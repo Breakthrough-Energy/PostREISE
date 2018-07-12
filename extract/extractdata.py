@@ -56,7 +56,7 @@ def extractData(caseName, locRead, nStart, nEnd):
 def extractDataAndSave(caseName, locRead, locSave, nStart, nEnd):
     """Extract data and save as csv in locSave locaton."""
     
-    (PG, PF) = extractDataDev(caseName, locRead, nStart, nEnd)
+    (PG, PF) = extractData(caseName, locRead, nStart, nEnd)
     
     PG.to_csv(locSave+caseName+'PG.csv')
     PF.to_csv(locSave+caseName+'PF.csv')
@@ -64,4 +64,4 @@ def extractDataAndSave(caseName, locRead, locSave, nStart, nEnd):
 
 if __name__ == "__main__":
     import sys
-    extractDataAndSave(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+    extractDataAndSave(sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4]), int(sys.argv[5]))
