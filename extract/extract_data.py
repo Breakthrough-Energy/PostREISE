@@ -6,7 +6,7 @@ import matlab.engine
 eng = matlab.engine.start_matlab()
 
 
-def extract_data(case_name, data_location, start_index, end_index):
+def extract_data(scenario_name, data_location, start_index, end_index):
     """Takes subintervals from simulation in matlab
     binary formate, converts and connects it into csv format.
     It uses the matlab functions get_power_output_from_gen
@@ -20,7 +20,7 @@ def extract_data(case_name, data_location, start_index, end_index):
     start = time.process_time()
     for i in range(start_index, end_index+1):
         print('Reading'+str(i))
-        filename = case_name + '_sub_result_' + str(i)
+        filename = scenario_name + '_sub_result_' + str(i)
         # Call matlab functions
         matlab_pg = eng.get_power_output_from_gen(data_location + filename)
         matlab_pf = eng.get_load_on_branch(data_location + filename)
@@ -32,10 +32,10 @@ def extract_data(case_name, data_location, start_index, end_index):
         else:
             pg = pd.DataFrame(np.array(matlab_pg._data).reshape(
                 matlab_pg.size[::-1]))
-            pg.name = case_name + 'PG'
+            pg.name = scenario_name + 'PG'
             pf = pd.DataFrame(np.array(matlabpf._data).reshape(
                 matlab_pf.size[::-1]))
-            pf.name = case_name + 'PF'
+            pf.name = scenario_name + 'PF'
     end = time.process_time()
     print('Reading time ' + str(100 * (end-start)) + 's')
 
@@ -53,14 +53,14 @@ def extract_data(case_name, data_location, start_index, end_index):
     return (pg, pf)
 
 
-def extract_data_and_save(case_name, data_location, save_location,
+def extract_data_and_save(scenario_name, data_location, save_location,
                           start_index, end_index):
     """Extract data and save as csv in locSave locaton."""
 
-    (pg, pf) = extract_data(case_name, data_location, start_index, end_index)
+    (pg, pf) = extract_data(scenario_name, data_location, start_index, end_index)
 
-    pg.to_csv(save_location+case_name+'PG.csv')
-    pf.to_csv(save_location+case_name+'PF.csv')
+    pg.to_csv(save_location+scenario_name+'PG.csv')
+    pf.to_csv(save_location+scenario_name+'PF.csv')
 
 
 if __name__ == "__main__":
