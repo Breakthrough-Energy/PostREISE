@@ -42,12 +42,12 @@ def extract_data(scenario_name, data_location, start_index, end_index):
     print('Reading time ' + str(100 * (end-start)) + 's')
 
     # Set data range
-    date_start = pd.Timestamp('2010-01-01')
-    date_end = pd.Timestamp('2012-12-31 23:00:00')
+    date_start = pd.Timestamp('2016-01-01')
+    date_end = pd.Timestamp('2016-12-31 23:00:00')
     date_range = pd.date_range(date_start, date_end, freq='H')
 
-    pf.index = date_range[(start_index-1)*4*24:(end_index)*4*24]
-    pg.index = date_range[(start_index-1)*4*24:(end_index)*4*24]
+    pf.index = date_range[(start_index-1):(end_index)]
+    pg.index = date_range[(start_index-1):(end_index)]
 
     # Shift index of PG becasue bus index in matlab
     pg = pg.rename(columns=lambda x: x+1)
