@@ -119,7 +119,7 @@ def plot_solar_onezone(PG, load_zone, from_index='2016', to_index='2016', freq='
         else:
             lt_tmp.remove(daylight_saving[0])
             lt_tmp.insert(lt_tmp.index(daylight_saving[1]),
-                          datetime.strptime('2016/11/6/1', '%Y/%m/%d/%H'))
+                          daylight_saving[1] - timedelta(hours=1))
             PG_lt_tmp['lt'] = lt_tmp
             PG_lt_tmp.set_index('lt', inplace=True, drop=True)
 
@@ -214,7 +214,7 @@ def plot_wind_onezone(PG, load_zone, from_index='2016', to_index='2016', freq='W
         else:
             lt_tmp.remove(daylight_saving[0])
             lt_tmp.insert(lt_tmp.index(daylight_saving[1]),
-                          datetime.strptime('2016/11/6/1', '%Y/%m/%d/%H'))
+                          daylight_saving[1] - timedelta(hours=1))
             PG_lt_tmp['lt'] = lt_tmp
             PG_lt_tmp.set_index('lt', inplace=True, drop=True)
 
