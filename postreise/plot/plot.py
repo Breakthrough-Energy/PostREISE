@@ -9,8 +9,20 @@ import pandas as pd
 
 
 def time_offset(year, month, day, hour, minute, sec, lon, lat):
-    """
-    Calculates time difference between utc and local time for a given location
+    """Calculates time difference between utc and local time for a given location.
+
+    Arguments:
+        year: year of the timestamp
+        month: month of the timestamp
+        day: day of the timestamp
+        hour: hour of the timestamp
+        minute: minute of the timestamp
+        sec: second of the timestamp
+        lon: longitude (in deg.) of the timestamp
+        lat: latitude (in deg.) of the timestamp
+
+    Returns:
+        Offset (in hours) between UTC and local time
     """
     current = datetime(year, month, day, hour, minute, sec)
 
@@ -26,40 +38,57 @@ def time_offset(year, month, day, hour, minute, sec, lon, lat):
     return (current_utc - current_local).total_seconds() / 60 / 60
 
 
-def to_LT(TS, columns, from_index, to_index):
-    """
-    Convert a time series pandas dataframe from UTC to local time. Eventual daylight saving are
-    taken into account
+
+def to_LT(PG, plantID, from_index, to_index):
+    """Convert a power generated time series from UTC to LT (local time). Eventual daylight
+    saving are taken into account.
+
+    Arguments:
+        PG: pandas time series of the power generated with UTC-timestamp indexing
+        plantID: plantID to consider in the data frame
+        from_index: starting timestamp
+        to_index: ending timestamp
+
+    Returns:
+        Power generated time series of the selected plantID with LT-timestamp indexing
     """
     daylight_saving = [datetime.strptime('2016-3-13-2', '%Y-%m-%d-%H'),
                        datetime.strptime('2016-11-6-2', '%Y-%m-%d-%H')]
 
-    for enum, i in enumerate(columns):
+    for enum, i in enumerate(plantID):
         offset = time_offset(2016, 1, 1, 0, 0, 0, WI.genbus.loc[i].lon, WI.genbus.loc[i].lat)
-        TS_LT_tmp = pd.DataFrame({i:TS[i].values})
-        LT_tmp = (TS.index + timedelta(hours=offset)).tolist()
+        PG_LT_tmp = pd.DataFrame({i:PG[i].values})
+        LT_tmp = (PG.index + timedelta(hours=offset)).tolist()
         if offset == time_offset(2016, 6, 1, 0, 0, 0, WI.genbus.loc[i].lon, WI.genbus.loc[i].lat):
-            TS_LT_tmp['LT'] = LT_tmp
-            TS_LT_tmp.set_index('LT', inplace=True, drop=True)
+            PG_LT_tmp['LT'] = LT_tmp
+            PG_LT_tmp.set_index('LT', inplace=True, drop=True)
         else:
             LT_tmp.remove(daylight_saving[0])
             LT_tmp.insert(LT_tmp.index(daylight_saving[1]), daylight_saving[1]-timedelta(hours=1))
-            TS_LT_tmp['LT'] = LT_tmp
-            TS_LT_tmp.set_index('LT', inplace=True, drop=True)
+            PG_LT_tmp['LT'] = LT_tmp
+            PG_LT_tmp.set_index('LT', inplace=True, drop=True)
 
-        TS_LT_tmp = TS_LT_tmp[from_index:to_index]
+        PG_LT_tmp = PG_LT_tmp[from_index:to_index]
         if enum == 0:
-            TS_LT = TS_LT_tmp
+            PG_LT = PG_LT_tmp
         else:
-            TS_LT = pd.merge(TS_LT, TS_LT_tmp, left_index=True, right_index=True, how='outer')
+            PG_LT = pd.merge(PG_LT, PG_LT_tmp, left_index=True, right_index=True, how='outer')
 
-    return TS_LT
+    return PG_LT
 
 
 def to_PST(TS, columns, from_index, to_index):
-    """
-    Convert a time series pandas dataframe from UTC to local time. Eventual daylight saving are
-    taken into account
+    """Convert a time series from UTC to PST (Pacific Standard Time). Eventual daylight
+    saving are taken into account.
+
+    Arguments:
+        TS: pandas time series with UTC-timestamp indexing
+        columns: columns to consider in the data frame
+        from_index: starting timestamp
+        to_index: ending timestamp
+
+    Returns:
+        Power generated time series of the selected columns with PST-timestamp indexing
     """
     TS_PST = TS[columns]
     TS_PST = TS_PST.set_index(TS.index - timedelta(hours=8))
@@ -69,9 +98,23 @@ def to_PST(TS, columns, from_index, to_index):
 
 
 def ts_all_onezone(PG, load_zone, from_index='2016-01-01-00', to_index='2017-01-01-00', freq='W'):
-    """
-    Plots the time series stack plot for load zone, California or total for western interconnect
-    including demand. It also prints the generation for each type.
+    """Plots the time series stack plot for load zone, California or total for western
+    interconnect including demand. It also prints the generation for each type.
+
+    Arguments:
+        PG: pandas time series of the power generated with UTC-timestamp indexing
+        load_zone: load zone to consider. If the load zone is set to total, all the plants in the
+                   western interconnect will be considered. If load zone is set to California,
+                   the plants located in Northern California, Central California, Bay Area,
+                   Southeast California and Southwest California will be considered.
+
+    Options:
+        from_index: starting timestamp
+        to_index: ending timestamp
+        freq: frequency for resampling
+
+    Returns:
+        Power generated time series for every available resource in the load zone
     """
     type2label = {'nuclear':'Nuclear',
                   'hydro':'Hydro',
@@ -113,7 +156,7 @@ def ts_all_onezone(PG, load_zone, from_index='2016-01-01-00', to_index='2017-01-
     ax = PG_stack.rename(columns=type2label).plot.area(color=colors,
                                                        fontsize=18,
                                                        alpha=0.7,
-                                                       figsize=(18, 12))
+                                                       figsize=(18,12))
     if load_zone == 'total':
         demand_data = demand_data.sum(axis=1)
     elif load_zone == 'California':
@@ -144,10 +187,29 @@ def ts_all_onezone(PG, load_zone, from_index='2016-01-01-00', to_index='2017-01-
 def ts_renewable_onezone(PG, type, load_zone,
                          from_index='2016-01-01-00', to_index='2017-01-01-00', freq='W',
                          LT=True, noplot=False, seed=0):
-    """
-    Plots the time series of the power generated by solar or wind plants in a given load zone,
-    California or total western interconnect. Also show on the same plot the time series
-    of the aggregated 25%, 50% and 75% most powerful plants (in terms of capacity).
+    """Plots the time series of the power generated by solar or wind plants in a given
+    load zone, California or total western interconnect. Also show on the same plot the time
+    series of power generated by 2, 8 and 15 randomly chosen plants in the load zone.
+
+    Arguments:
+        PG: pandas time series of the power generated with UTC-timestamp indexing
+        type: Can be 'solar' or 'wind'
+        load_zone: load zone to consider. If the load zone is set to total, all the plants in the
+                   western interconnect will be considered. If load zone is set to California,
+                   the plants located in Northern California, Central California, Bay Area,
+                   Southeast California and Southwest California will be considered.
+
+    Options:
+        from_index: starting timestamp
+        to_index: ending timestamp
+        freq: frequency for resampling
+        LT: apply the to_LT method to PG. If False the to_PST method is applied instead
+        noplot: if True, returns the time converted PG for the chosen renewable resource
+        seed: seed for the random selection of plants
+
+    Returns:
+        Power generated time series for the chosen renewable resource in the load zone and the
+        selected plants in the load zone.
     """
     if type != 'solar' and type != 'wind':
         print(type + ' not in type list.')
@@ -195,7 +257,7 @@ def ts_renewable_onezone(PG, type, load_zone,
         return total
 
     if n_plants < 20:
-        ax = total.plot(fontsize=18, alpha=0.7, figsize=(18, 12), color=WI.type2color[type], lw=5)
+        ax = total.plot(fontsize=18, alpha=0.7, figsize=(18,12), color=WI.type2color[type], lw=5)
         ax.set_facecolor('white')
         ax.grid(color='black', axis='y')
         ax.set_xlabel('')
@@ -230,10 +292,10 @@ def ts_renewable_onezone(PG, type, load_zone,
             colors += ['red','orangered','darkorange']
         elif type == 'wind':
             colors += ['dodgerblue','teal','turquoise']
-        linewidths    = [5,3,3,3]
-        linestyles    = ['-','--','--','--']
+        linewidths = [5,3,3,3]
+        linestyles = ['-','--','--','--']
         for col, c, lw, ls in zip(total.columns, colors, linewidths, linestyles):
-            total[col].plot(fontsize=18, alpha=0.7, figsize=(18, 12), lw=lw, ls=ls, color= c, ax=ax)
+            total[col].plot(fontsize=18, alpha=0.7, figsize=(18,12), lw=lw, ls=ls, color= c, ax=ax)
         ax.set_facecolor('white')
         ax.grid(color='black', axis='y')
         ax.set_xlabel('')
@@ -253,7 +315,24 @@ def ts_renewable_onezone(PG, type, load_zone,
 def ts_renewable_comp(PG, type, load_zone,
                       from_index='2016-01-01-00', to_index='2016-12-31-00', freq='W',
                       normalize=False):
+    """Plots the time series of the power generated by solar or wind plants in various
+    load zones. PST is chosen as a common timezone.
 
+    Arguments:
+        PG: pandas time series of the power generated with UTC-timestamp indexing
+        type: Can be 'solar' or 'wind'
+        load_zone: list of load zone. The list can include 'total' and/or California
+
+    Options:
+        from_index: starting timestamp
+        to_index: ending timestamp
+        freq: frequency for resampling
+        normalize: if True, the total capacity (in MWh) of the renewable resource in each
+                   load zone is used to derive a normalized power generated
+
+    Returns:
+        Power generated time series for the chosen renewable resource in the selected load zones
+    """
     for i, region in enumerate(load_zone):
         total_zone = ts_renewable_onezone(PG, type, region,
                                           from_index=from_index, to_index=to_index, freq=freq,
@@ -289,6 +368,3 @@ def ts_renewable_comp(PG, type, load_zone,
     plt.show()
 
     return total
-
-
-#def ts_curtailment_onezone(PG, type, load_zone, from_index='2016-01-01-00', to_index='2016-12-31-00', freq='H'):
