@@ -17,14 +17,14 @@ region2style = {'Washington':{'color':'green', 'alpha':1, 'lw':4, 'ls':'-'},
                 'Southwest California':{'color':'red', 'alpha':0.6, 'lw':4, 'ls':'-+'},
                 'Southeast California':{'color':'red', 'alpha':0.6, 'lw':4, 'ls':'-o'},
                 'Nevada':{'color':'orange', 'alpha':1, 'lw':4, 'ls':'-'},
-                'Arizona':{'color':'gold', 'alpha':1, 'lw':4, 'ls':'-'},
+                'Arizona':{'color':'maroon', 'alpha':1, 'lw':4, 'ls':'-'},
                 'Utah':{'color':'tomato', 'alpha':1, 'lw':4, 'ls':'-'},
                 'New Mexico':{'color':'teal', 'alpha':1, 'lw':4, 'ls':'-'},
-                'Colorado':{'color':'lightblue', 'alpha':1, 'lw':4, 'ls':'-'},
-                'Wyoming':{'color':'steelblue', 'alpha':1, 'lw':4, 'ls':'-'},
-                'Idaho':{'color':'slategray', 'alpha':1, 'lw':4, 'ls':'-'},
+                'Colorado':{'color':'darkorchid', 'alpha':1, 'lw':4, 'ls':'-'},
+                'Wyoming':{'color':'goldenrod', 'alpha':1, 'lw':4, 'ls':'-'},
+                'Idaho':{'color':'magenta', 'alpha':1, 'lw':4, 'ls':'-'},
                 'Montana':{'color':'indigo', 'alpha':1, 'lw':4, 'ls':'-'},
-                'El Paso':{'color':'magenta', 'alpha':1, 'lw':4, 'ls':'-'},
+                'El Paso':{'color':'dodgerblue', 'alpha':1, 'lw':4, 'ls':'-'},
                 'total':{'color':'black', 'alpha':1, 'lw':4, 'ls':'-'}}
 
 
@@ -262,7 +262,8 @@ def ts_renewable_onezone(PG, type, load_zone,
         try:
             plantID = g.get_group((type,load_zone)).index
         except KeyError:
-            return "No plant in %s" % load_zone
+            print("No plant in %s" % load_zone)
+            return
 
     n_plants = len(plantID)
     total_capacity = sum(WI.genbus.loc[plantID].GenMWMax.values)
@@ -358,7 +359,11 @@ def ts_renewable_comp(PG, type, load_zone,
         total_zone = ts_renewable_onezone(PG, type, region,
                                           from_index=from_index, to_index=to_index, freq=freq,
                                           noplot=True, LT=False)
-        name = total_zone.columns[0]
+
+        try:
+            name = total_zone.columns[0]
+        except AttributeError:
+            return
         n_plants = name.split()[1]
         capacity = int(name.split()[3].split('(')[1])
         total_zone.rename(columns={name:'%s: %s plants (%d MW)' % (region, n_plants, capacity)},
