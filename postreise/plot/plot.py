@@ -8,6 +8,27 @@ import numpy as np
 import pandas as pd
 
 
+region2style = {'Washington':{'color':'green', 'alpha':1, 'lw':4, 'ls':'-'},
+                'Oregon':{'color':'blue', 'alpha':1, 'lw':4, 'ls':'-'},
+                'California':{'color':'red', 'alpha':1, 'lw':4, 'ls':'-'},
+                'Northern California':{'color':'red', 'alpha':0.6, 'lw':4, 'ls':'--'},
+                'Bay Area':{'color':'red', 'alpha':0.6, 'lw':4, 'ls':':'},
+                'Central California':{'color':'red', 'alpha':0.6, 'lw':4, 'ls':'-.'},
+                'Southwest California':{'color':'red', 'alpha':0.6, 'lw':4, 'ls':'-+'},
+                'Southeast California':{'color':'red', 'alpha':0.6, 'lw':4, 'ls':'-o'},
+                'Nevada':{'color':'orange', 'alpha':1, 'lw':4, 'ls':'-'},
+                'Arizona':{'color':'gold', 'alpha':1, 'lw':4, 'ls':'-'},
+                'Utah':{'color':'tomato', 'alpha':1, 'lw':4, 'ls':'-'},
+                'New Mexico':{'color':'teal', 'alpha':1, 'lw':4, 'ls':'-'},
+                'Colorado':{'color':'lightblue', 'alpha':1, 'lw':4, 'ls':'-'},
+                'Wyoming':{'color':'steelblue', 'alpha':1, 'lw':4, 'ls':'-'},
+                'Idaho':{'color':'slategray', 'alpha':1, 'lw':4, 'ls':'-'},
+                'Montana':{'color':'indigo', 'alpha':1, 'lw':4, 'ls':'-'},
+                'El Paso':{'color':'magenta', 'alpha':1, 'lw':4, 'ls':'-'},
+                'total':{'color':'black', 'alpha':1, 'lw':4, 'ls':'-'}}
+
+
+
 def time_offset(year, month, day, hour, minute, sec, lon, lat):
     """Calculates time difference between utc and local time for a given location.
 
@@ -286,7 +307,7 @@ def ts_renewable_onezone(PG, type, load_zone,
         for i, col in enumerate(total.columns):
             total[col] /= norm[i]
 
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(18,12))
         colors = [WI.type2color[type]]
         if type == 'solar':
             colors += ['red','orangered','darkorange']
@@ -295,7 +316,7 @@ def ts_renewable_onezone(PG, type, load_zone,
         linewidths = [5,3,3,3]
         linestyles = ['-','--','--','--']
         for col, c, lw, ls in zip(total.columns, colors, linewidths, linestyles):
-            total[col].plot(fontsize=18, alpha=0.7, figsize=(18,12), lw=lw, ls=ls, color= c, ax=ax)
+            total[col].plot(fontsize=18, alpha=0.7, lw=lw, ls=ls, color= c, ax=ax)
         ax.set_facecolor('white')
         ax.grid(color='black', axis='y')
         ax.set_xlabel('')
@@ -351,7 +372,14 @@ def ts_renewable_comp(PG, type, load_zone,
             total = pd.merge(total, total_zone/norm, left_index=True, right_index=True, how='outer')
 
 
-    ax = total.plot(fontsize=18, alpha=0.7, figsize=(18, 12), lw=2)
+    fig, ax = plt.subplots(figsize=(18,12))
+    for col, region in zip(total.columns, load_zone):
+        color = region2style[region]['color']
+        alpha = region2style[region]['alpha']
+        lw = region2style[region]['lw']
+        ls = region2style[region]['ls']
+        total[col].plot(fontsize=18, color=color, alpha=alpha, lw=lw, ls=ls, ax=ax)
+
     ax.set_facecolor('white')
     ax.grid(color='black', axis='y')
     ax.set_xlabel('')
@@ -368,3 +396,33 @@ def ts_renewable_comp(PG, type, load_zone,
     plt.show()
 
     return total
+
+
+
+def ts_curtailment_onezone(PG, type, load_zone,
+                           from_index='2016-01-01-00', to_index='2017-01-01-00', freq='W',
+                           LT=True):
+    """Plots the time series of the curtailment for solar or wind plants in a given
+    load zone, California or total western interconnect. Also show on the same plot
+    the time series of the associated power output of the farms and the demand for
+    the load zone.
+
+    Arguments:
+        PG: pandas time series of the power generated with UTC-timestamp indexing
+        type: Can be 'solar' or 'wind'
+        load_zone: load zone to consider. If the load zone is set to total, all the plants in the
+                   western interconnect will be considered. If load zone is set to California,
+                   the plants located in Northern California, Central California, Bay Area,
+                   Southeast California and Southwest California will be considered.
+
+    Options:
+        from_index: starting timestamp
+        to_index: ending timestamp
+        freq: frequency for resampling
+        LT: apply the to_LT method to PG. If False the to_PST method is applied instead
+        noplot: if True, returns the time converted PG for the chosen renewable resource
+        seed: seed for the random selection of plants
+
+    Returns:
+        Curtailment time series for the chosen renewable resource in the load zone
+    """
