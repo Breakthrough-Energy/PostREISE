@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 
 
+
 region2style = {'Washington':{'color':'green', 'alpha':1, 'lw':4, 'ls':'-'},
                 'Oregon':{'color':'blue', 'alpha':1, 'lw':4, 'ls':'-'},
                 'California':{'color':'red', 'alpha':1, 'lw':4, 'ls':'-'},
@@ -173,11 +174,9 @@ def ts_all_onezone(PG, load_zone, from_index='2016-01-01-00', to_index='2017-01-
 
     demand_data = to_PST(WI.demand_data_2016, WI.demand_data_2016.columns, from_index, to_index)
 
-    colors = [WI.type2color[type] for type in type2label.keys()]
-    ax = PG_stack.rename(columns=type2label).plot.area(color=colors,
-                                                       fontsize=18,
-                                                       alpha=0.7,
-                                                       figsize=(18,12))
+    colors=[WI.type2color[type] for type in type2label.keys()]
+    ax = PG_stack[list(type2label.keys())].rename(columns=type2label).plot.area(color=colors,
+                                                  fontsize=18, alpha=0.7, figsize=(18,12))
     if load_zone == 'total':
         demand_data = demand_data.sum(axis=1)
     elif load_zone == 'California':
@@ -233,8 +232,7 @@ def ts_renewable_onezone(PG, type, load_zone,
         selected plants in the load zone.
     """
     if type != 'solar' and type != 'wind':
-        print(type + ' not in type list.')
-        print('Possible type are solar and wind')
+        print('Possible <type> are solar and wind')
         return
 
     if load_zone not in WI.load_zones.values():
