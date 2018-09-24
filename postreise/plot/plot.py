@@ -83,7 +83,7 @@ def to_PST(TS, columns, from_index, to_index):
         Power generated time series of the selected columns with PST-timestamp indexing
     """
     TS_PST = TS[columns]
-    TS_PST = TS_PST.set_index(TS.index - timedelta(hours=8))
+    TS_PST.set_index(pd.to_datetime(TS_PST.index) - timedelta(hours=8), inplace=True)
     TS_PST.index.name = 'PST'
 
     return TS_PST[from_index:to_index]
@@ -174,10 +174,12 @@ def get_demand(demand, zone):
         return demand.loc[:,zone]
 
 
+
 def IsRenewableResource(type):
     if type != 'solar' and type != 'wind':
         print('Possible <type> are <solar> and <wind>')
         return
+
 
 
 def ts_all_onezone(PG, zone, from_index='2016-01-01-00', to_index='2017-01-01-00', freq='W'):
@@ -396,7 +398,9 @@ def ts_renewable_comp(PG, type, zone_list,
     handles, labels = ax.get_legend_handles_labels()
     ax.legend(handles[::-1], labels[::-1], frameon=2, prop={'size':16}, loc='upper right')
     plt.title('%s - %s (%s)' % (from_index, to_index, type), fontsize=20)
+
     plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0)
+
     plt.show()
 
     return total
@@ -404,7 +408,8 @@ def ts_renewable_comp(PG, type, zone_list,
 
 
 def ts_curtailment_onezone(PG, type, zone,
-                           from_index='2016-01-01-00', to_index='2017-01-01-00', freq='W'):
+                           from_index='2016-01-01-00', to_index='2017-01-01-00', freq='W',
+                           multiplier=1):
     """Plots the time series of the curtailment for solar or wind plants in a given
     load zone, California or total western interconnect. Also show on the same plot
     the time series of the associated power output of the farms and the demand for
@@ -412,24 +417,59 @@ def ts_curtailment_onezone(PG, type, zone,
 
     Arguments:
         PG: pandas time series of the power generated with UTC-timestamp indexing
-        type: Can be 'solar' or 'wind'
+        type: 'solar' or 'wind'
         zone: one of the zone defined as keys in the zone2style dictionary
 
     Options:
         from_index: starting timestamp
         to_index: ending timestamp
         freq: frequency for resampling
-        noplot: if True, returns the time converted PG for the chosen renewable resource
-        seed: seed for the random selection of plants
+        multiplier: multiplier for renewable power output
 
     Returns:
         Curtailment time series for the chosen renewable resource in the load zone
-
-
-    used, plantID = ts_renewable_onezone(PG, type, zone,
-                                         from_index=from_index, to_index=to_index, freq=freq,
-                                         noplot=True, LT=False)
-
-    produced = to_PST(eval('WI.'+type+'_data_2016', plantID)
-    demand = to_PST(WI.demand_data_2016, WI.demand_data_2016.columns, from_index, to_index)
     """
+    IsRenewableResource(type)
+
+    plantID = list(set(get_plantID(zone)).intersection(WI.genbus.groupby('type').get_group(type).index))
+    n_plants = len(plantID)
+    if n_plants == 0:
+        print("No %s plants in %s" % (type,zone))
+        return
+    capacity = sum(WI.genbus.loc[plantID].GenMWMax.values)
+
+    produced = to_PST(eval('WI.'+type+'_data_2016'), plantID, from_index, to_index)
+    demand = to_PST(WI.demand_data_2016, WI.demand_data_2016.columns, from_index, to_index)
+    used = to_PST(PG, plantID, from_index, to_index)
+
+    curtailment = pd.DataFrame(produced.T.sum().resample(freq).mean().rename('Produced'))
+    curtailment['Used'] = used.T.sum().resample(freq).mean().values
+    curtailment['Demand'] = get_demand(demand,zone).resample(freq).mean().values
+
+    curtailment['Produced'] *= multiplier
+    curtailment['Ratio'] = 100 * (curtailment['Produced'] - curtailment['Used']) / curtailment['Produced']
+
+    curtailment.loc[abs(curtailment['Ratio']) < 0.5, 'Ratio'] = 0
+
+    fig, ax = plt.subplots(figsize=(18,12))
+    ax_MW = ax.twinx()
+
+    curtailment['Ratio'].plot(ax=ax, legend=False, style='b', lw=4, fontsize=18, alpha=0.7)
+    curtailment[['Produced','Demand']].plot(ax=ax_MW, style={'Produced':'g', 'Demand':'r'}, lw=4, fontsize=18, alpha=0.7)
+
+    ax.set_facecolor('white')
+    ax.grid(color='black', axis='y')
+    ax.set_xlabel('')
+    ax.set_ylabel('Curtailment [%]', fontsize=20)
+    ax_MW.set_ylabel('MW', fontsize=20)
+    ax.legend(loc='upper left', prop={'size':16})
+    ax_MW.legend(loc='upper right', prop={'size':16})
+
+    plt.title('%s: %s - %s (%s x%d)' % (zone, from_index, to_index, type, multiplier), fontsize=20)
+
+    filename = '.\Images\%s_%sx%d_%s-%s_curtailment.png' % (zone, type, multiplier, from_index, to_index)
+    plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0)
+
+    plt.show()
+
+    return curtailment
