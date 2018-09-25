@@ -20,6 +20,15 @@ California = ['Northern California',
 
 
 
+type2label = {'nuclear':'Nuclear',
+              'hydro':'Hydro',
+              'coal':'Coal',
+              'ng':'Natural Gas',
+              'solar':'Solar',
+              'wind':'Wind'}
+
+
+
 zone2style = {'Washington':{'color':'green', 'alpha':1, 'lw':4, 'ls':'-'},
               'Oregon':{'color':'blue', 'alpha':1, 'lw':4, 'ls':'-'},
               'California':{'color':'red', 'alpha':1, 'lw':4, 'ls':'-'},
@@ -41,10 +50,12 @@ zone2style = {'Washington':{'color':'green', 'alpha':1, 'lw':4, 'ls':'-'},
 
 
 
-scenarios = {'X1':['PG.pkl']*2,
-             'X2':['PG_RenX2.pkl',None],
-             'X3':['PG_RenX3.pkl',None],
-             'X4':[None]*2}
+scenarios = {'x1':['PG.pkl',None],
+             'x2':['PG_RenX2.pkl',None],
+             'x3':['PG_RenX3.pkl',None],
+             'x4':[None]*2}
+
+
 
 def time_offset(year, month, day, hour, minute, sec, lon, lat):
     """Calculates time difference between utc and local time for a given location.
@@ -206,12 +217,6 @@ def ts_all_onezone(PG, zone, from_index='2016-01-01-00', to_index='2017-01-01-00
     Returns:
         Power generated time series for every available resource in the load zone
     """
-    type2label = {'nuclear':'Nuclear',
-                  'hydro':'Hydro',
-                  'coal':'Coal',
-                  'ng':'Natural Gas',
-                  'solar':'Solar',
-                  'wind':'Wind'}
 
     plantID = get_plantID(zone)
     PG_new = to_PST(PG, plantID, from_index, to_index)
@@ -484,31 +489,93 @@ def ts_curtailment_onezone(PG, type, zone,
 
 
 
-def enhanced_onezone(zone):
+def scenario_renewable_onezone(zone):
     plantID = []
     for type in ['solar','wind']:
         plantID += list(set(get_plantID(zone)).intersection(WI.genbus.groupby('type').get_group(type).index))
 
     n_scenarios = len(scenarios.keys())
-    contribution = np.zeros(n_scenarios*2).reshape(n_scenarios,2)
+    allotment = np.zeros(n_scenarios*2).reshape(n_scenarios,2)
 
     for i, files in enumerate(scenarios.values()):
         for j, f in enumerate(files):
             if f:
                 PG_tmp = pd.read_pickle(f)
-                contribution[i,j] = PG_tmp[plantID].sum(axis=1).sum() / PG_tmp.sum(axis=1).sum()
+                allotment[i,j] = 100 * PG_tmp[plantID].sum(axis=1).sum() / PG_tmp.sum(axis=1).sum()
 
     fig, ax = plt.subplots(figsize=(18,12))
 
     ax.set_facecolor('white')
     ax.grid(color='black', axis='y')
     ax.tick_params(labelsize=18)
-    ax.set_xlabel('Scenarios', fontsize=20)
-    ax.set_ylabel('Contribution [%]', fontsize=20)
+    ax.set_xlabel('Renewable Energy', fontsize=20)
+    ax.set_ylabel('Renewable Energy Generation [%]', fontsize=20)
 
-    ax.plot(scenarios.keys(), contribution[:,0], 'b-o', label='Resource', lw=4, markersize=12)
-    ax.plot(scenarios.keys(), contribution[:,1], 'r-o', label='Grid',lw=4, markersize=12)
+    ax.plot(scenarios.keys(), allotment[:,0], 'r-o', label='Current Grid', lw=4, markersize=12)
+    ax.plot(scenarios.keys(), allotment[:,1], 'b-o', label='Enhanced Grid',lw=4, markersize=12)
 
     ax.legend(loc='upper right', prop={'size':16})
 
+    filename = '.\Images\%s_renewable_scenarios.png' % (zone)
+    plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0)
+
     plt.show()
+
+
+
+def scenarios_onezone(zone):
+    plantID = get_plantID(zone)
+    n_scenarios = len(scenarios.keys())
+
+    allotment = pd.DataFrame(columns=type2label.keys(), index=range(n_scenarios*2))
+
+    for i, files in enumerate(scenarios.values()):
+        for j, f in enumerate(files):
+            if f:
+                PG_zone = pd.read_pickle(f)[plantID]
+                total = PG_zone.sum(axis=1).sum()
+                PG_groups = PG_zone.T.groupby(WI.genbus['type'])
+                PG_stack = PG_groups.agg(sum).T
+                for type in WI.ID2type.values():
+                    if type not in PG_stack.columns:
+                        del type2label[type]
+
+                if j == 0:
+                    allotment.loc[i,type2label.keys()] = [PG_stack.sum()[type]/total for type in type2label.keys()]
+                else:
+                    allotment.loc[n_scenarios+i,type2label.keys()] = [PG_stack.sum()[type]/total for type in type2label.keys()]
+
+    allotment_plot = allotment.copy()
+    for i in allotment.index:
+        if allotment_plot.loc[i,'nuclear'] != np.nan:
+            allotment_plot.loc[i,['nuclear','hydro','coal','ng']] *= -1
+
+
+    colors=[WI.type2color[type] for type in type2label.keys()]
+    ax = allotment_plot[list(type2label.keys())].rename(columns=type2label).plot(kind='barh', stacked=True, figsize=(18, 12), label=True, color=colors, alpha=0.7, fontsize=18)
+
+
+    ax.set_facecolor('white')
+    ax.axvline(0, 0, 1, color='black')
+    ax.grid(color='black', which='major')
+    ax.grid(color='gray', which='minor', alpha=0.5)
+    ax.set_xticklabels([0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.1,0,0.1,0.2,0.3,0.4])
+    ax.set_xticks([-0.8,-0.7,-0.6,-0.5,-0.4,-0.3,-0.2,-0.1,0,0.1,0.2,0.3,0.4])
+    ax.legend(frameon=2, loc='upper left', prop={'size': 16})
+    ax.set_yticklabels(['Base Case',
+                        'x2 Current Renewable',
+                        'x3 Current Renewable',
+                        'x4 Current Renewable',
+                        'Base Case',
+                        'x2 Current Renewable',
+                        'x3 Current Renewable',
+                        'x4 Current Renewable'])
+    ax.set_xlabel('Generation [%]', fontsize=20)
+    ax.tick_params(labelsize=18)
+
+    filename = '.\Images\%s_scenarios.png' % (zone)
+    plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0)
+
+    plt.show()
+
+    return allotment
