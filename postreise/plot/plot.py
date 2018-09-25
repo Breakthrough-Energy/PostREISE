@@ -6,6 +6,9 @@ from datetime import datetime, timedelta
 from timezonefinder import TimezoneFinder
 import numpy as np
 import pandas as pd
+import sys
+
+sys.path.append("./test")
 
 
 
@@ -37,6 +40,11 @@ zone2style = {'Washington':{'color':'green', 'alpha':1, 'lw':4, 'ls':'-'},
               'total':{'color':'black', 'alpha':1, 'lw':4, 'ls':'-'}}
 
 
+
+scenarios = {'X1':['PG.pkl']*2,
+             'X2':['PG_RenX2.pkl',None],
+             'X3':['PG_RenX3.pkl',None],
+             'X4':[None]*2}
 
 def time_offset(year, month, day, hour, minute, sec, lon, lat):
     """Calculates time difference between utc and local time for a given location.
@@ -449,6 +457,7 @@ def ts_curtailment_onezone(PG, type, zone,
     curtailment['Produced'] *= multiplier
     curtailment['Ratio'] = 100 * (curtailment['Produced'] - curtailment['Used']) / curtailment['Produced']
 
+    # Deal with numerical precision
     curtailment.loc[abs(curtailment['Ratio']) < 0.5, 'Ratio'] = 0
 
     fig, ax = plt.subplots(figsize=(18,12))
@@ -462,7 +471,6 @@ def ts_curtailment_onezone(PG, type, zone,
     ax.set_xlabel('')
     ax.set_ylabel('Curtailment [%]', fontsize=20)
     ax_MW.set_ylabel('MW', fontsize=20)
-    ax.legend(loc='upper left', prop={'size':16})
     ax_MW.legend(loc='upper right', prop={'size':16})
 
     plt.title('%s: %s - %s (%s x%d)' % (zone, from_index, to_index, type, multiplier), fontsize=20)
@@ -473,3 +481,34 @@ def ts_curtailment_onezone(PG, type, zone,
     plt.show()
 
     return curtailment
+
+
+
+def enhanced_onezone(zone):
+    plantID = []
+    for type in ['solar','wind']:
+        plantID += list(set(get_plantID(zone)).intersection(WI.genbus.groupby('type').get_group(type).index))
+
+    n_scenarios = len(scenarios.keys())
+    contribution = np.zeros(n_scenarios*2).reshape(n_scenarios,2)
+
+    for i, files in enumerate(scenarios.values()):
+        for j, f in enumerate(files):
+            if f:
+                PG_tmp = pd.read_pickle(f)
+                contribution[i,j] = PG_tmp[plantID].sum(axis=1).sum() / PG_tmp.sum(axis=1).sum()
+
+    fig, ax = plt.subplots(figsize=(18,12))
+
+    ax.set_facecolor('white')
+    ax.grid(color='black', axis='y')
+    ax.tick_params(labelsize=18)
+    ax.set_xlabel('Scenarios', fontsize=20)
+    ax.set_ylabel('Contribution [%]', fontsize=20)
+
+    ax.plot(scenarios.keys(), contribution[:,0], 'b-o', label='Resource', lw=4, markersize=12)
+    ax.plot(scenarios.keys(), contribution[:,1], 'r-o', label='Grid',lw=4, markersize=12)
+
+    ax.legend(loc='upper right', prop={'size':16})
+
+    plt.show()
