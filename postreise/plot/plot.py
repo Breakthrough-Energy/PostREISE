@@ -50,9 +50,8 @@ scenarios_total = {'x1':['PG.pkl','PG_EnhancedGrid.pkl'],
 
 
 scenarios_California = {'x1':['PG.pkl','PG_CAEnhancedGrid.pkl'],
-                        'x2':['PG_CARenX2.pkl',None],
-                        'x3':[None,None],
-                        'x4':[None,None]}
+                        'x2':['PG_CARenX2.pkl','PG_CAEnhancedGridRenX2.pkl'],
+                        'x3':['PG_CARenX3.pkl','PG_CAEnhancedGridRenX3.pkl']}
 
 
 
