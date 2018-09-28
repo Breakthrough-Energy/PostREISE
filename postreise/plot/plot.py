@@ -22,13 +22,13 @@ California = ['Northern California',
 
 
 zone2style = {'Washington':{'color':'green', 'alpha':1, 'lw':4, 'ls':'-'},
-              'Oregon':{'color':'blue', 'alpha':1, 'lw':4, 'ls':'-'},
-              'California':{'color':'red', 'alpha':1, 'lw':4, 'ls':'-'},
-              'Northern California':{'color':'red', 'alpha':0.6, 'lw':4, 'ls':'--'},
-              'Bay Area':{'color':'red', 'alpha':0.6, 'lw':4, 'ls':':'},
-              'Central California':{'color':'red', 'alpha':0.6, 'lw':4, 'ls':'-.'},
-              'Southwest California':{'color':'red', 'alpha':0.6, 'lw':4, 'ls':'-+'},
-              'Southeast California':{'color':'red', 'alpha':0.6, 'lw':4, 'ls':'-o'},
+              'Oregon':{'color':'red', 'alpha':1, 'lw':4, 'ls':'-'},
+              'California':{'color':'blue', 'alpha':1, 'lw':4, 'ls':'-'},
+              'Northern California':{'color':'blue', 'alpha':0.6, 'lw':4, 'ls':'--'},
+              'Bay Area':{'color':'blue', 'alpha':0.6, 'lw':4, 'ls':':'},
+              'Central California':{'color':'blue', 'alpha':0.6, 'lw':4, 'ls':'-.'},
+              'Southwest California':{'color':'blue', 'alpha':0.6, 'lw':4, 'ls':'-+'},
+              'Southeast California':{'color':'blue', 'alpha':0.6, 'lw':4, 'ls':'-o'},
               'Nevada':{'color':'orange', 'alpha':1, 'lw':4, 'ls':'-'},
               'Arizona':{'color':'maroon', 'alpha':1, 'lw':4, 'ls':'-'},
               'Utah':{'color':'tomato', 'alpha':1, 'lw':4, 'ls':'-'},
@@ -242,7 +242,7 @@ def ts_all_onezone(PG, zone, from_index='2016-01-01-00', to_index='2017-01-01-00
 
     colors=[WI.type2color[type] for type in type2label.keys()]
     ax = PG_stack[list(type2label.keys())].rename(columns=type2label).plot.area(color=colors,
-                                                  fontsize=18, alpha=0.7, figsize=(18,12))
+                                                  fontsize=18, alpha=0.7, figsize=(20,12))
 
     demand.resample(freq).mean().rename('Demand').plot(color='red', legend='demand', lw=4, ax=ax)
     ax.set_ylim([0,max(ax.get_ylim()[1], demand.resample(freq).mean().max()+100)])
@@ -256,7 +256,7 @@ def ts_all_onezone(PG, zone, from_index='2016-01-01-00', to_index='2017-01-01-00
     plt.title('%s: %s - %s' % (zone, from_index, to_index), fontsize=20)
 
     filename = '.\Images\%s_%s-%s_NetGeneration.png' % (zone, from_index, to_index)
-    #plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0)
+    plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0)
 
     plt.show()
 
@@ -304,7 +304,7 @@ def ts_renewable_onezone(PG, type, zone,
     total = pd.DataFrame(PG_new.T.sum().resample(freq).mean().rename('Total: %d plants (%d MW)' % (n_plants, total_capacity)))
 
     if n_plants < 20:
-        ax = total.plot(fontsize=18, alpha=0.7, figsize=(18,12), color=WI.type2color[type], lw=5)
+        ax = total.plot(fontsize=18, alpha=0.7, figsize=(20,12), color=WI.type2color[type], lw=5)
         ax.set_facecolor('white')
         ax.grid(color='black', axis='y')
         ax.set_xlabel('')
@@ -314,7 +314,7 @@ def ts_renewable_onezone(PG, type, zone,
         plt.title('%s: %s - %s' % (zone, from_index, to_index), fontsize=20)
 
         filename = '.\Images\%s_%s_%s-%s_NetGeneration.png' % (zone, type, from_index, to_index)
-        #plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0)
+        plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0)
 
         plt.show()
     else:
@@ -328,12 +328,12 @@ def ts_renewable_onezone(PG, type, zone,
         total['8 plants (%d MW)' % norm[2]] = PG_new[selected[:8]].T.sum().resample(freq).mean()
         total['2 plant (%d MW)' % norm[3]] = PG_new[selected[:2]].T.sum().resample(freq).mean()
 
-        #WI.genbus.loc[selected].to_csv('.\Images\%s_%s_%s-%s.csv' % (zone, type, from_index, to_index))
+        WI.genbus.loc[selected].to_csv('.\Images\%s_%s_%s-%s.csv' % (zone, type, from_index, to_index))
 
         for i, col in enumerate(total.columns):
             total[col] /= norm[i]
 
-        fig, ax = plt.subplots(figsize=(18,12))
+        fig, ax = plt.subplots(figsize=(20,12))
         colors = [WI.type2color[type]]
         if type == 'solar':
             colors += ['red','orangered','darkorange']
@@ -352,7 +352,7 @@ def ts_renewable_onezone(PG, type, zone,
         plt.title('%s: %s - %s (%s)' % (zone, from_index, to_index, type), fontsize=20)
 
         filename = '.\Images\%s_%s_%s-%s_normalized.png' % (zone, type, from_index, to_index)
-        #plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0)
+        plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0)
 
         plt.show()
 
@@ -400,7 +400,7 @@ def ts_renewable_comp(PG, type, zone_list,
         else:
             total = pd.merge(total, total_zone/norm, left_index=True, right_index=True, how='outer')
 
-    fig, ax = plt.subplots(figsize=(18,12))
+    fig, ax = plt.subplots(figsize=(20,12))
     for col, zone in zip(total.columns, zone_list):
         color = zone2style[zone]['color']
         alpha = zone2style[zone]['alpha']
@@ -418,10 +418,10 @@ def ts_renewable_comp(PG, type, zone_list,
         ax.set_ylabel('Net Generation (MWh)', fontsize=20)
         filename = '.\Images\%s_%s_%s-%s_NetGeneration.png' % ("-".join(zone_list), type, from_index, to_index)
     handles, labels = ax.get_legend_handles_labels()
-    ax.legend(handles[::-1], labels[::-1], frameon=2, prop={'size':16}, loc='upper right')
+    ax.legend(handles[::-1], labels[::-1], frameon=2, prop={'size':16}, loc='upper left')
     plt.title('%s - %s (%s)' % (from_index, to_index, type), fontsize=20)
 
-    #plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0)
+    plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0)
 
     plt.show()
 
@@ -474,7 +474,7 @@ def ts_curtailment_onezone(PG, type, zone,
     # Deal with numerical precision
     curtailment.loc[abs(curtailment['Ratio']) < 0.5, 'Ratio'] = 0
 
-    fig, ax = plt.subplots(figsize=(18,12))
+    fig, ax = plt.subplots(figsize=(20,12))
     ax_MW = ax.twinx()
 
     curtailment['Ratio'].plot(ax=ax, legend=False, style='b', lw=4, fontsize=18, alpha=0.7)
@@ -490,7 +490,7 @@ def ts_curtailment_onezone(PG, type, zone,
     plt.title('%s: %s - %s (%s x%d)' % (zone, from_index, to_index, type, multiplier), fontsize=20)
 
     filename = '.\Images\%s_%sx%d_%s-%s_curtailment.png' % (zone, type, multiplier, from_index, to_index)
-    #plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0)
+    plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0)
 
     plt.show()
 
@@ -538,11 +538,20 @@ def scenarios_renewable_onezone(zone):
 
     ax.plot(scenarios.keys(), allotment[:,0], 'r-o', label='Current Grid', lw=4, markersize=12)
     ax.plot(scenarios.keys(), allotment[:,1], 'b-o', label='Enhanced Grid',lw=4, markersize=12)
+    for i in range(len(allotment)):
+        ax.annotate('%.1f%%' % allotment[i,0], xy=(list(scenarios.keys())[i],allotment[i,0]),
+                    xytext=(list(scenarios.keys())[i],allotment[i,0]-0.5),
+                    horizontalalignment='left', verticalalignment='top', fontsize=14, color='r')
+        ax.annotate('%.1f%%' % allotment[i,1], xy=(list(scenarios.keys())[i],allotment[i,1]),
+                    xytext=(list(scenarios.keys())[i],allotment[i,1]+0.5),
+                    horizontalalignment='right', verticalalignment='bottom', fontsize=14, color='b')
 
-    ax.legend(loc='upper right', prop={'size':16})
+
+
+    ax.legend(loc='lower right', prop={'size':16})
 
     filename = '.\Images\%s_renewable_scenarios.png' % (zone)
-    #plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0)
+    plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0)
 
     plt.show()
 
@@ -576,6 +585,7 @@ def scenarios_onezone(zone):
     n_scenarios = len(scenarios.keys())
 
     allotment = pd.DataFrame(columns=type2label.keys(), index=range(n_scenarios*2))
+    ytitle = [None]*n_scenarios*2
 
     for i, files in enumerate(scenarios.values()):
         for j, f in enumerate(files):
@@ -590,8 +600,11 @@ def scenarios_onezone(zone):
 
                 if j == 0:
                     allotment.loc[i,type2label.keys()] = [PG_stack.sum()[type]/total for type in type2label.keys()]
+                    ytitle[i] = list(scenarios.keys())[i]+' Current Renewable'
                 else:
                     allotment.loc[n_scenarios+i,type2label.keys()] = [PG_stack.sum()[type]/total for type in type2label.keys()]
+                    ytitle[n_scenarios+i] = list(scenarios.keys())[i]+' Current Renewable'
+
 
     allotment_plot = allotment.copy()
     for i in allotment.index:
@@ -610,20 +623,13 @@ def scenarios_onezone(zone):
     ax.set_xticklabels([80,70,60,50,40,30,20,10,0,10,20,30,40])
     ax.set_xticks([-0.8,-0.7,-0.6,-0.5,-0.4,-0.3,-0.2,-0.1,0,0.1,0.2,0.3,0.4])
     ax.legend(frameon=2, loc='upper left', prop={'size': 16})
-    ax.set_yticklabels(['Base Case',
-                        'x2 Current Renewable',
-                        'x3 Current Renewable',
-                        'x4 Current Renewable',
-                        'Base Case',
-                        'x2 Current Renewable',
-                        'x3 Current Renewable',
-                        'x4 Current Renewable'])
+    ax.set_yticklabels(ytitle)
     ax.set_xlabel('Generation [%]', fontsize=20)
     ax.tick_params(labelsize=18)
     ax.xaxis.set_minor_locator(AutoMinorLocator(2))
 
     filename = '.\Images\%s_scenarios.png' % (zone)
-    #plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0, transparent=True)
+    plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0, transparent=True)
 
     plt.show()
 
@@ -740,7 +746,7 @@ def upgrade_impact(zone_ref, zone_tostudy, grid=0):
     ax.add_artist(l2)
 
     filename = '.\Images\%s_upgrade_impact.png' % (zone_ref)
-    #plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0)
+    plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0)
 
     plt.show()
 
