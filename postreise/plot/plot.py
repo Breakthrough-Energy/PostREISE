@@ -60,17 +60,17 @@ def time_offset(year, month, day, hour, minute, sec, lon, lat):
     """Calculates time difference between utc and local time for a given location.
 
     Arguments:
-        year: year of the timestamp
-        month: month of the timestamp
-        day: day of the timestamp
-        hour: hour of the timestamp
-        minute: minute of the timestamp
-        sec: second of the timestamp
-        lon: longitude (in deg.) of the timestamp
-        lat: latitude (in deg.) of the timestamp
+        year: year of the timestamp.
+        month: month of the timestamp.
+        day: day of the timestamp.
+        hour: hour of the timestamp.
+        minute: minute of the timestamp.
+        sec: second of the timestamp.
+        lon: longitude (in deg.) of the timestamp.
+        lat: latitude (in deg.) of the timestamp.
 
     Returns:
-        Offset (in hours) between UTC and local time
+        Offset (in hours) between UTC and local time.
     """
     current = datetime(year, month, day, hour, minute, sec)
 
@@ -92,13 +92,13 @@ def to_PST(TS, columns, from_index, to_index):
     saving are taken into account.
 
     Arguments:
-        TS: pandas time series with UTC-timestamp indexing
-        columns: columns to consider in the data frame
-        from_index: starting timestamp
-        to_index: ending timestamp
+        TS: pandas time series with UTC-timestamp indexing.
+        columns: columns to consider in the data frame.
+        from_index: starting timestamp.
+        to_index: ending timestamp.
 
     Returns:
-        Power generated time series of the selected columns with PST-timestamp indexing
+        Power generated time series of the selected columns with PST-timestamp indexing.
     """
     TS_PST = TS[columns]
     TS_PST.set_index(pd.to_datetime(TS_PST.index) - timedelta(hours=8), inplace=True)
@@ -113,13 +113,13 @@ def to_LT(PG, plantID, from_index, to_index):
     saving are taken into account.
 
     Arguments:
-        PG: pandas time series of the power generated with UTC-timestamp indexing
-        plantID: plantID to consider in the data frame
-        from_index: starting timestamp
-        to_index: ending timestamp
+        PG: pandas time series of the power generated with UTC-timestamp indexing.
+        plantID: plantID to consider in the data frame.
+        from_index: starting timestamp.
+        to_index: ending timestamp.
 
     Returns:
-        Power generated time series of the selected plantID with LT-timestamp indexing
+        Power generated time series of the selected plantID with LT-timestamp indexing.
     """
     daylight_saving = [datetime.strptime('2016-3-13-2', '%Y-%m-%d-%H'),
                        datetime.strptime('2016-11-6-2', '%Y-%m-%d-%H')]
@@ -148,13 +148,13 @@ def to_LT(PG, plantID, from_index, to_index):
 
 
 def get_plantID(zone):
-    """Lists the id of the plants located in a given zone
+    """Lists the id of the plants located in a given zone.
 
     Arguments:
-        zone: one of the zone defined as keys in the zone2style dictionary
+        zone: one of the zone defined as keys in the zone2style dictionary.
 
     Returns:
-        plantID in a given zone
+        plantID in a given zone.
     """
     if zone not in WI.load_zones.values():
         if zone == 'total':
@@ -175,14 +175,14 @@ def get_plantID(zone):
 
 
 def get_demand(demand, zone):
-    """demand profile for a given zone
+    """demand profile for a given zone.
 
     Arguments:
-        demand: demand profiles for all 16 load zones
-        zone: one of the zone defined as keys in the zone2style dictionary
+        demand: demand profiles for all 16 load zones.
+        zone: one of the zone defined as keys in the zone2style dictionary.
 
     Returns:
-        time series of the demand for a given zone
+        time series of the demand for a given zone.
     """
     if zone == 'total':
         return demand.sum(axis=1)
@@ -194,6 +194,11 @@ def get_demand(demand, zone):
 
 
 def IsRenewableResource(type):
+    """Is resource renewable.
+
+    Arguments:
+        type: either <nuclear>, <hydro>, <coal>, <ng>, <solar> or <wind>.
+    """
     if type != 'solar' and type != 'wind':
         print('Possible <type> are <solar> and <wind>')
         return
@@ -205,16 +210,16 @@ def ts_all_onezone(PG, zone, from_index='2016-01-01-00', to_index='2017-01-01-00
     interconnect including demand. It also prints the generation for each type.
 
     Arguments:
-        PG: pandas time series of the power generated with UTC-timestamp indexing
-        zone: one of the zone defined as keys in the zone2style dictionary
+        PG: pandas time series of the power generated with UTC-timestamp indexing.
+        zone: one of the zone defined as keys in the zone2style dictionary.
 
     Options:
-        from_index: starting timestamp
-        to_index: ending timestamp
-        freq: frequency for resampling
+        from_index: starting timestamp.
+        to_index: ending timestamp.
+        freq: frequency for resampling.
 
     Returns:
-        Power generated time series for every available resource in the load zone
+        Power generated time series for every available resource in the load zone.
     """
     type2label = {'nuclear':'Nuclear',
                   'hydro':'Hydro',
@@ -268,16 +273,16 @@ def ts_renewable_onezone(PG, type, zone,
     series of power generated by 2, 8 and 15 randomly chosen plants in the load zone.
 
     Arguments:
-        PG: pandas time series of the power generated with UTC-timestamp indexing
-        type: can be 'solar' or 'wind'
-        zone: one of the zone defined as keys in the zone2style dictionary
+        PG: pandas time series of the power generated with UTC-timestamp indexing.
+        type: can be 'solar' or 'wind'.
+        zone: one of the zone defined as keys in the zone2style dictionary.
 
     Options:
-        from_index: starting timestamp
-        to_index: ending timestamp
-        freq: frequency for resampling
-        LT: apply the to_LT method to PG. If False the to_PST method is applied instead
-        seed: seed for the random selection of plants
+        from_index: starting timestamp.
+        to_index: ending timestamp.
+        freq: frequency for resampling.
+        LT: apply the to_LT method to PG. If False the to_PST method is applied instead.
+        seed: seed for the random selection of plants.
 
     Returns:
         Power generated time series for the chosen renewable resource in the load zone and the
@@ -362,19 +367,19 @@ def ts_renewable_comp(PG, type, zone_list,
     load zones. PST is chosen as a common timezone.
 
     Arguments:
-        PG: pandas time series of the power generated with UTC-timestamp indexing
-        type: Can be 'solar' or 'wind'
-        zone: list of zone. Zones are defined as keys in the zone2style dictionary
+        PG: pandas time series of the power generated with UTC-timestamp indexing.
+        type: Can be 'solar' or 'wind'.
+        zone: list of zone. Zones are defined as keys in the zone2style dictionary.
 
     Options:
-        from_index: starting timestamp
-        to_index: ending timestamp
-        freq: frequency for resampling
+        from_index: starting timestamp.
+        to_index: ending timestamp.
+        freq: frequency for resampling.
         normalize: if True, the total capacity (in MWh) of the renewable resource in each
-                   load zone is used to derive a normalized power generated
+                   load zone is used to derive a normalized power generated.
 
     Returns:
-        Power generated time series for the chosen renewable resource in the selected load zones
+        Power generated time series for the chosen renewable resource in the selected load zones.
     """
     IsRenewableResource(type)
 
@@ -434,18 +439,18 @@ def ts_curtailment_onezone(PG, type, zone,
     the load zone.
 
     Arguments:
-        PG: pandas time series of the power generated with UTC-timestamp indexing
-        type: 'solar' or 'wind'
-        zone: one of the zone defined as keys in the zone2style dictionary
+        PG: pandas time series of the power generated with UTC-timestamp indexing.
+        type: 'solar' or 'wind'.
+        zone: one of the zone defined as keys in the zone2style dictionary.
 
     Options:
-        from_index: starting timestamp
-        to_index: ending timestamp
-        freq: frequency for resampling
-        multiplier: multiplier for renewable power output
+        from_index: starting timestamp.
+        to_index: ending timestamp.
+        freq: frequency for resampling.
+        multiplier: multiplier for renewable power output.
 
     Returns:
-        Curtailment time series for the chosen renewable resource in the load zone
+        Curtailment time series for the chosen renewable resource in the load zone.
     """
     IsRenewableResource(type)
 
@@ -499,7 +504,7 @@ def scenarios_renewable_onezone(zone):
        the total power generated in that zone for various scenarios.
 
     Arguments:
-        zone: either total or California
+        zone: either total or California.
     """
     if zone == 'total':
         scenarios = scenarios_total
@@ -548,10 +553,10 @@ def scenarios_onezone(zone):
     """Plots the stacked power generated for a given zone for various scenarios.
 
     Arguments:
-        zone: either total or California
+        zone: either total or California.
 
     Returns:
-        Allotment of power generated per resource type
+        Allotment of power generated per resource type.
     """
     if zone == 'total':
         scenarios = scenarios_total
@@ -628,16 +633,16 @@ def scenarios_onezone(zone):
 
 
 def upgrade_impact(zone_ref, zone_tostudy, grid=0):
-    """Plots the stacked power generated for given load zones for increased renewable
-       energy in a given grid
+    """Plots the stacked power generated for given load zones per increased renewable
+       energy on a specified grid.
 
     Arguments:
         zone_ref: California
         zone_tostudy: one of the zone defined as keys in the zone2style dictionary
 
     Returns:
-        Stacked power generated group by zone and increased renewable energy
-        in a given grid
+        List of stacked power generated in multiple zones for various increased renewable
+        energy scenarios.
     """
     if zone_ref == 'California':
         scenarios = scenarios_California
