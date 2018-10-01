@@ -51,7 +51,8 @@ scenarios_total = {'x1':['PG.pkl','PG_EnhancedGrid.pkl'],
 
 scenarios_California = {'x1':['PG.pkl','PG_CAEnhancedGrid.pkl'],
                         'x2':['PG_CARenX2.pkl','PG_CAEnhancedGridRenX2.pkl'],
-                        'x3':['PG_CARenX3.pkl','PG_CAEnhancedGridRenX3.pkl']}
+                        'x3':['PG_CARenX3.pkl','PG_CAEnhancedGridRenX3.pkl'],
+                        'x4':['PG_CARenX4.pkl','PG_CAEnhancedGridRenX4.pkl']}
 
 
 
@@ -65,8 +66,8 @@ def time_offset(year, month, day, hour, minute, sec, lon, lat):
         hour: hour of the timestamp.
         minute: minute of the timestamp.
         sec: second of the timestamp.
-        lon: longitude (in deg.) of the timestamp.
-        lat: latitude (in deg.) of the timestamp.
+        lon: longitude (in deg.) of the location.
+        lat: latitude (in deg.) of the location.
 
     Returns:
         Offset (in hours) between UTC and local time.
