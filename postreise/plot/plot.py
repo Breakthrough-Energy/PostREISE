@@ -66,8 +66,8 @@ def time_offset(year, month, day, hour, minute, sec, lon, lat):
         hour: hour of the timestamp.
         minute: minute of the timestamp.
         sec: second of the timestamp.
-        lon: longitude (in deg.) of the location.
-        lat: latitude (in deg.) of the location.
+        lon: longitude of the site (in deg.) measured eastward from Greenwich.
+        lat: latitude of the site (in deg.). Equator is the zero point.
 
     Returns:
         Offset (in hours) between UTC and local time.
