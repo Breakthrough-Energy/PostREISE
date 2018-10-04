@@ -2,6 +2,7 @@ import westernintnet
 WI = westernintnet.WesternIntNet()
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
+import seaborn as sns
 import pytz
 from datetime import datetime, timedelta
 from timezonefinder import TimezoneFinder
@@ -151,7 +152,7 @@ def get_plantID(zone):
     """Lists the id of the plants located in a given zone.
 
     Arguments:
-        zone: one of the zone defined as keys in the zone2style dictionary.
+        zone: one of the zone defined as keys in the <zone2style> dictionary.
 
     Returns:
         plantID in a given zone.
@@ -179,7 +180,7 @@ def get_demand(demand, zone):
 
     Arguments:
         demand: demand profiles for all 16 load zones.
-        zone: one of the zone defined as keys in the zone2style dictionary.
+        zone: one of the zone defined as keys in the <zone2style> dictionary.
 
     Returns:
         time series of the demand for a given zone.
@@ -211,7 +212,7 @@ def ts_all_onezone(PG, zone, from_index='2016-01-01-00', to_index='2017-01-01-00
 
     Arguments:
         PG: pandas time series of the power generated with UTC-timestamp indexing.
-        zone: one of the zone defined as keys in the zone2style dictionary.
+        zone: one of the zone defined as keys in the <zone2style> dictionary.
 
     Options:
         from_index: starting timestamp.
@@ -275,7 +276,7 @@ def ts_renewable_onezone(PG, type, zone,
     Arguments:
         PG: pandas time series of the power generated with UTC-timestamp indexing.
         type: can be 'solar' or 'wind'.
-        zone: one of the zone defined as keys in the zone2style dictionary.
+        zone: one of the zone defined as keys in the <zone2style> dictionary.
 
     Options:
         from_index: starting timestamp.
@@ -369,7 +370,7 @@ def ts_renewable_comp(PG, type, zone_list,
     Arguments:
         PG: pandas time series of the power generated with UTC-timestamp indexing.
         type: Can be 'solar' or 'wind'.
-        zone: list of zone. Zones are defined as keys in the zone2style dictionary.
+        zone: list of zone. Zones are defined as keys in the <zone2style> dictionary.
 
     Options:
         from_index: starting timestamp.
@@ -440,8 +441,8 @@ def ts_curtailment_onezone(PG, type, zone,
 
     Arguments:
         PG: pandas time series of the power generated with UTC-timestamp indexing.
-        type: 'solar' or 'wind'.
-        zone: one of the zone defined as keys in the zone2style dictionary.
+        type: either <solar> or <wind>.
+        zone: one of the zone defined as keys in the <zone2style> dictionary.
 
     Options:
         from_index: starting timestamp.
@@ -504,7 +505,7 @@ def scenarios_renewable_onezone(zone):
        the total power generated in that zone for various scenarios.
 
     Arguments:
-        zone: either total or California.
+        zone: either <total> or <California>.
     """
     if zone == 'total':
         scenarios = scenarios_total
@@ -562,7 +563,7 @@ def scenarios_onezone(zone):
     """Plots the stacked power generated for a given zone for various scenarios.
 
     Arguments:
-        zone: either total or California.
+        zone: either <total> or <California>.
 
     Returns:
         Allotment of power generated per resource type.
@@ -752,3 +753,50 @@ def upgrade_impact(zone_ref, zone_tostudy, grid=0):
     plt.show()
 
     return allotment
+
+
+
+def corr_renewable(PG, type, zone):
+    """Plots the correlation between power generated in given load zone and for wind or solar
+
+    Arguments:
+        PG: pandas time series of the power generated with UTC-timestamp indexing.
+        type: either <wind> or <solar>
+        zone: one of the zone defined as keys in the <zone2style> dictionary.
+
+    Returns:
+        Power generated time series for the specified energy type and load zones.
+    """
+    IsRenewableResource(type)
+
+    for i, z in enumerate(zone):
+        plantID = list(set(get_plantID(z)).intersection(WI.genbus.groupby('type').get_group(type).index))
+        n_plants = len(plantID)
+        if n_plants == 0:
+            print("No %s plants in %s" % (type,z))
+            return
+        if i == 0:
+            PG_zone = pd.DataFrame({z:PG[plantID].sum(axis=1).values}, index=PG.index)
+        else:
+            PG_zone[z] = PG[plantID].sum(axis=1).values
+
+    PG_zone.index.name = 'UTC'
+
+    corr = PG_zone.corr()
+    fig, ax = plt.subplots(figsize=(12,12))
+    if type == 'solar':
+        palette = 'OrRd'
+    elif type == 'wind':
+        palette='Greens'
+
+    ax = sns.heatmap(corr, annot=True, fmt=".2f", cmap=palette, ax=ax, square=True, cbar=False,
+                     annot_kws={"size": 18}, lw=4)
+    ax.tick_params(labelsize=15)
+    ax.set_yticklabels(zone, rotation=40, ha='right')
+
+    filename = '.\Images\%s_%s_corr.png' % ("-".join(zone), type)
+    plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0)
+
+    plt.show()
+
+    return PG_zone
