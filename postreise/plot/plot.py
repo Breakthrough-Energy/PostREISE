@@ -644,8 +644,8 @@ def upgrade_impact(zone_ref, zone_tostudy, grid=0):
        energy on a specified grid.
 
     Arguments:
-        zone_ref: California
-        zone_tostudy: one of the zone defined as keys in the zone2style dictionary
+        zone_ref: California.
+        zone_tostudy: one of the zone defined as keys in the zone2style dictionary.
 
     Returns:
         List of stacked power generated in multiple zones for various increased renewable
@@ -757,11 +757,11 @@ def upgrade_impact(zone_ref, zone_tostudy, grid=0):
 
 
 def corr_renewable(PG, type, zone):
-    """Plots the correlation between power generated in given load zone and for wind or solar
+    """Plots the correlation between power generated in given load zone and for wind or solar.
 
     Arguments:
         PG: pandas time series of the power generated with UTC-timestamp indexing.
-        type: either <wind> or <solar>
+        type: either <solar> or <wind>.
         zone: one of the zone defined as keys in the <zone2style> dictionary.
 
     Returns:
