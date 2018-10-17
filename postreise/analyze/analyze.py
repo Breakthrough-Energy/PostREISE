@@ -35,7 +35,7 @@ def get_PG(sftp,scenario_list,scenario_name):
     print('Done reading')
     PG.columns = PG.columns.astype(int)
     # need to shift index because matlab starts from 1
-    PG = PG.rename(columns=lambda x: x-1)
+    #PG = PG.rename(columns=lambda x: x-1)
     return PG
 
 def get_PF(sftp,scenario_list,scenario_name):
