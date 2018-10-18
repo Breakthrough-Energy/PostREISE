@@ -24,7 +24,6 @@ California = ['Northern California',
               'Southwest California']
 
 
-
 zone2style = {'Washington':{'color':'green', 'alpha':1, 'lw':4, 'ls':'-'},
               'Oregon':{'color':'red', 'alpha':1, 'lw':4, 'ls':'-'},
               'California':{'color':'blue', 'alpha':1, 'lw':4, 'ls':'-'},
@@ -151,8 +150,7 @@ def to_LT(PG, plantID, from_index, to_index):
 def get_plantID(zone):
     """Lists the id of the plants located in a given zone.
 
-    :param zone: one of the zones defined as keys in the \ 
-        :py:const:`zone2style` dictionary.
+    :param zone: one of the zones.
     :param return: id of the plants in the selected zone.
     """
     
@@ -177,8 +175,7 @@ def get_demand(demand, zone):
     """Get demand profile for load zone, California or total.
 
     :param demand: pandas DataFrame of the load with UTC timestamp indexing.
-    :param string zone: one of the zones defined as keys in the \ 
-        :py:const:`zone2style` dictionary.
+    :param string zone: one of the zones.
     :return: data frame of the load with selected zone as columns and UTC \ 
         timestamp as indices.
     """
@@ -206,8 +203,7 @@ def ts_all_onezone(PG, zone, from_index='2016-01-01-00', to_index='2017-01-01-00
 
     :param PG: pandas DataFrame of the power generated with id of the plants \ 
         as columns and UTC timestamp as indiced.
-    :param sring zone: one of the zones defined as keys in the \ 
-        :py:const:`zone2style` dictionary.
+    :param sring zone: one of the zones.
     :param string from_index: starting timestamp.
     :param string to_index: ending timestamp.
     :param freq: frequency for resampling.
@@ -266,8 +262,7 @@ def ts_renewable_onezone(PG, type, zone, from_index='2016-01-01-00',
     :param PG: pandas DataFrame of the power generated with id of the plants \ 
         as columns and UTC timestamp as indiced.
     :param string type: one of *solar* or *wind*.
-    :param string zone: one of the zones defined as keys in the \ 
-        :py:const:`zone2style` dictionary.
+    :param string zone: one of the zones.
     :param string from_index: starting timestamp.
     :param string to_index: ending timestamp.
     :param freq: frequency for resampling.    
@@ -358,8 +353,7 @@ def ts_renewable_comp(PG, type, zone_list, from_index='2016-01-01-00',
     :param PG: pandas DataFrame of the power generated with id of the plants \ 
         as columns and UTC timestamp as indiced.
     :param string type: one of *solar* or *wind*.
-    :param zone: list of zones defined as keys in the \ 
-        :py:const:`zone2style` dictionary.
+    :param zone: list of zones.
     :param string from_index: starting timestamp.
     :param string to_index: ending timestamp.
     :param freq: frequency for resampling.
@@ -430,8 +424,7 @@ def ts_curtailment_onezone(PG, type, zone,
     :param PG: pandas DataFrame of the power generated with id of the plants \ 
         as columns and UTC timestamp as indiced.
     :param string type: one of *solar* or *wind*.
-    :param string zone: one of the zones defined as keys in the \ 
-        :py:const:`zone2style` dictionary.
+    :param string zone: one of the zones.
     :param string from_index: starting timestamp.
     :param string to_index: ending timestamp.
     :param freq: frequency for resampling.
@@ -630,8 +623,7 @@ def upgrade_impact(zone_ref, zone_tostudy, grid=0):
         zones for available scenarios energy and grid.
 
     :param string zone_ref: *California*.
-    :param zone_tostudy: list of zones defined as keys in \ 
-        :py:const:`zone2style` dictionary.
+    :param zone_tostudy: list of zones.
     :return: list of data frame of the allotment of power generated in \ 
         various zones. Each data frame has the fuel type as columns and the \ 
         the scenario name as indices.
@@ -748,8 +740,7 @@ def corr_renewable(PG, type, zone):
     :param PG: pandas DataFrame of the power generated with id of the plants \ 
         as columns and UTC timestamp as indiced.
     :param string type: one of *solar* or *wind*.
-    :param zone: list of zones defined as keys in the \ 
-        :py:const:`zone2style` dictionary.
+    :param zone: list of zones.
     :return: data frame of the power generated  by the selected renewable \
         resource with the selected zones as columns and UTC timestamp as \ 
         indices.
