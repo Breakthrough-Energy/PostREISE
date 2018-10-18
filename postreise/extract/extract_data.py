@@ -9,11 +9,9 @@ from pandas.core.indexes.datetimes import date_range
 
 def extract_data(scenario_name, data_location, start_index, end_index,
                  date_range):
-    """
-    Takes subintervals from simulation in MATLAB
-    binary format, converts and connects it into csv format.
-    It uses the MATLAB functions get_power_output_from_gen
-    and get_load_on_branch to extract data.
+    """Takes subintervals from simulation in MATLAB binary format, converts \ 
+        and connects it into csv format. It uses the MATLAB functions \ 
+        get_power_output_from_gen and get_load_on_branch to extract data.
 
 
     :param str scenario_name: Name of scenario.
@@ -62,8 +60,9 @@ def extract_data(scenario_name, data_location, start_index, end_index,
 
 def extract_data_batch(scenario_name, data_location, start_index, end_index,
                        date_range):
-    """This function extracts the data in batches using the MATLAB function
-    get_all_power_and_load. The MATLAB function saves the output in csv files.
+    """This function extracts the data in batches using the MATLAB function \ 
+        get_all_power_and_load. The MATLAB function saves the output in csv \ 
+        files.
 
     :param str scenario_name: Name of scenario.
     :param str data_location: Location of data to be extracted.
@@ -100,8 +99,8 @@ def extract_data_and_save(scenario_name, data_location, save_location,
 
     :param str scenario_name: Name of scenario to be extracted.
     :param str data_location: Location of data to be extracted.
-    :param str save_location: Location where the extracted data
-     should be stored.
+    :param str save_location: Location where the extracted data should be \ 
+        stored.
     :param int start_index: Start index of the file to be extracted.
     :param int end_index: End index of the file to be extracted.
     :param date_range: Pandas date_range object
@@ -120,8 +119,8 @@ def extract_scenario(scenario_name):
     """Extract data given scenario_name. Lookup data from ScenarioList.csv
 
     :param str scenario_name: Name of scenario to be extracted.
-
     """
+    
     scenario_dirname = '/home/EGM/'
     scenario_list = pd.read_csv(scenario_dirname + 'ScenarioList.csv')
 
