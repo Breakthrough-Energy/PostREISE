@@ -1,11 +1,12 @@
-# PreREISE
+# PostREISE
 ---
 
 This package contains the following modules:
-  * extract;
-  * analyze;
-  * plot;
-and requires the Matlab simulation engine. Perform the following steps:
+  * extract
+  * analyze
+  * plot
+  
+It requires the Matlab simulation engine.
 
 ## 1. Setuo/Install
 ```
@@ -15,7 +16,6 @@ python setup.py install
 
 ## 2. Extracting Data
 This module reads from the cases database to get information about the location and range of the data. It extracts the data from the MATLAB results and saves the data as csv files. This module runs only on the server for now.
-
 
 To extract results from the MATLAB results after a simulation you can run:
 ```python
@@ -34,4 +34,4 @@ Reads the data from the database and performs the data analysis. It first perfor
 
 
 ## 4. Plot
-This module reads the data from the analyze process and plots the output. This module could be combined with the analyze step.
+This module reads the data from the analyze process and plots the output. Note that this module could be combined with the analyze step.
