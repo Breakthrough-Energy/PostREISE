@@ -7,14 +7,13 @@ import pandas as pd
 import pytz
 import seaborn as sns
 from matplotlib.ticker import AutoMinorLocator
+from timezonefinder import TimezoneFinder
 
 from westernintnet.westernintnet import WesternIntNet
-from timezonefinder import TimezoneFinder
 
 WI = WesternIntNet()
 
 sys.path.append("./test")
-
 
 
 California = ['Northern California',
@@ -24,39 +23,43 @@ California = ['Northern California',
               'Southwest California']
 
 
-zone2style = {'Washington':{'color':'green', 'alpha':1, 'lw':4, 'ls':'-'},
-              'Oregon':{'color':'red', 'alpha':1, 'lw':4, 'ls':'-'},
-              'California':{'color':'blue', 'alpha':1, 'lw':4, 'ls':'-'},
-              'Northern California':{'color':'blue', 'alpha':0.6, 'lw':4, 'ls':'--'},
-              'Bay Area':{'color':'blue', 'alpha':0.6, 'lw':4, 'ls':':'},
-              'Central California':{'color':'blue', 'alpha':0.6, 'lw':4, 'ls':'-.'},
-              'Southwest California':{'color':'blue', 'alpha':0.6, 'lw':4, 'ls':'-+'},
-              'Southeast California':{'color':'blue', 'alpha':0.6, 'lw':4, 'ls':'-o'},
-              'Nevada':{'color':'orange', 'alpha':1, 'lw':4, 'ls':'-'},
-              'Arizona':{'color':'maroon', 'alpha':1, 'lw':4, 'ls':'-'},
-              'Utah':{'color':'tomato', 'alpha':1, 'lw':4, 'ls':'-'},
-              'New Mexico':{'color':'teal', 'alpha':1, 'lw':4, 'ls':'-'},
-              'Colorado':{'color':'darkorchid', 'alpha':1, 'lw':4, 'ls':'-'},
-              'Wyoming':{'color':'goldenrod', 'alpha':1, 'lw':4, 'ls':'-'},
-              'Idaho':{'color':'magenta', 'alpha':1, 'lw':4, 'ls':'-'},
-              'Montana':{'color':'indigo', 'alpha':1, 'lw':4, 'ls':'-'},
-              'El Paso':{'color':'dodgerblue', 'alpha':1, 'lw':4, 'ls':'-'},
-              'total':{'color':'black', 'alpha':1, 'lw':4, 'ls':'-'}}
+zone2style = {'Washington': {'color': 'green', 'alpha': 1, 'lw': 4, 'ls': '-'},
+              'Oregon': {'color': 'red', 'alpha': 1, 'lw': 4, 'ls': '-'},
+              'California': {'color': 'blue', 'alpha': 1, 'lw': 4, 'ls': '-'},
+              'Northern California': {'color': 'blue', 'alpha': 0.6, 'lw': 4,
+                                      'ls': '--'},
+              'Bay Area': {'color': 'blue', 'alpha': 0.6, 'lw': 4, 'ls': ':'},
+              'Central California': {'color': 'blue', 'alpha': 0.6, 'lw': 4,
+                                     'ls': '-.'},
+              'Southwest California': {'color': 'blue', 'alpha': 0.6, 'lw': 4,
+                                       'ls': '-+'},
+              'Southeast California': {'color': 'blue', 'alpha': 0.6, 'lw': 4,
+                                       'ls': '-o'},
+              'Nevada': {'color': 'orange', 'alpha': 1, 'lw': 4, 'ls': '-'},
+              'Arizona': {'color': 'maroon', 'alpha': 1, 'lw': 4, 'ls': '-'},
+              'Utah': {'color': 'tomato', 'alpha': 1, 'lw': 4, 'ls': '-'},
+              'New Mexico': {'color': 'teal', 'alpha': 1, 'lw': 4, 'ls': '-'},
+              'Colorado': {'color': 'darkorchid', 'alpha': 1, 'lw': 4,
+                           'ls': '-'},
+              'Wyoming': {'color': 'goldenrod', 'alpha': 1, 'lw': 4,
+                          'ls': '-'},
+              'Idaho': {'color': 'magenta', 'alpha': 1, 'lw': 4, 'ls': '-'},
+              'Montana': {'color': 'indigo', 'alpha': 1, 'lw': 4, 'ls': '-'},
+              'El Paso': {'color': 'dodgerblue', 'alpha': 1, 'lw': 4,
+                          'ls': '-'},
+              'total': {'color': 'black', 'alpha': 1, 'lw': 4, 'ls': '-'}}
 
 
-
-scenarios_total = {'x1':['PG.pkl','PG_EnhancedGrid.pkl'],
-                   'x2':['PG_RenX2.pkl','PG_EnhancedGridRenX2.pkl'],
-                   'x3':['PG_RenX3.pkl','PG_EnhancedGridRenX3.pkl'],
-                   'x4':['PG_RenX4.pkl','PG_EnhancedGridRenX4.pkl']}
-
+scenarios_total = {'x1': ['PG.pkl', 'PG_EnhancedGrid.pkl'],
+                   'x2': ['PG_RenX2.pkl', 'PG_EnhancedGridRenX2.pkl'],
+                   'x3': ['PG_RenX3.pkl', 'PG_EnhancedGridRenX3.pkl'],
+                   'x4': ['PG_RenX4.pkl', 'PG_EnhancedGridRenX4.pkl']}
 
 
-scenarios_California = {'x1':['PG.pkl','PG_CAEnhancedGrid.pkl'],
-                        'x2':['PG_CARenX2.pkl','PG_CAEnhancedGridRenX2.pkl'],
-                        'x3':['PG_CARenX3.pkl','PG_CAEnhancedGridRenX3.pkl'],
-                        'x4':['PG_CARenX4.pkl','PG_CAEnhancedGridRenX4.pkl']}
-
+scenarios_California = {'x1': ['PG.pkl', 'PG_CAEnhancedGrid.pkl'],
+                        'x2': ['PG_CARenX2.pkl', 'PG_CAEnhancedGridRenX2.pkl'],
+                        'x3': ['PG_CARenX3.pkl', 'PG_CAEnhancedGridRenX3.pkl'],
+                        'x4': ['PG_CARenX4.pkl', 'PG_CAEnhancedGridRenX4.pkl']}
 
 
 def time_offset(year, month, day, hour, minute, sec, lon, lat):
@@ -71,7 +74,8 @@ def time_offset(year, month, day, hour, minute, sec, lon, lat):
     :param int sec: second of the timestamp.
     :param float lon: longitude of the site (in deg.) measured eastward from \ 
         Greenwich.
-    :param float lat: latitude of the site (in deg.). Equator is the zero point.
+    :param float lat: latitude of the site (in deg.). Equator is the zero \ 
+        point.
     :return: offset (in hours) between UTC and local time.
     """
     current = datetime(year, month, day, hour, minute, sec)
@@ -88,7 +92,6 @@ def time_offset(year, month, day, hour, minute, sec, lon, lat):
     return (current_utc - current_local).total_seconds() / 60 / 60
 
 
-
 def to_PST(DF, columns, from_index, to_index):
     """Converts UTC timestamp indexing to PST (Pacific Standard Time) \ 
         timestamp indexing in a data frame.
@@ -101,18 +104,18 @@ def to_PST(DF, columns, from_index, to_index):
     :return: data frame of power generated (load) with id of the selected \ 
         plants (load zones) as columns and PST timestamp indexing.
     """
-    
+
     DF_PST = DF[columns]
-    DF_PST.set_index(pd.to_datetime(DF_PST.index) - timedelta(hours=8), inplace=True)
+    DF_PST.set_index(pd.to_datetime(DF_PST.index) - timedelta(hours=8), 
+                     inplace=True)
     DF_PST.index.name = 'PST'
 
     return DF_PST[from_index:to_index]
 
 
-
 def to_LT(PG, plantID, from_index, to_index):
     """Converts UTC timestamp indexing to LT (local time) timestamp indexing \ 
-        in a power generated data frame
+        in a power generated data frame.
 
     :param PG: pandas DataFrame of the power generated and id of all the \ 
         plants as columns and UTC timestamp as indices.
@@ -126,15 +129,18 @@ def to_LT(PG, plantID, from_index, to_index):
                        datetime.strptime('2016-11-6-2', '%Y-%m-%d-%H')]
 
     for enum, i in enumerate(plantID):
-        offset = time_offset(2016, 1, 1, 0, 0, 0, WI.genbus.loc[i].lon, WI.genbus.loc[i].lat)
-        PG_LT_tmp = pd.DataFrame({i:PG[i].values})
+        offset = time_offset(2016, 1, 1, 0, 0, 0, 
+                             WI.genbus.loc[i].lon, WI.genbus.loc[i].lat)
+        PG_LT_tmp = pd.DataFrame({i: PG[i].values})
         LT_tmp = (PG.index + timedelta(hours=offset)).tolist()
-        if offset == time_offset(2016, 6, 1, 0, 0, 0, WI.genbus.loc[i].lon, WI.genbus.loc[i].lat):
+        if offset == time_offset(2016, 6, 1, 0, 0, 0, 
+                                 WI.genbus.loc[i].lon, WI.genbus.loc[i].lat):
             PG_LT_tmp['LT'] = LT_tmp
             PG_LT_tmp.set_index('LT', inplace=True, drop=True)
         else:
             LT_tmp.remove(daylight_saving[0])
-            LT_tmp.insert(LT_tmp.index(daylight_saving[1]), daylight_saving[1]-timedelta(hours=1))
+            LT_tmp.insert(LT_tmp.index(daylight_saving[1]), 
+                          daylight_saving[1]-timedelta(hours=1))
             PG_LT_tmp['LT'] = LT_tmp
             PG_LT_tmp.set_index('LT', inplace=True, drop=True)
 
@@ -142,7 +148,8 @@ def to_LT(PG, plantID, from_index, to_index):
         if enum == 0:
             PG_LT = PG_LT_tmp
         else:
-            PG_LT = pd.merge(PG_LT, PG_LT_tmp, left_index=True, right_index=True, how='outer')
+            PG_LT = pd.merge(PG_LT, PG_LT_tmp, left_index=True, 
+                             right_index=True, how='outer')
 
     return PG_LT
 
@@ -153,7 +160,7 @@ def get_plantID(zone):
     :param zone: one of the zones.
     :param return: id of the plants in the selected zone.
     """
-    
+
     if zone not in WI.load_zones.values():
         if zone == 'total':
             plantID = WI.genbus.index
@@ -182,9 +189,9 @@ def get_demand(demand, zone):
     if zone == 'total':
         return demand.sum(axis=1)
     elif zone == 'California':
-        return demand.loc[:,California].sum(axis=1)
+        return demand.loc[:, California].sum(axis=1)
     else:
-        return demand.loc[:,zone]
+        return demand.loc[:, zone]
 
 
 def IsRenewableResource(type):
@@ -197,7 +204,8 @@ def IsRenewableResource(type):
         return
 
 
-def ts_all_onezone(PG, zone, from_index='2016-01-01-00', to_index='2017-01-01-00', freq='W'):
+def ts_all_onezone(PG, zone, from_index='2016-01-01-00', 
+                   to_index='2017-01-01-00', freq='W'):
     """Plots the time series stack plot for load zone, California or total \ 
         including demand. It also prints the generation for each type.
 
@@ -210,12 +218,12 @@ def ts_all_onezone(PG, zone, from_index='2016-01-01-00', to_index='2017-01-01-00
     :return: data frame of the power generated in the slected zone with \ 
         fuel type as columns and PST timestamp as indices.
     """
-    type2label = {'nuclear':'Nuclear',
-                  'hydro':'Hydro',
-                  'coal':'Coal',
-                  'ng':'Natural Gas',
-                  'solar':'Solar',
-                  'wind':'Wind'}
+    type2label = {'nuclear': 'Nuclear',
+                  'hydro': 'Hydro',
+                  'coal': 'Coal',
+                  'ng': 'Natural Gas',
+                  'solar': 'Solar',
+                  'wind': 'Wind'}
 
     plantID = get_plantID(zone)
     PG_new = to_PST(PG, plantID, from_index, to_index)
@@ -226,27 +234,26 @@ def ts_all_onezone(PG, zone, from_index='2016-01-01-00', to_index='2017-01-01-00
         if type not in PG_stack.columns:
             del type2label[type]
 
-
-    demand = to_PST(WI.demand_data_2016, WI.demand_data_2016.columns, from_index, to_index)
+    demand = to_PST(WI.demand_data_2016, WI.demand_data_2016.columns,
+                    from_index, to_index)
     demand = get_demand(demand, zone)
 
-    colors=[WI.type2color[type] for type in type2label.keys()]
-    ax = PG_stack[list(type2label.keys())].rename(columns=type2label).plot.area(color=colors,
-                                                  fontsize=18, alpha=0.7, figsize=(20,12))
+    colors = [WI.type2color[type] for type in type2label.keys()]
+    ax = PG_stack[list(type2label.keys())].rename(columns=type2label).plot.area(color=colors, fontsize=18, alpha=0.7, figsize=(20, 12))
 
     demand.resample(freq).mean().rename('Demand').plot(color='red', legend='demand', lw=4, ax=ax)
-    ax.set_ylim([0,max(ax.get_ylim()[1], demand.resample(freq).mean().max()+100)])
+    ax.set_ylim([0, max(ax.get_ylim()[1], demand.resample(freq).mean().max()+100)])
 
     ax.set_facecolor('white')
     ax.grid(color='black', axis='y')
     handles, labels = ax.get_legend_handles_labels()
-    ax.legend(handles[::-1], labels[::-1], frameon = 2, prop={'size':16}, loc='lower right')
+    ax.legend(handles[::-1], labels[::-1], frameon=2, prop={'size': 16}, loc='lower right')
     ax.set_xlabel('')
     ax.set_ylabel('Net Generation (MWh)', fontsize=20)
     plt.title('%s: %s - %s' % (zone, from_index, to_index), fontsize=20)
 
     filename = '.\Images\%s_%s-%s_NetGeneration.png' % (zone, from_index, to_index)
-    plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0)
+    plt.savefig(filename, bbox_inches='tight', pad_inches=0)
 
     plt.show()
 
@@ -277,7 +284,7 @@ def ts_renewable_onezone(PG, type, zone, from_index='2016-01-01-00',
     plantID = list(set(get_plantID(zone)).intersection(WI.genbus.groupby('type').get_group(type).index))
     n_plants = len(plantID)
     if n_plants == 0:
-        print("No %s plants in %s" % (type,zone))
+        print("No %s plants in %s" % (type, zone))
         return
 
     total_capacity = sum(WI.genbus.loc[plantID].GenMWMax.values)
@@ -290,7 +297,8 @@ def ts_renewable_onezone(PG, type, zone, from_index='2016-01-01-00',
     total = pd.DataFrame(PG_new.T.sum().resample(freq).mean().rename('Total: %d plants (%d MW)' % (n_plants, total_capacity)))
 
     if n_plants < 20:
-        ax = total.plot(fontsize=18, alpha=0.7, figsize=(20,12), color=WI.type2color[type], lw=5)
+        ax = total.plot(fontsize=18, alpha=0.7, figsize=(20, 12), 
+                        color=WI.type2color[type], lw=5)
         ax.set_facecolor('white')
         ax.grid(color='black', axis='y')
         ax.set_xlabel('')
@@ -601,8 +609,9 @@ def scenarios_onezone(zone):
     ax.axvline(0, 0, 1, color='black')
     ax.grid(color='black', which='major')
     ax.grid(color='gray', which='minor', alpha=0.5)
-    ax.set_xticklabels([80,70,60,50,40,30,20,10,0,10,20,30,40])
-    ax.set_xticks([-0.8,-0.7,-0.6,-0.5,-0.4,-0.3,-0.2,-0.1,0,0.1,0.2,0.3,0.4])
+    ax.set_xticklabels([80, 70, 60, 50, 40, 30, 20, 10, 0, 10, 20, 30, 40])
+    ax.set_xticks([-0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0, 0.1, 0.2, 
+                   0.3, 0.4])
     ax.legend(frameon=2, loc='upper left', prop={'size': 16})
     ax.set_yticklabels(ytitle)
     ax.set_xlabel('Generation [%]', fontsize=20)
@@ -610,12 +619,11 @@ def scenarios_onezone(zone):
     ax.xaxis.set_minor_locator(AutoMinorLocator(2))
 
     filename = '.\Images\%s_scenarios.png' % (zone)
-    plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0, transparent=True)
+    plt.savefig(filename, bbox_inches='tight', pad_inches=0, transparent=True)
 
     plt.show()
 
     return allotment
-
 
 
 def upgrade_impact(zone_ref, zone_tostudy, grid=0):
@@ -652,14 +660,19 @@ def upgrade_impact(zone_ref, zone_tostudy, grid=0):
         f = files[grid]
         if f:
             PG = pd.read_pickle(f)
-            allotment_scenario = pd.DataFrame(columns=['nuclear','hydro','coal','ng','solar','wind'], index=zone)
+            allotment_scenario = pd.DataFrame(columns=['nuclear', 
+                                                       'hydro', 
+                                                       'coal', 
+                                                       'ng', 
+                                                       'solar', 
+                                                       'wind'], index=zone)
             for z in zone:
-                type2label = {'nuclear':'Nuclear',
-                              'hydro':'Hydro',
-                              'coal':'Coal',
-                              'ng':'Natural Gas',
-                              'solar':'Solar',
-                              'wind':'Wind'}
+                type2label = {'nuclear': 'Nuclear',
+                              'hydro': 'Hydro',
+                              'coal': 'Coal',
+                              'ng': 'Natural Gas',
+                              'solar': 'Solar',
+                              'wind': 'Wind'}
                 PG_zone = PG[get_plantID(z)]
                 total = PG_zone.sum(axis=1).sum()
                 PG_groups = PG_zone.T.groupby(WI.genbus['type'])
@@ -668,15 +681,13 @@ def upgrade_impact(zone_ref, zone_tostudy, grid=0):
                     if type not in PG_stack.columns:
                         del type2label[type]
 
-                allotment_scenario.loc[z,type2label.keys()] = [PG_stack.sum()[type]/1000. for type in type2label.keys()]
+                allotment_scenario.loc[z, type2label.keys()] = [PG_stack.sum()[type]/1000. for type in type2label.keys()]
 
 
             allotment.append(allotment_scenario)
             title.append('Renewable %s' % key)
 
-
-
-    fig, ax = plt.subplots(figsize=(18,12))
+    fig, ax = plt.subplots(figsize=(18, 12))
 
     ax.set_facecolor('white')
     ax.grid(color='black', axis='y')
@@ -686,12 +697,12 @@ def upgrade_impact(zone_ref, zone_tostudy, grid=0):
 
     colors = [WI.type2color[type] for type in type2label.keys()]
     for df in allotment:
-        ax = df.rename(columns={'nuclear':'Nuclear',
-                                'hydro':'Hydro',
-                                'coal':'Coal',
-                                'ng':'Natural Gas',
-                                'solar':'Solar',
-                                'wind':'Wind'}).plot(kind="bar",
+        ax = df.rename(columns={'nuclear': 'Nuclear',
+                                'hydro': 'Hydro',
+                                'coal': 'Coal',
+                                'ng': 'Natural Gas',
+                                'solar': 'Solar',
+                                'wind': 'Wind'}).plot(kind="bar",
                                                      linewidth=0,
                                                      stacked=True,
                                                      ax=ax,
@@ -705,16 +716,16 @@ def upgrade_impact(zone_ref, zone_tostudy, grid=0):
     n_col = len(type2label.keys())
     n_df = len(allotment)
     n_ind = len(zone)
-    h, l = ax.get_legend_handles_labels() # get the handles we want to modify
-    for i in range(0, n_df * n_col, n_col): # len(h) = n_col * n_df
+    h, l = ax.get_legend_handles_labels()  # get the handles we want to modify
+    for i in range(0, n_df * n_col, n_col):  # len(h) = n_col * n_df
         for j, pa in enumerate(h[i:i+n_col]):
-            for rect in pa.patches: # for each index
-                rect.set_x(rect.get_x() + 1 / float(n_df + 1) * i / float(n_col))
-                rect.set_hatch('/' * int(i / n_col)) # edited part
+            for rect in pa.patches:  # for each index
+                rect.set_x(rect.get_x() + 1 / float(n_df+1) * i / float(n_col))
+                rect.set_hatch('/' * int(i / n_col))  # edited part
                 rect.set_width(1 / float(n_df + 1))
 
     ax.set_xticks((np.arange(0, 2 * n_ind, 2) + 1 / float(n_df + 1)) / 2.)
-    ax.set_xticklabels(df.index, rotation = 0)
+    ax.set_xticklabels(df.index, rotation=0)
 
     # Add invisible data to add another legend
     n = [ax.bar(0, 0, color="gray", hatch='/' * i) for i in range(n_df)]
@@ -725,12 +736,11 @@ def upgrade_impact(zone_ref, zone_tostudy, grid=0):
     ax.add_artist(l2)
 
     filename = '.\Images\%s_upgrade_impact.png' % (zone_ref)
-    plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0)
+    plt.savefig(filename, bbox_inches='tight', pad_inches=0)
 
     plt.show()
 
     return allotment
-
 
 
 def corr_renewable(PG, type, zone):
@@ -751,29 +761,30 @@ def corr_renewable(PG, type, zone):
         plantID = list(set(get_plantID(z)).intersection(WI.genbus.groupby('type').get_group(type).index))
         n_plants = len(plantID)
         if n_plants == 0:
-            print("No %s plants in %s" % (type,z))
+            print("No %s plants in %s" % (type, z))
             return
         if i == 0:
-            PG_zone = pd.DataFrame({z:PG[plantID].sum(axis=1).values}, index=PG.index)
+            PG_zone = pd.DataFrame({z: PG[plantID].sum(axis=1).values}, 
+                                   index=PG.index)
         else:
             PG_zone[z] = PG[plantID].sum(axis=1).values
 
     PG_zone.index.name = 'UTC'
 
     corr = PG_zone.corr()
-    fig, ax = plt.subplots(figsize=(12,12))
+    fig, ax = plt.subplots(figsize=(12, 12))
     if type == 'solar':
         palette = 'OrRd'
     elif type == 'wind':
-        palette='Greens'
+        palette = 'Greens'
 
-    ax = sns.heatmap(corr, annot=True, fmt=".2f", cmap=palette, ax=ax, square=True, cbar=False,
-                     annot_kws={"size": 18}, lw=4)
+    ax = sns.heatmap(corr, annot=True, fmt=".2f", cmap=palette, ax=ax, 
+                     square=True, cbar=False, annot_kws={"size": 18}, lw=4)
     ax.tick_params(labelsize=15)
     ax.set_yticklabels(zone, rotation=40, ha='right')
 
     filename = '.\Images\%s_%s_corr.png' % ("-".join(zone), type)
-    plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0)
+    plt.savefig(filename, bbox_inches='tight', pad_inches=0)
 
     plt.show()
 
