@@ -13,6 +13,8 @@ def generate_cong_stats(cong_df, branches_df, name):
     Generates congestion statistics from the input congestion data.
     :param dataframe cong_df: Power flow dataframe, \ 
     values normalized to Capacity
+    :param dataframe branches_df: network branches in format created \ 
+    by WesternIntnet
     :param string name: filename of output
     :return: pandas dataframe with columns = ['hutil1','hutil0p9-1', \ 
                                               'hutil0p8-0p9','hutil0p75-0p8', \ 
