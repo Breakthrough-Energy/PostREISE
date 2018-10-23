@@ -18,7 +18,7 @@ def test_transmission():
     and normalized power flow files are used.
     '''
 
-    data_dir = '../data/'
+    data_dir = 'data/'
 
     branches = pd.read_csv(data_dir + 'branches_for_testing_100.csv')
     cong_base = pd.read_csv(data_dir + 'congestion_base_for_testing_1000.csv',
