@@ -202,7 +202,7 @@ class PlotRun():
         demand.set_index(demand.index - utc_offset, inplace=True)
         demand.index.name = tz
 
-        if zone == 'total':
+        if zone == 'Western':
             return demand.sum(axis=1)
         elif zone == 'California':
             CA = ['Bay Area', 'Central California', 'Northern California',
@@ -252,7 +252,8 @@ class PlotRun():
             if type not in PG_stack.columns:
                 del type2label[type]
 
-        demand = self._get_demand(zone)
+        demand = self._get_demand(zone).resample(self.freq).sum().rename(
+            'demand')
 
         fig = plt.figure(figsize=(20, 10))
         ax = fig.gca()
@@ -260,13 +261,12 @@ class PlotRun():
             columns=type2label).plot.area(
             color=[self.grid.type2color[type] for type in type2label.keys()], 
             alpha=0.7, ax=ax)
-        demand.resample(self.freq).sum().rename('demand').plot(
-            color='red', lw=4, ax=ax)
-        ax.set_ylim([0., max(ax.get_ylim()[1], 
-                             demand.resample(self.freq).sum().max()+1000)])
+        demand.plot(color='red', lw=4, ax=ax)
+        ax.set_ylim([0., max(ax.get_ylim()[1], demand.max()+1000)])
         ax.set_ylabel('%s Net Generation (MWh)' % zone, fontsize=20)
 
-        return [(PG_stack, demand), ax, None]
+        return [pd.merge(PG_stack, demand.to_frame(), left_index=True, 
+                         right_index=True, how='outer'), ax, None]
 
     def _get_comp(self, resource):
         """Calculates time series of PG for one resource. 
@@ -326,7 +326,7 @@ class PlotRun():
 
         return [total, ax, None]
 
-    def plot(self):
+    def get_plot(self):
         """Plots.
 
         """
