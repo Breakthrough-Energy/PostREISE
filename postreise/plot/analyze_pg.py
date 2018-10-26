@@ -3,44 +3,45 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-class PlotRun():
-    """Generates plots of power generated.
+class AnalyzePG():
+    """Manipulates PG.
 
     """
 
-    def __init__(self, run, from_index, to_index, zones, resources, kind, 
-                 freq='auto', normalize=False):
+    def __init__(self, run, time, zones, resources, kind, normalize=False):
         """Initializes class instance.
 
-        :param tuple run: first element is a data frame of the power \ 
-            generated with id of the plants as columns and UTC timestamp \ 
-            as indiced. Second element is a grid instance.
-        :param string from_index: starting UTC timestamp.
-        :param string to_index: ending UTC timestamp.
-        :param list zones: any combinations of *Arizona*, *California*, \ 
-            *Bay Area*, *Central California*, *Northern California*, \ 
-            *Southeast California*, *Southwest California*, *Colorado*, \ 
-            *El Paso*, *Idaho*, *Montana*, *Nevada*, *New Mexico*, *Oregon*, \ 
-            *Utah*, *Washington*, *Western*, *Wyoming*.
+        :param tuple run: run related parameters. 1st element is a data frame \ 
+            of the power generated with id of the plants as columns and UTC \ 
+            timestamp as indices. 2nd element is a grid instance.
+        :param tuple time: time related parameters. 1st element is the \ 
+            starting date. 2nd element is the ending date. 3rd element is the \ 
+            timezone, only UTC or LT (local time) are possible. 4th element \ 
+            is the frequency for resampling, can be *'D'*, *'W'* or *'auto'*.
+        :param list zones: any combinations of *'Arizona'*, *'California'*, \ 
+            *'Bay Area'*, *'Central California'*, *'Northern California'*, \ 
+            *'Southeast California'*, *'Southwest California'*, *'Colorado'*, \ 
+            *'El Paso'*, *'Idaho'*, *'Montana'*, *'Nevada'*, *'New Mexico'*, \ 
+            ''*Oregon'*, *'Utah'*, *'Washington'*, *'Western'*, *'Wyoming'*.
         :param list resources: energy resources. Can be any combinations of \ 
-            *coal*, *hydro*, *ng*, *nuclear*, *solar*, *wind*.
-        :param string kind: one of *stacked*, *curtailment*, *zones*, \ 
-            *plants*, *correlation*
-        :param string freq: frequency for resampling. Can be 'D', 'W', 'M'.
-        :param bool freq: should net generation be normalized by capacity.
+            *'coal'*, *'hydro'*, *'ng'*, *'nuclear'*, *'solar'*, *'wind'*.
+        :param string kind: one of *'stacked'*, *'curtailment'*, *'comp'*, \ 
+            *'plants'*, *'correlation'*
+        :param bool normalize: should net generation be normalized by capacity.
         """
 
-        self.PG = run[0][from_index:to_index]
+        self.PG = run[0]
         self.grid = run[1]
-        self.from_index = from_index
-        self.to_index = to_index
+        self.from_index = time[0]
+        self.to_index = time[1]
+        self.tz = time[2]
+        self.freq = time[3]
         self.zones = zones
         self.resources = resources
-        self.freq = freq
         self.normalize = normalize
 
-
         # Check parameters
+        self._check_dates()
         self._check_zones()
         self._check_resources()
 
@@ -118,9 +119,19 @@ class PlotRun():
                 self.data.append(self._get_stacked(z))
 
         elif kind == "comp":
+            if self.tz == 'LT':
+                print('PST is used for all zones')
             self.data = []
             for r in resources:
                 self.data.append(self._get_comp(r))
+
+    def _check_dates(self):
+        try:
+            self.PG.loc[self.from_index]
+            self.PG.loc[self.to_index]
+        except KeyError:
+            print("Dates must be within [%s,%s]" % (self.PG.index[0],
+                  self.PG.index[-1]))
 
     def _check_zones(self):
         all = list(self.grid.load_zones.values()) + ['California', 'Western']
@@ -135,6 +146,18 @@ class PlotRun():
             if r not in all:
                 print("%s is incorrect. Possible resources are:" % all)
                 return
+
+    def _to_LT(self, df_utc, zone):
+        """ Converts UTC time to Local Time.
+
+        :param pandas df_utc: data frame with UTC timestamp as indices.
+        :param return: data frame with Local Time as indices.
+        """
+        df_lt = df_utc.set_index(df_utc.index -
+                                 timedelta(hours=self.zone2time[zone][0]))
+        df_lt.index.name = self.zone2time[zone][1]
+
+        return df_lt
 
     def _set_freq(self):
         """Sets frequency for resampling.
@@ -195,22 +218,23 @@ class PlotRun():
             timestamp as indices.
         """
 
-        utc_offset = timedelta(hours=self.zone2time[zone][0])
-        tz = self.zone2time[zone][1]
-
-        demand = self.grid.demand_data_2016[self.from_index:self.to_index]
-        demand.set_index(demand.index - utc_offset, inplace=True)
-        demand.index.name = tz
-
+        demand = self.grid.demand_data_2016
         if zone == 'Western':
-            return demand.sum(axis=1)
+            demand = demand.sum(axis=1).rename('demand').to_frame()
         elif zone == 'California':
             CA = ['Bay Area', 'Central California', 'Northern California',
                   'Southeast California', 'Southwest California']
-            return demand.loc[:, CA].sum(axis=1)
+            demand = demand.loc[:, CA].sum(axis=1).rename('demand').to_frame()
         else:
-            return demand.loc[:, zone]
-
+            demand = demand.loc[:, zone].rename('demand').to_frame()
+            
+        if self.tz == 'LT':
+            return self._to_LT(demand, zone)[
+                self.from_index:self.to_index].resample(self.freq).sum()
+        else:
+            return demand[self.from_index:self.to_index].resample(
+                self.freq).sum()
+            
     def _set_canvas(self, ax):
         """Set attributes for plot.
 
@@ -234,16 +258,15 @@ class PlotRun():
             object containing information to plot. 
         """
 
-        utc_offset = timedelta(hours=self.zone2time[zone][0])
-        tz = self.zone2time[zone][1]
-
         plant_id = []
         for r in self.resources:
             plant_id += self._get_plant_id(zone, r)
-
         PG = self.PG[plant_id]
-        PG.set_index(PG.index - utc_offset, inplace=True)
-        PG.index.name = tz
+        
+        if self.tz == 'LT':
+            PG = self._to_LT(PG, zone)[self.from_index:self.to_index]
+        else:
+            PG = PG[self.from_index:self.to_index]
 
         PG_groups = PG.T.groupby(self.grid.genbus['type'])
         PG_stack = PG_groups.agg(sum).T.resample(self.freq).sum()
@@ -252,8 +275,7 @@ class PlotRun():
             if type not in PG_stack.columns:
                 del type2label[type]
 
-        demand = self._get_demand(zone).resample(self.freq).sum().rename(
-            'demand')
+        demand = self._get_demand(zone)
 
         fig = plt.figure(figsize=(20, 10))
         ax = fig.gca()
@@ -262,11 +284,11 @@ class PlotRun():
             color=[self.grid.type2color[type] for type in type2label.keys()], 
             alpha=0.7, ax=ax)
         demand.plot(color='red', lw=4, ax=ax)
-        ax.set_ylim([0., max(ax.get_ylim()[1], demand.max()+1000)])
+        ax.set_ylim([0., max(ax.get_ylim()[1], demand.max().values[0]+1000)])
         ax.set_ylabel('%s Net Generation (MWh)' % zone, fontsize=20)
 
-        return [pd.merge(PG_stack, demand.to_frame(), left_index=True, 
-                         right_index=True, how='outer'), ax, None]
+        return [PG_stack.merge(demand, left_index=True, right_index=True), 
+                ax, None]
 
     def _get_comp(self, resource):
         """Calculates time series of PG for one resource. 
@@ -276,9 +298,6 @@ class PlotRun():
             containing information to plot. 
         """
 
-        utc_offset = timedelta(hours=self.zone2time['Western'][0])
-        tz = self.zone2time['Western'][1]
-
         first = True
         for z in self.zones:
             plant_id = self._get_plant_id(z, resource)
@@ -287,9 +306,12 @@ class PlotRun():
                 print("No %s plants in %s" % (resource, z))
             else:
                 PG = self.PG[plant_id]
-                PG.set_index(PG.index - utc_offset, inplace=True)
-                PG.index.name = tz
-
+                if self.tz == 'LT':
+                    PG = self._to_LT(PG, 
+                                     'Western')[self.from_index:self.to_index]
+                else:
+                    PG = PG[self.from_index:self.to_index]
+                    
                 capacity = sum(self.grid.genbus.loc[plant_id].GenMWMax.values)
 
                 col_name = '%s: %d plants (%d MW)' % (z, n_plants, capacity)
@@ -297,26 +319,23 @@ class PlotRun():
                     self.freq).sum().rename(col_name))
 
                 delta = total_tmp.index[1]-total_tmp.index[0]
-                norm = capacity * delta.days * 24 if self.normalize else 1
+                norm = capacity * (delta.days * 24 + delta.seconds/3600) \
+                    if self.normalize else 1
 
                 if first:
                     total = total_tmp/norm
                     fig = plt.figure(figsize=(20, 10))
                     ax = fig.gca()
-                    total[col_name].plot(color=self.zone2style[z]['color'],
-                                         alpha=self.zone2style[z]['alpha'],
-                                         lw=self.zone2style[z]['lw'],
-                                         ls=self.zone2style[z]['ls'],
-                                         ax=ax)
                     first = False
                 else:
-                    total = pd.merge(total, total_tmp/norm, left_index=True,
-                                     right_index=True, how='outer')
-                    total[col_name].plot(color=self.zone2style[z]['color'],
-                                         alpha=self.zone2style[z]['alpha'],
-                                         lw=self.zone2style[z]['lw'],
-                                         ls=self.zone2style[z]['ls'],
-                                         ax=ax)
+                    total = pd.merge(total, total_tmp/norm, left_index=True, 
+                                     right_index=True)
+
+                total[col_name].plot(color=self.zone2style[z]['color'],
+                                     alpha=self.zone2style[z]['alpha'],
+                                     lw=self.zone2style[z]['lw'],
+                                     ls=self.zone2style[z]['ls'],
+                                     ax=ax)
 
         if self.normalize:
             ylabel = 'Normalized %s Generation' % resource.capitalize()
@@ -342,3 +361,4 @@ class PlotRun():
         """
         data = [d[0] for d in self.data]
         return data
+        
