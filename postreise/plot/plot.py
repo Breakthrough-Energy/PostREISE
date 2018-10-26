@@ -789,3 +789,34 @@ def corr_renewable(PG, type, zone):
     plt.show()
 
     return PG_zone
+
+
+def get_corr_renewable(PG, type, zone):
+    """Returns the correlation between solar or wind power generated in \ 
+        various zones.
+
+    :param PG: pandas DataFrame of the power generated with id of the plants \ 
+        as columns and UTC timestamp as indiced.
+    :param string type: one of *solar* or *wind*.
+    :param zone: list of zones.
+    :return: data frame of the power generated  by the selected renewable \
+        resource with the selected zones as columns and UTC timestamp as \ 
+        indices.
+    """
+    IsRenewableResource(type)
+
+    for i, z in enumerate(zone):
+        plantID = list(set(get_plantID(z)).intersection(WI.genbus.groupby('type').get_group(type).index))
+        n_plants = len(plantID)
+        if n_plants == 0:
+            print("No %s plants in %s" % (type, z))
+            return
+        if i == 0:
+            PG_zone = pd.DataFrame({z: PG[plantID].sum(axis=1).values}, 
+                                   index=PG.index)
+        else:
+            PG_zone[z] = PG[plantID].sum(axis=1).values
+
+    PG_zone.index.name = 'UTC'
+
+    return PG_zone
