@@ -74,6 +74,9 @@ def generate_cong_stats(cong_df, branches_df, name):
         .loc['mean']['hutil>=0p75']/total_hours
     mu = total_hours*p_cong
     var = total_hours*p_cong*(1 - p_cong)
+
+    # TO DO: Current version assumes normal distibution; calculate
+    # real distribution, then do a lookup depending on distribution type.
     cong_stats['zscore'] = (cong_stats['hutil>=0p75'] - mu)/math.sqrt(var)
     cong_stats['pvalue'] = cong_stats['zscore'].apply(lambda x: 1-scsp.ndtr(x))
 
