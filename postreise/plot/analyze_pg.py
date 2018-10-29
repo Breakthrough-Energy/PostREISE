@@ -15,9 +15,10 @@ class AnalyzePG():
             of the power generated with id of the plants as columns and UTC \ 
             timestamp as indices. 2nd element is a grid instance.
         :param tuple time: time related parameters. 1st element is the \ 
-            starting date. 2nd element is the ending date. 3rd element is the \ 
-            timezone, only UTC or LT (local time) are possible. 4th element \ 
-            is the frequency for resampling, can be *'D'*, *'W'* or *'auto'*.
+            starting date. 2nd element is the ending date (left out). 3rd \ 
+            element is the timezone, only UTC or LT (local time) are \ 
+            possible. 4th element is the frequency for resampling, can be \
+            *'D'*, *'W'* or *'auto'*.
         :param list zones: any combinations of *'Arizona'*, *'California'*, \ 
             *'Bay Area'*, *'Central California'*, *'Northern California'*, \ 
             *'Southeast California'*, *'Southwest California'*, *'Colorado'*, \ 
@@ -45,8 +46,7 @@ class AnalyzePG():
         self._check_zones()
         self._check_resources()
 
-        if self.freq == 'auto':
-            self._set_freq()
+        if self.freq == 'auto': self._set_frequency() 
 
         self.zone2time = {'Arizona': [7, 'MST'],
                           'Bay Area': [8, 'PST'],
@@ -126,6 +126,9 @@ class AnalyzePG():
                 self.data.append(self._get_comp(r))
 
     def _check_dates(self):
+        """Tests dates.
+
+        """
         try:
             self.PG.loc[self.from_index]
             self.PG.loc[self.to_index]
@@ -134,6 +137,9 @@ class AnalyzePG():
                   self.PG.index[-1]))
 
     def _check_zones(self):
+        """Tests the zones.
+
+        """
         all = list(self.grid.load_zones.values()) + ['California', 'Western']
         for z in self.zones:
             if z not in all:
@@ -141,6 +147,9 @@ class AnalyzePG():
                 return
 
     def _check_resources(self):
+        """Tests the resources.
+
+        """
         all = ['nuclear', 'hydro', 'coal', 'ng', 'solar', 'wind']
         for r in self.resources:
             if r not in all:
@@ -148,7 +157,7 @@ class AnalyzePG():
                 return
 
     def _to_LT(self, df_utc, zone):
-        """ Converts UTC time to Local Time.
+        """Converts UTC time to Local Time.
 
         :param pandas df_utc: data frame with UTC timestamp as indices.
         :param return: data frame with Local Time as indices.
@@ -159,17 +168,17 @@ class AnalyzePG():
 
         return df_lt
 
-    def _set_freq(self):
+    def _set_frequency(self):
         """Sets frequency for resampling.
 
         """
 
-        delta = datetime.strptime(to_index, '%Y-%m-%d-%H') - \
-            datetime.strptime(from_index, '%Y-%m-%d-%H')
+        delta = datetime.strptime(self.to_index, '%Y-%m-%d-%H') - \
+            datetime.strptime(self.from_index, '%Y-%m-%d-%H')
 
         if delta.days < 7:
             self.freq = 'H'
-        elif delta.days >= 7 and delta.days < 180:
+        elif delta.days > 31 and delta.days < 180:
             self.freq = 'D'
         else:
             self.freq = 'W'
@@ -179,7 +188,7 @@ class AnalyzePG():
             located in one zone and using one specific resource.
 
         :param string zone: zone to consider.
-        :param list resources: type of generators to consider.
+        :param string resource: type of generator to consider.
         :return: plant identification number of all the generators located \ 
             in the specified zone and using the specified resource. 
         """
@@ -208,8 +217,35 @@ class AnalyzePG():
             except KeyError:
                 pass
 
-        return id
+        return id        
 
+    def _get_PG(self, zone, resources):
+        """Get PG of all the generators located in one zone and powered by \ 
+            resources.
+        
+        :param string zone: one of the zones.
+        :param list resources: type of generators to consider.
+        :return: PG and capacity of all the generators located in one zone \ 
+            and using the specified resources.
+        """
+
+        plant_id = []
+        for r in resources:
+            plant_id += self._get_plant_id(zone, r)
+
+        if len(plant_id) == 0:
+            print("No %s plants in %s" % ("/".join(resources), zone))
+            return [None] * 2
+        else:
+            capacity = sum(self.grid.genbus.loc[plant_id].GenMWMax.values)
+            PG = self.PG[plant_id]
+            if self.tz == 'LT':
+                PG = self._to_LT(PG, zone)[self.from_index:self.to_index]
+            else:
+                PG = PG[self.from_index:self.to_index]
+
+            return PG, capacity
+        
     def _get_demand(self, zone):
         """Get demand profile for load zone, California or total.
 
@@ -258,37 +294,42 @@ class AnalyzePG():
             object containing information to plot. 
         """
 
-        plant_id = []
-        for r in self.resources:
-            plant_id += self._get_plant_id(zone, r)
-        PG = self.PG[plant_id]
-        
-        if self.tz == 'LT':
-            PG = self._to_LT(PG, zone)[self.from_index:self.to_index]
-        else:
-            PG = PG[self.from_index:self.to_index]
-
-        PG_groups = PG.T.groupby(self.grid.genbus['type'])
-        PG_stack = PG_groups.agg(sum).T.resample(self.freq).sum()
-        type2label = self.type2label.copy()
-        for type in self.grid.ID2type.values():
-            if type not in PG_stack.columns:
-                del type2label[type]
-
         demand = self._get_demand(zone)
+        
+        PG, capacity = self._get_PG(zone, self.resources)
+        if PG is not None:
+            PG_groups = PG.T.groupby(self.grid.genbus['type'])
+            PG_stack = PG_groups.agg(sum).T.resample(self.freq).sum()
+            type2label = self.type2label.copy()
+            for type in self.grid.ID2type.values():
+                if type not in PG_stack.columns:
+                    del type2label[type]
 
-        fig = plt.figure(figsize=(20, 10))
-        ax = fig.gca()
-        ax = PG_stack[list(type2label.keys())].rename(
-            columns=type2label).plot.area(
-            color=[self.grid.type2color[type] for type in type2label.keys()], 
-            alpha=0.7, ax=ax)
-        demand.plot(color='red', lw=4, ax=ax)
-        ax.set_ylim([0., max(ax.get_ylim()[1], demand.max().values[0]+1000)])
-        ax.set_ylabel('%s Net Generation (MWh)' % zone, fontsize=20)
+            if self.normalize is True:
+                delta = PG_stack.index[1] - PG_stack.index[0]
+                PG_stack /= capacity*(delta.days*24 + delta.seconds/3600)
+                demand /= capacity*(delta.days*24 + delta.seconds/3600)
 
-        return [PG_stack.merge(demand, left_index=True, right_index=True), 
-                ax, None]
+            fig = plt.figure(figsize=(20, 10))
+            ax = fig.gca()
+            ax = PG_stack[list(type2label.keys())].rename(
+                columns=type2label).plot.area(
+                color=[self.grid.type2color[r] for r in type2label.keys()], 
+                alpha=0.7, ax=ax)
+            demand.plot(color='red', lw=4, ax=ax)
+        
+            ax.set_ylim([0, max(ax.get_ylim()[1], 1.1*demand.max().values[0])])
+            if self.normalize:
+                ax.set_ylabel('Normalized Electricy Generated in %s' % zone, 
+                              fontsize=20)
+            else:
+                ax.set_ylabel('Electricty Generated in %s (MWh)' % zone,
+                              fontsize=20)
+
+            return [PG_stack.merge(demand, left_index=True, right_index=True), 
+                    ax, None]
+        else:
+            return [None] * 3
 
     def _get_comp(self, resource):
         """Calculates time series of PG for one resource. 
@@ -300,35 +341,24 @@ class AnalyzePG():
 
         first = True
         for z in self.zones:
-            plant_id = self._get_plant_id(z, resource)
-            n_plants = len(plant_id)
-            if n_plants == 0:
-                print("No %s plants in %s" % (resource, z))
+            PG, capacity = self._get_PG(z, [resource])
+            if PG is None:
+                pass
             else:
-                PG = self.PG[plant_id]
-                if self.tz == 'LT':
-                    PG = self._to_LT(PG, 
-                                     'Western')[self.from_index:self.to_index]
-                else:
-                    PG = PG[self.from_index:self.to_index]
-                    
-                capacity = sum(self.grid.genbus.loc[plant_id].GenMWMax.values)
-
-                col_name = '%s: %d plants (%d MW)' % (z, n_plants, capacity)
+                col_name = '%s: %d plants (%d MW)' % (z, PG.shape[1], capacity)
                 total_tmp = pd.DataFrame(PG.T.sum().resample(
                     self.freq).sum().rename(col_name))
-
-                delta = total_tmp.index[1]-total_tmp.index[0]
-                norm = capacity * (delta.days * 24 + delta.seconds/3600) \
-                    if self.normalize else 1
+                if self.normalize:
+                    delta = total_tmp.index[1] - total_tmp.index[0]
+                    total_tmp /= capacity*(delta.days*24 + delta.seconds/3600)
 
                 if first:
-                    total = total_tmp/norm
+                    total = total_tmp
                     fig = plt.figure(figsize=(20, 10))
                     ax = fig.gca()
                     first = False
                 else:
-                    total = pd.merge(total, total_tmp/norm, left_index=True, 
+                    total = pd.merge(total, total_tmp, left_index=True, 
                                      right_index=True)
 
                 total[col_name].plot(color=self.zone2style[z]['color'],
@@ -338,9 +368,9 @@ class AnalyzePG():
                                      ax=ax)
 
         if self.normalize:
-            ylabel = 'Normalized %s Generation' % resource.capitalize()
+            ylabel = 'Normalized %s Electricity Generated' % resource.capitalize()
         else:
-            ylabel = '%s Net Generation (MWh)' % resource.capitalize()
+            ylabel = '%s Electricity Generation (MWh)' % resource.capitalize()
         ax.set_ylabel(ylabel, fontsize=20)
 
         return [total, ax, None]
@@ -350,8 +380,9 @@ class AnalyzePG():
 
         """
         for data in self.data:
-            ax = data[1]
-            self._set_canvas(ax)
+            if data[1] is not None:
+                ax = data[1]
+                self._set_canvas(ax)
 
         plt.show()
 
@@ -361,4 +392,3 @@ class AnalyzePG():
         """
         data = [d[0] for d in self.data]
         return data
-        
