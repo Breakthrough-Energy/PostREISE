@@ -1,7 +1,6 @@
-from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 import pandas as pd
-
+import sys
 
 class AnalyzePG():
     """Manipulates PG.
@@ -16,11 +15,12 @@ class AnalyzePG():
             timestamp as indices. 2nd element is a grid instance.
         :param tuple time: time related parameters. 1st element is the \ 
             starting date. 2nd element is the ending date (left out). 3rd \ 
-            element is the timezone, only UTC or LT (local time) are \ 
+            element is the timezone, only UTC, PST and LT (local time) are \ 
             possible. 4th element is the frequency for resampling, can be \
             *'D'*, *'W'* or *'auto'*.
-        :param list zones: any combinations of *'Arizona'*, *'California'*, \ 
-            *'Bay Area'*, *'Central California'*, *'Northern California'*, \ 
+        :param list zones: geographical zones. Any combinations of \ 
+            *'Arizona'*, *'California'*, *'Bay Area'*, \ 
+            *'Central California'*, *'Northern California'*, \ 
             *'Southeast California'*, *'Southwest California'*, *'Colorado'*, \ 
             *'El Paso'*, *'Idaho'*, *'Montana'*, *'Nevada'*, *'New Mexico'*, \ 
             ''*Oregon'*, *'Utah'*, *'Washington'*, *'Western'*, *'Wyoming'*.
@@ -33,40 +33,38 @@ class AnalyzePG():
 
         self.PG = run[0]
         self.grid = run[1]
-        self.from_index = time[0]
-        self.to_index = time[1]
+        
+        # Check parameters
+        self._check_dates(time[0], time[1])
+        self._check_zones(zones)
+        self._check_resources(resources)
+        self._check_tz(time[2])
+        self._check_freq(time[3])
+
+        # Set attributes
         self.tz = time[2]
         self.freq = time[3]
         self.zones = zones
         self.resources = resources
         self.normalize = normalize
-
-        # Check parameters
-        self._check_dates()
-        self._check_zones()
-        self._check_resources()
-
-        if self.freq == 'auto': self._set_frequency() 
-
-        self.zone2time = {'Arizona': [7, 'MST'],
-                          'Bay Area': [8, 'PST'],
-                          'California': [8, 'PST'],
-                          'Central California': [8, 'PST'],
-                          'Colorado': [7, 'MST'],
-                          'El Paso': [7, 'MST'],
-                          'Idaho': [7, 'MST'],
-                          'Montana': [7, 'MST'],
-                          'Nevada': [7, 'MST'],
-                          'New Mexico': [7, 'MST'],
-                          'Northern California': [8, 'PST'],
-                          'Oregon': [8, 'PST'],
-                          'Southeast California': [8, 'PST'],
-                          'Southwest California': [8, 'PST'],
-                          'Utah': [7, 'MST'],
-                          'Washington': [8, 'PST'],
-                          'Western': [8, 'PST'],
-                          'Wyoming': [7, 'MST']}
-
+        self.zone2time = {'Arizona': [-7, 'MST'],
+                          'Bay Area': [-8, 'PST'],
+                          'California': [-8, 'PST'],
+                          'Central California': [-8, 'PST'],
+                          'Colorado': [-7, 'MST'],
+                          'El Paso': [-7, 'MST'],
+                          'Idaho': [-7, 'MST'],
+                          'Montana': [-7, 'MST'],
+                          'Nevada': [-7, 'MST'],
+                          'New Mexico': [-7, 'MST'],
+                          'Northern California': [-8, 'PST'],
+                          'Oregon': [-8, 'PST'],
+                          'Southeast California': [-8, 'PST'],
+                          'Southwest California': [-8, 'PST'],
+                          'Utah': [-7, 'MST'],
+                          'Washington': [-8, 'PST'],
+                          'Western': [-8, 'PST'],
+                          'Wyoming': [-7, 'MST']}
         self.zone2style = {
             'Arizona':
                 {'color': 'maroon', 'alpha': 1, 'lw': 4, 'ls': '-'},
@@ -104,7 +102,6 @@ class AnalyzePG():
                 {'color': 'black', 'alpha': 1, 'lw': 4, 'ls': '-'},
             'Wyoming':
                 {'color': 'goldenrod', 'alpha': 1, 'lw': 4, 'ls': '-'}}
-
         self.type2label = {'nuclear': 'Nuclear',
                            'hydro': 'Hydro',
                            'coal': 'Coal',
@@ -112,69 +109,117 @@ class AnalyzePG():
                            'solar': 'Solar',
                            'wind': 'Wind'}
 
+        if self.freq == 'auto':
+            self._set_frequency(pd.Timestamp(time[0]), pd.Timestamp(time[1]))
+
         if kind == "stacked":
             self.data = []
             self.grid.read_demand_data()
             for z in zones:
+                self._set_date_range(pd.Timestamp(time[0]),
+                                     pd.Timestamp(time[1]),
+                                     pd.Timedelta(hours=self.zone2time[z][0]))
                 self.data.append(self._get_stacked(z))
 
         elif kind == "comp":
             if self.tz == 'LT':
-                print('PST is used for all zones')
+                print('PST is set for all zones')
+                self.tz = 'PST'
+            self._set_date_range(pd.Timestamp(time[0]),
+                                 pd.Timestamp(time[1]),
+                                 pd.Timedelta(hours=-8))
             self.data = []
             for r in resources:
                 self.data.append(self._get_comp(r))
 
-    def _check_dates(self):
-        """Tests dates.
+    def _check_dates(self, start_date, end_date):
+        """Test dates.
 
+        :param string start_date: starting date
+        :param string end_date: ending date
         """
         try:
-            self.PG.loc[self.from_index]
-            self.PG.loc[self.to_index]
+            self.PG.loc[start_date]
+            self.PG.loc[end_date]
         except KeyError:
             print("Dates must be within [%s,%s]" % (self.PG.index[0],
                   self.PG.index[-1]))
+            sys.exit('Error')
 
-    def _check_zones(self):
-        """Tests the zones.
+    def _check_zones(self, zones):
+        """Test zones.
 
+        :param list zones: geographical zones.
         """
         all = list(self.grid.load_zones.values()) + ['California', 'Western']
-        for z in self.zones:
+        for z in zones:
             if z not in all:
                 print("%s is incorrect. Possible zones are:" % all)
-                return
+                sys.exit('Error')
 
-    def _check_resources(self):
-        """Tests the resources.
+    def _check_resources(self, resources):
+        """Test resources.
 
+        :param list resources: type of generators.
         """
         all = ['nuclear', 'hydro', 'coal', 'ng', 'solar', 'wind']
-        for r in self.resources:
+        for r in resources:
             if r not in all:
                 print("%s is incorrect. Possible resources are:" % all)
-                return
+                sys.exit('Error')
+
+    def _check_tz(self, tz):
+        """Test time zone.
+
+        :param string tz: time zone.
+        """
+        all = ['LT', 'PST', 'UTC']
+        if tz not in all:
+            print("%s is incorrect. Possible time zones are:" % all)
+            sys.exit('Error')
+
+    def _check_freq(self, freq):
+        """Test freq.
+
+        :param string freq: frequency for resampling.
+        """
+        all = ['H', 'D', 'W', 'auto']
+        if freq not in all:
+            print("%s is incorrect. Possible frequency are:" % all)
+            sys.exit('Error')
 
     def _to_LT(self, df_utc, zone):
         """Converts UTC time to Local Time.
 
         :param pandas df_utc: data frame with UTC timestamp as indices.
-        :param return: data frame with Local Time as indices.
+        :param string zone: one of the zones.
+        :param return: data frame with Local Time timestamp as indices.
         """
-        df_lt = df_utc.set_index(df_utc.index -
-                                 timedelta(hours=self.zone2time[zone][0]))
+        df_lt = df_utc.set_index(df_utc.index +
+                                 pd.Timedelta(hours=self.zone2time[zone][0]))
         df_lt.index.name = self.zone2time[zone][1]
 
         return df_lt
 
-    def _set_frequency(self):
+    def _to_PST(self, df_utc):
+        """Converts UTC time to PST.
+    
+        :param pandas df_utc: data frame with UTC timestamp as indices.
+        :param return: data frame with PST timestamp as indices.
+        """
+        df_pst = df_utc.set_index(df_utc.index - pd.Timedelta(hours=8))
+        df_pst.index.name = 'PST'
+        
+        return df_pst
+
+    def _set_frequency(self, start_date, end_date):
         """Sets frequency for resampling.
 
+        :param pandas start_date: starting timestamp.
+        :param pandas end_date: ending timestamp.
         """
 
-        delta = datetime.strptime(self.to_index, '%Y-%m-%d-%H') - \
-            datetime.strptime(self.from_index, '%Y-%m-%d-%H')
+        delta = start_date - end_date
 
         if delta.days < 7:
             self.freq = 'H'
@@ -183,6 +228,51 @@ class AnalyzePG():
         else:
             self.freq = 'W'
 
+    def _set_date_range(self, start_date, end_date, offset):
+        """Calculates the appropriate date range after resampling in order to \ 
+            to get an equal number of entries per sample.
+
+        :param pandas start_date: starting timestamp.
+        :param pandas end_date: ending timestamp.
+        :param pandas offset: UTC offset
+        """
+
+        last = pd.Timestamp(self.PG.index[-1]) + offset
+
+        timestep = pd.DataFrame(index=pd.date_range(
+            start_date + offset, end_date + offset, freq='H')).resample(
+            self.freq, label='left').size().rename('Number of Hours')
+
+        if self.freq == 'H':
+            self.from_index = start_date
+            self.to_index = timestep.index[-1] if end_date > last else end_date
+        elif self.freq == 'D' or self.freq == 'W':
+            self.from_index = timestep.index.values[0] if \
+                timestep[0] == timestep[1] else timestep.index[1]
+            self.to_index = timestep.index.values[-1] if \
+                timestep[-1] == timestep[-2] else timestep.index[-2]
+
+        self.timestep = timestep[self.from_index:self.to_index]
+
+    def _set_canvas(self, ax):
+        """Set attributes for plot.
+
+        :param matplotlib ax: axis object.
+        :return: updated axis object.
+        """
+
+        ax.set_facecolor('white')
+        ax.grid(color='black', axis='y')
+        ax.tick_params(labelsize=16)
+        handles, labels = ax.get_legend_handles_labels()
+        ax.legend(handles[::-1], labels[::-1], frameon=2, prop={'size': 16},
+                  loc='lower right')
+        ax.set_xlabel('')
+        if self.normalize:
+            ax.set_ylabel('Normalized Generation', fontsize=20)
+        else:
+            ax.set_ylabel('Generation (MWh)', fontsize=20)
+        
     def _get_plant_id(self, zone, resource):
         """Extracts the plant identification number of all the generators \ 
             located in one zone and using one specific resource.
@@ -240,12 +330,13 @@ class AnalyzePG():
             capacity = sum(self.grid.genbus.loc[plant_id].GenMWMax.values)
             PG = self.PG[plant_id]
             if self.tz == 'LT':
-                PG = self._to_LT(PG, zone)[self.from_index:self.to_index]
-            else:
-                PG = PG[self.from_index:self.to_index]
+                PG = self._to_LT(PG, zone)
+            elif self.tz == 'PST':
+                PG = self._to_PST(PG)
 
-            return PG, capacity
-        
+            return PG.resample(self.freq, label='left').sum()[
+                self.from_index:self.to_index], capacity
+
     def _get_demand(self, zone):
         """Get demand profile for load zone, California or total.
 
@@ -265,27 +356,13 @@ class AnalyzePG():
             demand = demand.loc[:, zone].rename('demand').to_frame()
             
         if self.tz == 'LT':
-            return self._to_LT(demand, zone)[
-                self.from_index:self.to_index].resample(self.freq).sum()
-        else:
-            return demand[self.from_index:self.to_index].resample(
-                self.freq).sum()
-            
-    def _set_canvas(self, ax):
-        """Set attributes for plot.
+            demand = self._to_LT(demand, zone)
+        elif self.tz == 'PST':
+            demand = self._to_PST(demand)
 
-        :param matplotlib ax: axis object.
-        :return: updated axis object.
-        """
-
-        ax.set_facecolor('white')
-        ax.grid(color='black', axis='y')
-        ax.tick_params(labelsize=16)
-        handles, labels = ax.get_legend_handles_labels()
-        ax.legend(handles[::-1], labels[::-1], frameon=2, prop={'size': 16},
-                  loc='lower right')
-        ax.set_xlabel('')
-
+        return demand.resample(self.freq, label='left').sum()[
+            self.from_index:self.to_index]
+    
     def _get_stacked(self, zone):
         """Calculates time series of PG and demand for one zone. 
 
@@ -294,24 +371,26 @@ class AnalyzePG():
             object containing information to plot. 
         """
 
+        fig = plt.figure(figsize=(20, 10))
+        plt.title('%s' % zone, fontsize=22)
+        ax = fig.gca()
+        
         demand = self._get_demand(zone)
         
         PG, capacity = self._get_PG(zone, self.resources)
         if PG is not None:
             PG_groups = PG.T.groupby(self.grid.genbus['type'])
-            PG_stack = PG_groups.agg(sum).T.resample(self.freq).sum()
+            PG_stack = PG_groups.agg(sum).T
             type2label = self.type2label.copy()
             for type in self.grid.ID2type.values():
                 if type not in PG_stack.columns:
                     del type2label[type]
 
             if self.normalize is True:
-                delta = PG_stack.index[1] - PG_stack.index[0]
-                PG_stack /= capacity*(delta.days*24 + delta.seconds/3600)
-                demand /= capacity*(delta.days*24 + delta.seconds/3600)
+                PG_stack = PG_stack.divide(capacity * self.timestep, 
+                                           axis='index')
+                demand = demand.divide(capacity * self.timestep, axis='index')
 
-            fig = plt.figure(figsize=(20, 10))
-            ax = fig.gca()
             ax = PG_stack[list(type2label.keys())].rename(
                 columns=type2label).plot.area(
                 color=[self.grid.type2color[r] for r in type2label.keys()], 
@@ -319,12 +398,6 @@ class AnalyzePG():
             demand.plot(color='red', lw=4, ax=ax)
         
             ax.set_ylim([0, max(ax.get_ylim()[1], 1.1*demand.max().values[0])])
-            if self.normalize:
-                ax.set_ylabel('Normalized Electricy Generated in %s' % zone, 
-                              fontsize=20)
-            else:
-                ax.set_ylabel('Electricty Generated in %s (MWh)' % zone,
-                              fontsize=20)
 
             return [PG_stack.merge(demand, left_index=True, right_index=True), 
                     ax, None]
@@ -339,6 +412,10 @@ class AnalyzePG():
             containing information to plot. 
         """
 
+        fig = plt.figure(figsize=(20, 10))
+        plt.title('%s' % resource.capitalize(), fontsize=22)
+        ax = fig.gca()
+        
         first = True
         for z in self.zones:
             PG, capacity = self._get_PG(z, [resource])
@@ -346,16 +423,14 @@ class AnalyzePG():
                 pass
             else:
                 col_name = '%s: %d plants (%d MW)' % (z, PG.shape[1], capacity)
-                total_tmp = pd.DataFrame(PG.T.sum().resample(
-                    self.freq).sum().rename(col_name))
+                total_tmp = pd.DataFrame(PG.T.sum().rename(col_name))
+
                 if self.normalize:
-                    delta = total_tmp.index[1] - total_tmp.index[0]
-                    total_tmp /= capacity*(delta.days*24 + delta.seconds/3600)
+                    total_tmp = total_tmp.divide(capacity * self.timestep, 
+                                                 axis='index')
 
                 if first:
                     total = total_tmp
-                    fig = plt.figure(figsize=(20, 10))
-                    ax = fig.gca()
                     first = False
                 else:
                     total = pd.merge(total, total_tmp, left_index=True, 
@@ -366,12 +441,6 @@ class AnalyzePG():
                                      lw=self.zone2style[z]['lw'],
                                      ls=self.zone2style[z]['ls'],
                                      ax=ax)
-
-        if self.normalize:
-            ylabel = 'Normalized %s Electricity Generated' % resource.capitalize()
-        else:
-            ylabel = '%s Electricity Generation (MWh)' % resource.capitalize()
-        ax.set_ylabel(ylabel, fontsize=20)
 
         return [total, ax, None]
 
