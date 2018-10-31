@@ -15,9 +15,9 @@ class AnalyzePG():
             timestamp as indices. 2nd element is a grid instance.
         :param tuple time: time related parameters. 1st element is the \ 
             starting date. 2nd element is the ending date (left out). 3rd \ 
-            element is the timezone, only UTC, PST and LT (local time) are \ 
-            possible. 4th element is the frequency for resampling, can be \
-            *'D'*, *'W'* or *'auto'*.
+            element is the timezone, only *'utc'*, *'US/Pacific'* and \ 
+            *'local'* are possible. 4th element is the frequency for \ 
+            resampling, can be *'D'*, *'W'* or *'auto'*.
         :param list zones: geographical zones. Any combinations of \ 
             *'Arizona'*, *'California'*, *'Bay Area'*, \ 
             *'Central California'*, *'Northern California'*, \ 
@@ -31,7 +31,7 @@ class AnalyzePG():
         :param bool normalize: should net generation be normalized by capacity.
         """
 
-        self.PG = run[0]
+        self.PG = run[0].tz_localize('utc')
         self.grid = run[1]
         
         # Check parameters
@@ -42,29 +42,28 @@ class AnalyzePG():
         self._check_freq(time[3])
 
         # Set attributes
-        self.tz = time[2]
         self.freq = time[3]
         self.zones = zones
         self.resources = resources
         self.normalize = normalize
-        self.zone2time = {'Arizona': [-7, 'MST'],
-                          'Bay Area': [-8, 'PST'],
-                          'California': [-8, 'PST'],
-                          'Central California': [-8, 'PST'],
-                          'Colorado': [-7, 'MST'],
-                          'El Paso': [-7, 'MST'],
-                          'Idaho': [-7, 'MST'],
-                          'Montana': [-7, 'MST'],
-                          'Nevada': [-7, 'MST'],
-                          'New Mexico': [-7, 'MST'],
-                          'Northern California': [-8, 'PST'],
-                          'Oregon': [-8, 'PST'],
-                          'Southeast California': [-8, 'PST'],
-                          'Southwest California': [-8, 'PST'],
-                          'Utah': [-7, 'MST'],
-                          'Washington': [-8, 'PST'],
-                          'Western': [-8, 'PST'],
-                          'Wyoming': [-7, 'MST']}
+        self.zone2time = {'Arizona': 'US/Mountain',
+                          'Bay Area': 'US/Pacific',
+                          'California': 'US/Pacific',
+                          'Central California': 'US/Pacific',
+                          'Colorado': 'US/Mountain',
+                          'El Paso': 'US/Mountain',
+                          'Idaho': 'US/Mountain',
+                          'Montana': 'US/Mountain',
+                          'Nevada': 'US/Mountain',
+                          'New Mexico': 'US/Mountain',
+                          'Northern California': 'US/Pacific',
+                          'Oregon': 'US/Pacific',
+                          'Southeast California': 'US/Pacific',
+                          'Southwest California': 'US/Pacific',
+                          'Utah': 'US/Mountain',
+                          'Washington': 'US/Pacific',
+                          'Western': 'US/Pacific',
+                          'Wyoming': 'US/Mountain'}
         self.zone2style = {
             'Arizona':
                 {'color': 'maroon', 'alpha': 1, 'lw': 4, 'ls': '-'},
@@ -110,27 +109,33 @@ class AnalyzePG():
                            'wind': 'Wind'}
 
         if self.freq == 'auto':
-            self._set_frequency(pd.Timestamp(time[0]), pd.Timestamp(time[1]))
+            self._set_frequency(time[0], time[1])
 
         if kind == "stacked":
             self.data = []
             self.grid.read_demand_data()
             for z in zones:
-                self._set_date_range(pd.Timestamp(time[0]),
-                                     pd.Timestamp(time[1]),
-                                     pd.Timedelta(hours=self.zone2time[z][0]))
+                self.tz = self.zone2time[z] if time[2] == 'local' else time[2]
+                self._set_date_range(time[0], time[1])
                 self.data.append(self._get_stacked(z))
 
         elif kind == "comp":
-            if self.tz == 'LT':
-                print('PST is set for all zones')
-                self.tz = 'PST'
-            self._set_date_range(pd.Timestamp(time[0]),
-                                 pd.Timestamp(time[1]),
-                                 pd.Timedelta(hours=-8))
+            if time[2] == 'local':
+                print('US/Pacific is set for all zones')
+                self.tz = 'US/Pacific'
+            else:
+                self.tz = time[2]    
+            self._set_date_range(time[0], time[1])
             self.data = []
             for r in resources:
                 self.data.append(self._get_comp(r))
+
+        elif kind == 'curtailment':
+            self.data = []
+            self.grid.read_demand_data()
+            for z in zones:
+                self.tz = self.zone2time[z] if time[2] == 'local' else time[2]
+                self._set_date_range(time[0], time[1])
 
     def _check_dates(self, start_date, end_date):
         """Test dates.
@@ -154,7 +159,7 @@ class AnalyzePG():
         all = list(self.grid.load_zones.values()) + ['California', 'Western']
         for z in zones:
             if z not in all:
-                print("%s is incorrect. Possible zones are:" % all)
+                print("%s is incorrect. Possible zones are: %s" % (z, all))
                 sys.exit('Error')
 
     def _check_resources(self, resources):
@@ -165,7 +170,7 @@ class AnalyzePG():
         all = ['nuclear', 'hydro', 'coal', 'ng', 'solar', 'wind']
         for r in resources:
             if r not in all:
-                print("%s is incorrect. Possible resources are:" % all)
+                print("%s is incorrect. Possible resources are: %s" % (r,all))
                 sys.exit('Error')
 
     def _check_tz(self, tz):
@@ -173,9 +178,9 @@ class AnalyzePG():
 
         :param string tz: time zone.
         """
-        all = ['LT', 'PST', 'UTC']
+        all = ['utc', 'US/Pacific', 'local']
         if tz not in all:
-            print("%s is incorrect. Possible time zones are:" % all)
+            print("%s is incorrect. Possible time zones are: %s" % (tz, all))
             sys.exit('Error')
 
     def _check_freq(self, freq):
@@ -185,41 +190,28 @@ class AnalyzePG():
         """
         all = ['H', 'D', 'W', 'auto']
         if freq not in all:
-            print("%s is incorrect. Possible frequency are:" % all)
+            print("%s is incorrect. Possible frequency are: %s" % (freq, all))
             sys.exit('Error')
 
-    def _to_LT(self, df_utc, zone):
-        """Converts UTC time to Local Time.
+    def _convert_tz(self, df_utc):
+        """Convert dataframe fron UTC time zone to desired time zone.
 
         :param pandas df_utc: data frame with UTC timestamp as indices.
-        :param string zone: one of the zones.
-        :param return: data frame with Local Time timestamp as indices.
+        :param return: data frame vonverted to desired time zone.
         """
-        df_lt = df_utc.set_index(df_utc.index +
-                                 pd.Timedelta(hours=self.zone2time[zone][0]))
-        df_lt.index.name = self.zone2time[zone][1]
+        df_new = df_utc.tz_convert(self.tz)
+        df_new.index.name = self.tz
 
-        return df_lt
-
-    def _to_PST(self, df_utc):
-        """Converts UTC time to PST.
-    
-        :param pandas df_utc: data frame with UTC timestamp as indices.
-        :param return: data frame with PST timestamp as indices.
-        """
-        df_pst = df_utc.set_index(df_utc.index - pd.Timedelta(hours=8))
-        df_pst.index.name = 'PST'
-        
-        return df_pst
+        return df_new
 
     def _set_frequency(self, start_date, end_date):
         """Sets frequency for resampling.
 
-        :param pandas start_date: starting timestamp.
-        :param pandas end_date: ending timestamp.
+        :param string start_date: starting timestamp.
+        :param string end_date: ending timestamp.
         """
 
-        delta = start_date - end_date
+        delta = pd.Timestamp(start_date) - pd.Timestamp(end_date)
 
         if delta.days < 7:
             self.freq = 'H'
@@ -228,24 +220,24 @@ class AnalyzePG():
         else:
             self.freq = 'W'
 
-    def _set_date_range(self, start_date, end_date, offset):
+    def _set_date_range(self, start_date, end_date):
         """Calculates the appropriate date range after resampling in order to \ 
             to get an equal number of entries per sample.
 
-        :param pandas start_date: starting timestamp.
-        :param pandas end_date: ending timestamp.
-        :param pandas offset: UTC offset
+        :param string start_date: starting timestamp.
+        :param string end_date: ending timestamp.
         """
 
-        last = pd.Timestamp(self.PG.index[-1]) + offset
+        last = self.PG.index[-1].tz_convert(self.tz)
 
         timestep = pd.DataFrame(index=pd.date_range(
-            start_date + offset, end_date + offset, freq='H')).resample(
+            start_date, end_date, freq='H', tz=self.tz)).resample(
             self.freq, label='left').size().rename('Number of Hours')
 
         if self.freq == 'H':
-            self.from_index = start_date
-            self.to_index = timestep.index[-1] if end_date > last else end_date
+            self.from_index = pd.Timestamp(start_date)
+            self.to_index = timestep.index[-1] if \
+            pd.Timestamp(end_date) > last else pd.Timestamp(end_date)
         elif self.freq == 'D' or self.freq == 'W':
             self.from_index = timestep.index.values[0] if \
                 timestep[0] == timestep[1] else timestep.index[1]
@@ -328,14 +320,10 @@ class AnalyzePG():
             return [None] * 2
         else:
             capacity = sum(self.grid.genbus.loc[plant_id].GenMWMax.values)
-            PG = self.PG[plant_id]
-            if self.tz == 'LT':
-                PG = self._to_LT(PG, zone)
-            elif self.tz == 'PST':
-                PG = self._to_PST(PG)
+            PG = self._convert_tz(self.PG[plant_id]).resample(
+                self.freq, label='left').sum()[self.from_index:self.to_index]
 
-            return PG.resample(self.freq, label='left').sum()[
-                self.from_index:self.to_index], capacity
+            return PG, capacity
 
     def _get_demand(self, zone):
         """Get demand profile for load zone, California or total.
@@ -345,7 +333,7 @@ class AnalyzePG():
             timestamp as indices.
         """
 
-        demand = self.grid.demand_data_2016
+        demand = self.grid.demand_data_2016.tz_localize('utc')
         if zone == 'Western':
             demand = demand.sum(axis=1).rename('demand').to_frame()
         elif zone == 'California':
@@ -354,14 +342,11 @@ class AnalyzePG():
             demand = demand.loc[:, CA].sum(axis=1).rename('demand').to_frame()
         else:
             demand = demand.loc[:, zone].rename('demand').to_frame()
-            
-        if self.tz == 'LT':
-            demand = self._to_LT(demand, zone)
-        elif self.tz == 'PST':
-            demand = self._to_PST(demand)
 
-        return demand.resample(self.freq, label='left').sum()[
-            self.from_index:self.to_index]
+        demand = self._convert_tz(demand).resample(
+            self.freq, label='left').sum()[self.from_index:self.to_index]
+
+        return demand
     
     def _get_stacked(self, zone):
         """Calculates time series of PG and demand for one zone. 
@@ -403,6 +388,14 @@ class AnalyzePG():
                     ax, None]
         else:
             return [None] * 3
+
+    def _get_curtailment(self, resource):
+        """Calculates time series of curtailment for one resource. 
+
+        :param string resource: resource to consider.
+        :return: time series of curtailment for selected resource and axis \ 
+            object containing information to plot. 
+        """
 
     def _get_comp(self, resource):
         """Calculates time series of PG for one resource. 
