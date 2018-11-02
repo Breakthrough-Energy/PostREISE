@@ -116,39 +116,11 @@ class AnalyzePG():
             self._set_frequency(time[0], time[1])
 
         if kind == "stacked":
-            self.data = []
-            self.grid.read_demand_data()
-            for z in zones:
-                self.tz = self.zone2time[z] if time[2] == 'local' else time[2]
-                self._set_date_range(time[0], time[1])
-                self.data.append(self._get_stacked(z))
-
+            self._do_stacked(time[0], time[1], time[2])
         elif kind == "comp":
-            if time[2] == 'local':
-                print('Set US/Pacific for all zones')
-                self.tz = 'US/Pacific'
-            else:
-                self.tz = time[2]    
-            self._set_date_range(time[0], time[1])
-            self.data = []
-            for r in resources:
-                self.data.append(self._get_comp(r))
-
+            self._do_comp(time[0], time[1], time[2])
         elif kind == 'curtailment':
-            for r in resources:
-                if r == 'solar':
-                    self.grid.read_solar_data()
-                elif r == 'wind':
-                    self.grid.read_wind_data()
-                else:
-                    print("Curtailment analysis is only for renewable energies")
-            self.data = []
-            self.grid.read_demand_data()
-            for z in zones:
-                self.tz = self.zone2time[z] if time[2] == 'local' else time[2]
-                self._set_date_range(time[0], time[1])                
-                for r in resources:
-                    self.data.append(self._get_curtailment(z, r))
+            self._do_curtailment(time[0], time[1], time[2])
 
     def _check_dates(self, start_date, end_date):
         """Test dates.
@@ -271,6 +243,192 @@ class AnalyzePG():
 
         self.timestep = timestep[self.from_index:self.to_index]
 
+    def _do_stacked(self, start_date, end_date, tz):
+        """Do stack analysis.
+
+        :param string start_date: starting timestamp.
+        :param string end_date: ending timestamp.
+        :param string tz: timezone.
+        """
+
+        self.data = []
+        self.grid.read_demand_data()
+        for z in self.zones:
+            self.tz = self.zone2time[z] if tz == 'local' else tz
+            self._set_date_range(start_date, end_date)
+            self.data.append(self._get_stacked(z))
+
+    def _get_stacked(self, zone):
+        """Calculates time series of PG and demand for one zone. 
+
+        :param string zone: zone to consider.
+        :return: time series of PG and demand for selected zone and axis \ 
+            object containing information to plot. 
+        """
+        
+
+        PG, capacity = self._get_PG(zone, self.resources)
+        if PG is not None:
+            fig = plt.figure(figsize=(20, 10))
+            plt.title('%s' % zone, fontsize=22)
+            ax = fig.gca()
+        
+            demand = self._get_demand(zone)
+            
+            PG_groups = PG.T.groupby(self.grid.genbus['type'])
+            PG_stack = PG_groups.agg(sum).T
+            type2label = self.type2label.copy()
+            for type in self.grid.ID2type.values():
+                if type not in PG_stack.columns:
+                    del type2label[type]
+
+            if self.normalize is True:
+                PG_stack = PG_stack.divide(capacity * self.timestep, 
+                                           axis='index')
+                demand = demand.divide(capacity * self.timestep, axis='index')
+
+            ax = PG_stack[list(type2label.keys())].rename(
+                columns=type2label).plot.area(
+                color=[self.grid.type2color[r] for r in type2label.keys()], 
+                alpha=0.7, ax=ax)
+            demand.plot(color='red', lw=4, ax=ax)
+        
+            ax.set_ylim([0, max(ax.get_ylim()[1], 1.1*demand.max().values[0])])
+
+            PG_stack['demand'] = demand
+            PG_stack.name = zone
+
+            return [PG_stack, (ax, None), None]
+        else:
+            return [None, (None, None), None]
+
+    def _do_comp(self, start_date, end_date, tz):
+        """Do stack analysis.
+
+        :param string start_date: starting timestamp.
+        :param string end_date: ending timestamp.
+        :param string tz: timezone.
+        """
+        
+        if tz == 'local':
+            print('Set US/Pacific for all zones')
+            self.tz = 'US/Pacific'
+        else:
+            self.tz = tz    
+        self._set_date_range(start_date, end_date)
+        self.data = []
+        for r in self.resources:
+            self.data.append(self._get_comp(r))
+                
+    def _get_comp(self, resource):
+        """Calculates time series of PG for one resource. 
+        
+        :param string resource: resource to consider.
+        :return: time series of PG for selected resource and axis object \ 
+            containing information to plot. 
+        """
+
+        fig = plt.figure(figsize=(20, 10))
+        plt.title('%s' % resource.capitalize(), fontsize=22)
+        
+        first = True
+        total = pd.DataFrame()
+        for z in self.zones:
+            PG, capacity = self._get_PG(z, [resource])
+            if PG is None:
+                pass
+            else:
+                ax = fig.gca()
+                col_name = '%s: %d plants (%d MW)' % (z, PG.shape[1], capacity)
+                total_tmp = pd.DataFrame(PG.T.sum().rename(col_name))
+
+                if self.normalize:
+                    total_tmp = total_tmp.divide(capacity * self.timestep, 
+                                                 axis='index')
+                if first:
+                    total = total_tmp
+                    first = False
+                else:
+                    total = pd.merge(total, total_tmp, left_index=True,
+                                     right_index=True)
+
+                total[col_name].plot(color=self.zone2style[z]['color'],
+                                     alpha=self.zone2style[z]['alpha'],
+                                     lw=self.zone2style[z]['lw'],
+                                     ls=self.zone2style[z]['ls'],
+                                     ax=ax)
+
+        if total.empty:
+            plt.close()
+            return [None, (None, None), None]
+        else:
+            total.name = resource
+            return [total, (ax, None), None]
+
+    def _do_curtailment(self, start_date, end_date, tz):
+        """Do curtailment analysis.
+
+        :param string start_date: starting timestamp.
+        :param string end_date: ending timestamp.
+        :param string tz: timezone.
+        """
+
+        for r in self.resources:
+            if r == 'solar':
+                self.grid.read_solar_data()
+            elif r == 'wind':
+                self.grid.read_wind_data()
+            else:
+                print("Curtailment analysis is only for renewable energies")
+        self.data = []
+        self.grid.read_demand_data()
+        for z in self.zones:
+            self.tz = self.zone2time[z] if tz == 'local' else tz
+            self._set_date_range(start_date, end_date)                
+            for r in self.resources:
+                self.data.append(self._get_curtailment(z, r))
+
+    def _get_curtailment(self, zone, resource):
+        """Calculates time series of curtailment for one zone and one resource. 
+
+        :param string zone: zone to consider.
+        :param string resource: resource to consider.
+        :return: time series of curtailment for selected zone along with and \ 
+            axis object containing information to plot. 
+        """
+
+        PG, capacity = self._get_PG(zone, [resource])
+        if PG is None:
+            return [None, (None, None), None]
+        else:
+            fig = plt.figure(figsize=(20, 10))
+            plt.title('%s (%s)' % (zone, resource.capitalize()), fontsize=22)
+            ax = fig.gca()
+            ax_twin = ax.twinx()
+
+            demand = self._get_demand(zone)
+            available = self._get_profile(zone, resource)
+        
+            curtailment = pd.DataFrame(available.T.sum().rename('available'))
+            curtailment['generated'] = PG.T.sum().values
+            curtailment['demand'] = demand.values
+        
+            multiplier = 1
+            curtailment['available'] *= multiplier
+            curtailment['ratio'] = 100 * \
+                (1 - curtailment['generated'] / curtailment['available'])
+        
+            # Nnumerical precision
+            curtailment.loc[abs(curtailment['ratio']) < 1, 'ratio'] = 0
+            
+            curtailment['ratio'].plot(ax=ax, legend=False, style='b', lw=4,
+                fontsize=18, alpha=0.7)
+            curtailment[['available','demand']].plot(ax=ax_twin, fontsize=18,
+                lw=4, style={'available': 'g', 'demand': 'r'}, alpha=0.7)
+
+            curtailment.name = "%s - %s" % (zone, resource)
+            return [curtailment, (ax, ax_twin), None]        
+        
     def _set_canvas(self, ax):
         """Set attributes for plot.
 
@@ -397,137 +555,6 @@ class AnalyzePG():
         
         return self._convert_tz(profile[plant_id]).resample(
             self.freq, label='left').sum()[self.from_index:self.to_index]
-
-    def _get_stacked(self, zone):
-        """Calculates time series of PG and demand for one zone. 
-
-        :param string zone: zone to consider.
-        :return: time series of PG and demand for selected zone and axis \ 
-            object containing information to plot. 
-        """
-        
-
-        PG, capacity = self._get_PG(zone, self.resources)
-        if PG is not None:
-            fig = plt.figure(figsize=(20, 10))
-            plt.title('%s' % zone, fontsize=22)
-            ax = fig.gca()
-        
-            demand = self._get_demand(zone)
-            
-            PG_groups = PG.T.groupby(self.grid.genbus['type'])
-            PG_stack = PG_groups.agg(sum).T
-            type2label = self.type2label.copy()
-            for type in self.grid.ID2type.values():
-                if type not in PG_stack.columns:
-                    del type2label[type]
-
-            if self.normalize is True:
-                PG_stack = PG_stack.divide(capacity * self.timestep, 
-                                           axis='index')
-                demand = demand.divide(capacity * self.timestep, axis='index')
-
-            ax = PG_stack[list(type2label.keys())].rename(
-                columns=type2label).plot.area(
-                color=[self.grid.type2color[r] for r in type2label.keys()], 
-                alpha=0.7, ax=ax)
-            demand.plot(color='red', lw=4, ax=ax)
-        
-            ax.set_ylim([0, max(ax.get_ylim()[1], 1.1*demand.max().values[0])])
-
-            PG_stack = PG_stack.merge(demand, left_index=True, right_index=True)
-            PG_stack.name = zone
-
-            return [PG_stack, (ax, None), None]
-        else:
-            return [None, (None, None), None]
-
-    def _get_curtailment(self, zone, resource):
-        """Calculates time series of curtailment for one zone and one resource. 
-
-        :param string zone: zone to consider.
-        :param string resource: resource to consider.
-        :return: time series of curtailment for selected zone along with and \ 
-            axis object containing information to plot. 
-        """
-
-        PG, capacity = self._get_PG(zone, [resource])
-        if PG is None:
-            return [None, (None, None), None]
-        else:
-            fig = plt.figure(figsize=(20, 10))
-            plt.title('%s (%s)' % (zone, resource.capitalize()), fontsize=22)
-            ax = fig.gca()
-            ax_twin = ax.twinx()
-
-            demand = self._get_demand(zone)
-            available = self._get_profile(zone, resource)
-        
-            curtailment = pd.DataFrame(available.T.sum().rename('available'))
-            curtailment['generated'] = PG.T.sum().values
-            curtailment['demand'] = demand.values
-        
-            multiplier = 1
-            curtailment['available'] *= multiplier
-            curtailment['ratio'] = 100 * \
-                (1 - curtailment['generated'] / curtailment['available'])
-        
-            # Deal with numerical precision
-            curtailment.loc[abs(curtailment['ratio']) < 0.5, 'ratio'] = 0
-            
-            curtailment['ratio'].plot(ax=ax,
-                legend=False, style='b', lw=4, fontsize=18, alpha=0.7)
-            curtailment[['available','demand']].plot(ax=ax_twin,
-                lw=4, fontsize=18, style={'available': 'g', 'demand': 'r'}, 
-                alpha=0.7)
-
-            curtailment.name = "%s - %s" % (zone, resource)
-            return [curtailment, (ax, ax_twin), None]
-
-    def _get_comp(self, resource):
-        """Calculates time series of PG for one resource. 
-        
-        :param string resource: resource to consider.
-        :return: time series of PG for selected resource and axis object \ 
-            containing information to plot. 
-        """
-
-        fig = plt.figure(figsize=(20, 10))
-        plt.title('%s' % resource.capitalize(), fontsize=22)
-        
-        first = True
-        total = pd.DataFrame()
-        for z in self.zones:
-            PG, capacity = self._get_PG(z, [resource])
-            if PG is None:
-                pass
-            else:
-                ax = fig.gca()
-                col_name = '%s: %d plants (%d MW)' % (z, PG.shape[1], capacity)
-                total_tmp = pd.DataFrame(PG.T.sum().rename(col_name))
-
-                if self.normalize:
-                    total_tmp = total_tmp.divide(capacity * self.timestep, 
-                                                 axis='index')
-                if first:
-                    total = total_tmp
-                    first = False
-                else:
-                    total = pd.merge(total, total_tmp, left_index=True,
-                                     right_index=True)
-
-                total[col_name].plot(color=self.zone2style[z]['color'],
-                                     alpha=self.zone2style[z]['alpha'],
-                                     lw=self.zone2style[z]['lw'],
-                                     ls=self.zone2style[z]['ls'],
-                                     ax=ax)
-
-        if total.empty:
-            plt.close()
-            return [None, (None, None), None]
-        else:
-            total.name = resource
-            return [total, (ax, None), None]
 
     def get_plot(self):
         """Plots data.
