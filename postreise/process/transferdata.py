@@ -1,5 +1,3 @@
-import base64
-import getpass
 import os
 from pathlib import Path
 
