@@ -1,5 +1,3 @@
-import sys
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -140,11 +138,21 @@ class AnalyzePG():
         """
         try:
             self.PG.loc[start_date]
+        except KeyError:
+            print("Starting date must be within [%s,%s]" % (self.PG.index[0],
+                                                            self.PG.index[-1]))
+            raise Exception("Invalid starting date")
+
+        try:
             self.PG.loc[end_date]
         except KeyError:
-            print("Dates must be within [%s,%s]" % (self.PG.index[0],
-                  self.PG.index[-1]))
-            sys.exit('Error')
+            print("Ending date must be within [%s,%s]" % (self.PG.index[0],
+                                                          self.PG.index[-1]))
+            raise Exception("Invalid ending date")
+
+        if pd.Timestamp(start_date) > pd.Timestamp(end_date):
+            print("Starting date must be greater than ending date")
+            raise Exception("Invalid dates")
 
     def _check_zones(self, zones):
         """Test zones.
@@ -155,7 +163,7 @@ class AnalyzePG():
         for z in zones:
             if z not in all:
                 print("%s is incorrect. Possible zones are: %s" % (z, all))
-                sys.exit('Error')
+                raise Exception('Invalid zone(s)')
 
     def _check_resources(self, resources):
         """Test resources.
@@ -166,7 +174,7 @@ class AnalyzePG():
         for r in resources:
             if r not in all:
                 print("%s is incorrect. Possible resources are: %s" % (r, all))
-                sys.exit('Error')
+                raise Exception('Invalid resource(s)')
 
     def _check_tz(self, tz):
         """Test time zone.
@@ -176,7 +184,7 @@ class AnalyzePG():
         all = ['utc', 'US/Pacific', 'local']
         if tz not in all:
             print("%s is incorrect. Possible time zones are: %s" % (tz, all))
-            sys.exit('Error')
+            raise Exception('Invalid time zone')
 
     def _check_freq(self, freq):
         """Test freq.
@@ -186,7 +194,7 @@ class AnalyzePG():
         all = ['H', 'D', 'W', 'auto']
         if freq not in all:
             print("%s is incorrect. Possible frequency are: %s" % (freq, all))
-            sys.exit('Error')
+            raise Exception('Invalid frequency')
 
     def _check_kind(self, kind):
         """Test kind.
@@ -196,7 +204,7 @@ class AnalyzePG():
         all = ['chart', 'stacked', 'comp', 'curtailment', 'correlation']
         if kind not in all:
             print("%s is incorrect. Possible analysis are: %s" % (kind, all))
-            sys.exit('Error')
+            raise Exception('Invalid Analysis')
 
     def _convert_tz(self, df_utc):
         """Convert dataframe fron UTC time zone to desired time zone.
@@ -617,7 +625,6 @@ class AnalyzePG():
                     val = format(int(b.x1), ',')
                     ax[i].annotate(val, (b.x1, b.y1-y_offset), fontsize=16)
  
-
     def _get_plant_id(self, zone, resource):
         """Extracts the plant identification number of all the generators \ 
             located in one zone and using one specific resource.
