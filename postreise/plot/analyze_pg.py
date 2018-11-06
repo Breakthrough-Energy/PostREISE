@@ -125,10 +125,12 @@ class AnalyzePG():
             self._do_stacked(time[0], time[1], time[2])
         elif kind == "comp":
             self._do_comp(time[0], time[1], time[2])
-        elif kind == 'curtailment':
+        elif kind == "curtailment":
             self._do_curtailment(time[0], time[1], time[2])
-        elif kind == 'correlation':
+        elif kind == "correlation":
             self._do_correlation(time[0], time[1], time[2])
+        elif kind == "chart":
+            self._do_chart(time[0], time[1], time[2])
 
     def _check_dates(self, start_date, end_date):
         """Test dates.
@@ -191,7 +193,7 @@ class AnalyzePG():
 
         :param string kind: type of analysis.
         """
-        all = ['stacked', 'comp', 'curtailment', 'correlation']
+        all = ['chart', 'stacked', 'comp', 'curtailment', 'correlation']
         if kind not in all:
             print("%s is incorrect. Possible analysis are: %s" % (kind, all))
             sys.exit('Error')
@@ -256,6 +258,59 @@ class AnalyzePG():
                 self.to_index = timestep.index[-2]
 
         self.timestep = timestep[self.from_index:self.to_index]
+
+    def _do_chart(self, start_date, end_date, tz):
+        """ Do chart analysis.
+
+        :param string start_date: starting timestamp.
+        :param string end_date: ending timestamp.
+        :param string tz: timezone.
+        """
+
+        print('Set UTC for all zones')
+        self.tz = 'utc'
+
+        self._set_date_range(start_date, end_date)
+        self.data = []
+        for z in self.zones:
+            self.data.append(self._get_chart(z))
+
+    def _get_chart(self, zone):
+        """Calculates proportion of resources for one zone.
+
+        :param string zone: zone to consider.
+        :return: numerical proportion of resources for the selected zone \ 
+            along with axis object containing information to plot. 
+        """
+
+        PG, _ = self._get_PG(zone, self.resources)
+        if PG is not None:
+            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 24))
+            ax1.set_title('Generation (MWh)', fontsize=22)
+            ax2.set_title('Resources (MW)', fontsize=22)
+            
+            PG_groups = PG.T.groupby(self.grid.genbus['type']).agg(sum).T
+            PG_groups.name = "%s (Generation)" % zone
+            resources = PG_groups.columns
+            type2label = self.type2label.copy()
+            for type in self.grid.ID2type.values():
+                if type not in PG_groups.columns:
+                    del type2label[type]
+
+            ax1 = PG_groups.sum().plot(
+                ax=ax1, kind='barh', alpha=0.7,
+                color=[self.grid.type2color[r] for r in type2label.keys()])
+
+            capacity = self.grid.genbus.loc[PG.columns].groupby('type').agg(
+                sum).GenMWMax.rename(index=type2label)
+            capacity.name = "%s (Capacity)" % zone
+            ax2 = capacity.plot(
+                ax=ax2, kind='barh', alpha=0.7,
+                color=[self.grid.type2color[r] for r in type2label.keys()])
+
+            return [(PG_groups, capacity), (ax1, ax2), None]
+        else:
+            return [None, (None, None), None]
 
     def _do_stacked(self, start_date, end_date, tz):
         """Do stack analysis.
@@ -529,10 +584,10 @@ class AnalyzePG():
         """
 
         ax[0].set_facecolor('white')
-        ax[0].tick_params(labelsize=16)
 
         if self.kind == 'stacked' or self.kind == 'comp':
             ax[0].grid(color='black', axis='y')
+            ax[0].tick_params(labelsize=16)
             ax[0].set_xlabel('')
             handles, labels = ax[0].get_legend_handles_labels()
             ax[0].legend(handles[::-1], labels[::-1], frameon=2,
@@ -542,11 +597,26 @@ class AnalyzePG():
             else:
                 ax[0].set_ylabel('Generation (MWh)', fontsize=20)
         elif self.kind == 'curtailment':
+            ax[0].tick_params(labelsize=16)
             ax[0].grid(color='black', axis='y')
             ax[0].set_xlabel('')
             ax[0].set_ylabel('Curtailment [%]', fontsize=20)
             ax[1].set_ylabel('MWh', fontsize=20)
             ax[1].legend(loc='upper right', prop={'size': 16})
+        elif self.kind == 'chart':
+            y_offset = 0.3
+            for i in [0, 1]:
+                ax[i].tick_params(axis='y', labelsize=16)
+                ax[i].set_xticklabels('')
+                ax[i].set_ylabel('')
+                ax[i].spines['right'].set_visible(False)
+                ax[i].spines['top'].set_visible(False)
+                ax[i].spines['bottom'].set_visible(False)
+                for p in ax[i].patches:
+                    b = p.get_bbox()
+                    val = format(int(b.x1), ',')
+                    ax[i].annotate(val, (b.x1, b.y1-y_offset), fontsize=16)
+ 
 
     def _get_plant_id(self, zone, resource):
         """Extracts the plant identification number of all the generators \ 
@@ -674,5 +744,7 @@ class AnalyzePG():
                                           len(self.resources), 3))[:, :, 0]
         elif self.kind == "correlation":
             data = np.reshape(self.data, (1, len(self.resources), 3))[:, :, 0]
+        elif self.kind == "chart":
+            data = np.array([d[0] for d in self.data])
 
         return data
