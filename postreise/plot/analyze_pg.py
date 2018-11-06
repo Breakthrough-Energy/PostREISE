@@ -249,9 +249,8 @@ class AnalyzePG():
         last = self.PG.index[-1].tz_convert(self.tz)
 
         timestep = pd.DataFrame(index=pd.date_range(
-            start_date, end_date, freq='H', tz='utc')).tz_convert(
-            self.tz).resample(self.freq, label='left').size().rename(
-            'Number of Hours')
+            start_date, end_date, freq='H', tz=self.tz)).resample(
+            self.freq, label='left').size().rename('Number of Hours')
 
         if self.freq == 'H':
             self.from_index = pd.Timestamp(start_date, tz=self.tz)
@@ -575,10 +574,17 @@ class AnalyzePG():
                     for i, col in enumerate(total.columns):
                         total[col] = total[col].divide(
                             norm[i] * self.timestep, axis='index')
-                
-                colors = ['black', 'red', 'green', 'blue']
 
-                ax =total.plot(alpha=0.7, lw=4, color=colors, ax=ax)
+                lws = [5,3,3,3]
+                lss = ['-','--','--','--']
+                colors = [self.grid.type2color[resource]]
+                if resource == 'solar':
+                    colors += ['red','orangered','darkorange']
+                elif resource == 'wind':
+                    colors += ['dodgerblue','teal','turquoise']
+
+                for col, c, lw, ls in zip(total.columns, colors, lws, lss):
+                    total[col].plot(alpha=0.7, lw=lw, ls=ls, color= c, ax=ax)
 
                 return [total, (ax, None), None]
 
@@ -658,7 +664,6 @@ class AnalyzePG():
         """Set attributes for plot.
 
         :param matplotlib ax: axis object.
-        :return: updated axis object.
         """
 
         ax[0].set_facecolor('white')
