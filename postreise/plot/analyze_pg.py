@@ -9,14 +9,14 @@ class AnalyzePG():
 
     """
 
-    def __init__(self, run, time, zones, resources, kind, normalize=False):
+    def __init__(self, scenario, time, zones, resources, kind, normalize=False):
         """Constructor.
 
-        :param tuple run: run related parameters. 1st element is a data frame \ 
-            of the power generated with id of the plants as columns and UTC \ 
-            timestamp as indices. 2nd element is a grid instance. 3rd \ 
-            element is an int indicating by which factor the renewable \ 
-            energies have been increased. 
+        :param tuple scenario: parameters related to scenario. 1st element \ 
+            is a data frame of the power generated with id of the plants as \ 
+            columns and UTC timestamp as indices. 2nd element is a grid \ 
+            instance. 3rd element is an int indicating by which factor the \ 
+            renewable energies have been increased. 
         :param tuple time: time related parameters. 1st element is the \ 
             starting date. 2nd element is the ending date (left out). 3rd \ 
             element is the timezone, only *'utc'*, *'US/Pacific'* and \ 
@@ -36,9 +36,9 @@ class AnalyzePG():
         """
         plt.close('all')
 
-        self.PG = run[0].tz_localize('utc')
-        self.grid = run[1]
-        self.multiplier = run[2]
+        self.PG = scenario[0].tz_localize('utc')
+        self.grid = scenario[1]
+        self.multiplier = scenarion[2]
 
         # Check parameters
         self._check_dates(time[0], time[1])
