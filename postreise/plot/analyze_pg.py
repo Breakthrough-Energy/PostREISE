@@ -139,19 +139,6 @@ class AnalyzePG():
         :param string start_date: starting date
         :param string end_date: ending date
         """
-        try:
-            self.PG.loc[start_date]
-        except KeyError:
-            print("Starting date must be within [%s,%s]" % (self.PG.index[0],
-                                                            self.PG.index[-1]))
-            raise Exception("Invalid starting date")
-
-        try:
-            self.PG.loc[end_date]
-        except KeyError:
-            print("Ending date must be within [%s,%s]" % (self.PG.index[0],
-                                                          self.PG.index[-1]))
-            raise Exception("Invalid ending date")
 
         if pd.Timestamp(start_date) > pd.Timestamp(end_date):
             print("Starting date must be greater than ending date")
@@ -246,27 +233,40 @@ class AnalyzePG():
         :param string end_date: ending timestamp.
         """
 
-        last = self.PG.index[-1].tz_convert(self.tz)
+        first_available = self.PG.index[0].tz_convert(self.tz)
+        last_available = self.PG.index[-1].tz_convert(self.tz)
 
         timestep = pd.DataFrame(index=pd.date_range(
             start_date, end_date, freq='H', tz=self.tz)).resample(
             self.freq, label='left').size().rename('Number of Hours')
 
         if self.freq == 'H':
-            self.from_index = pd.Timestamp(start_date, tz=self.tz)
-            if pd.Timestamp(end_date, tz=self.tz) > last:
-                self.to_index = timestep.index[-1] 
+            if first_available > pd.Timestamp(start_date, tz=self.tz):
+                self.from_index = first_available
+            else:
+                self.from_index = pd.Timestamp(start_date, tz=self.tz)
+            if last_available < pd.Timestamp(end_date, tz=self.tz):
+                self.to_index = last_available
             else:
                 self.to_index = pd.Timestamp(end_date, tz=self.tz)
         elif self.freq == 'D' or self.freq == 'W':
             if timestep[0] == timestep[1]:
-                self.from_index = timestep.index.values[0]
+                first_full = pd.Timestamp(timestep.index.values[0], tz=self.tz)
             else:
-                self.from_index = timestep.index[1]
+                first_full = pd.Timestamp(timestep.index.values[1], tz=self.tz)
             if timestep[-1] == timestep[-2]:
-                self.to_index = timestep.index.values[-1]
+                last_full = pd.Timestamp(timestep.index.values[-1], tz=self.tz)
             else:
-                self.to_index = timestep.index[-2]
+                last_full = pd.Timestamp(timestep.index.values[-2], tz=self.tz)
+
+            if first_available > first_full:
+                self.from_index = min(timestep[first_available:].index)
+            else:
+                self.from_index = first_full            
+            if last_available < last_full:
+                self.to_index = max(timestep[:last_available].index)
+            else:
+                self.to_index = last_full
 
         self.timestep = timestep[self.from_index:self.to_index]
 
@@ -502,11 +502,10 @@ class AnalyzePG():
             # Nnumerical precision
             curtailment.loc[abs(curtailment['ratio']) < 1, 'ratio'] = 0
 
-            curtailment['ratio'].plot(
-                ax=ax, legend=False, style='b', lw=4, fontsize=18, alpha=0.7)
-            curtailment[['available', 'demand']].plot(
-                ax=ax_twin, fontsize=18, lw=4, alpha=0.7,
-                style={'available': 'g', 'demand': 'r'})
+            curtailment['ratio'].plot(ax=ax, legend=False, style='b', lw=4,
+                alpha=0.7)
+            curtailment[['available', 'demand']].plot(ax=ax_twin, lw=4,
+                alpha=0.7, style={'available': 'g', 'demand': 'r'})
 
             curtailment.name = "%s - %s" % (zone, resource)
             return [curtailment, (ax, ax_twin), None]
@@ -705,7 +704,7 @@ class AnalyzePG():
             ax[0].set_xlabel('')
             handles, labels = ax[0].get_legend_handles_labels()
             ax[0].legend(handles[::-1], labels[::-1], frameon=2,
-                         prop={'size': 16}, loc='lower right')
+                         prop={'size': 16}, loc='top right')
             if self.normalize:
                 ax[0].set_ylabel('Normalized Generation', fontsize=20)
             else:
