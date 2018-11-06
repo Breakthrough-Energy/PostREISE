@@ -1,3 +1,4 @@
+import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -38,7 +39,7 @@ class AnalyzePG():
 
         self.PG = scenario[0].tz_localize('utc')
         self.grid = scenario[1]
-        self.multiplier = scenarion[2]
+        self.multiplier = scenario[2]
 
         # Check parameters
         self._check_dates(time[0], time[1])
@@ -119,16 +120,18 @@ class AnalyzePG():
         if self.freq == 'auto':
             self._set_frequency(time[0], time[1])
 
-        if kind == "stacked":
+        if kind == 'stacked':
             self._do_stacked(time[0], time[1], time[2])
-        elif kind == "comp":
+        elif kind == 'comp':
             self._do_comp(time[0], time[1], time[2])
-        elif kind == "curtailment":
+        elif kind == 'curtailment':
             self._do_curtailment(time[0], time[1], time[2])
-        elif kind == "correlation":
+        elif kind == 'correlation':
             self._do_correlation(time[0], time[1], time[2])
-        elif kind == "chart":
+        elif kind == 'chart':
             self._do_chart(time[0], time[1], time[2])
+        elif kind == 'variability':
+            self._do_variability(time[0], time[1], time[2])
 
     def _check_dates(self, start_date, end_date):
         """Test dates.
@@ -201,7 +204,8 @@ class AnalyzePG():
 
         :param string kind: type of analysis.
         """
-        all = ['chart', 'stacked', 'comp', 'curtailment', 'correlation']
+        all = ['chart', 'stacked', 'comp', 'curtailment', 'correlation', 
+               'variability']
         if kind not in all:
             print("%s is incorrect. Possible analysis are: %s" % (kind, all))
             raise Exception('Invalid Analysis')
@@ -339,8 +343,8 @@ class AnalyzePG():
         """Calculates time series of PG and demand for one zone. 
 
         :param string zone: zone to consider.
-        :return: time series of PG and demand for selected zone and axis \ 
-            object containing information to plot. 
+        :return: time series of PG and demand for selected zone along with \ 
+            axis object containing information to plot. 
         """
 
         PG, capacity = self._get_PG(zone, self.resources)
@@ -400,8 +404,8 @@ class AnalyzePG():
         """Calculates time series of PG for one resource.
 
         :param string resource: resource to consider.
-        :return: time series of PG for selected resource and axis object \ 
-            containing information to plot. 
+        :return: time series of PG for selected resource along with axis \ 
+            object containing information to plot. 
         """
 
         fig = plt.figure(figsize=(20, 10))
@@ -456,7 +460,7 @@ class AnalyzePG():
                 self.grid.read_wind_data()
             else:
                 print("Curtailment analysis is only for renewable energies")
-                sys.exit('Error')
+                raise Exception('Invalid resource')
 
         self.data = []
         self.grid.read_demand_data()
@@ -471,7 +475,7 @@ class AnalyzePG():
 
         :param string zone: zone to consider.
         :param string resource: resource to consider.
-        :return: time series of curtailment for selected zone along with and \ 
+        :return: time series of curtailment for selected zone along with \ 
             axis object containing information to plot.
         """
 
@@ -508,6 +512,76 @@ class AnalyzePG():
             curtailment.name = "%s - %s" % (zone, resource)
             return [curtailment, (ax, ax_twin), None]
 
+    def _do_variability(self, start_date, end_date, tz):
+        """Do variability analysis.
+
+        :param string start_date: starting timestamp.
+        :param string end_date: ending timestamp.
+        :param string tz: timezone.
+        """
+
+        for r in self.resources:
+            if r not in ['solar', 'wind']:
+                print("Curtailment analysis is only for renewable energies")
+                raise Exception('Invalid resource')
+
+        self.data = []
+        for z in self.zones:
+            self.tz = self.zone2time[z] if tz == 'local' else tz
+            self._set_date_range(start_date, end_date)
+            for r in self.resources:
+                self.data.append(self._get_variability(z, r))
+
+    def _get_variability(self, zone, resource):
+        """Calculates time series of PG for one zone and one resource. Also \
+            calculates the time series of the PG of 2, 8 and 15 randomly \ 
+            chosen plants in the same zone and using the same resource.
+
+        :param string resource: resource to consider.
+        :return: time series of PG for selected zone and selected plants \ 
+            along with axis object containing information to plot.         
+        """
+
+        PG, capacity = self._get_PG(zone, [resource])
+        if PG is None:
+            return [None, (None, None), None]
+        else:
+            n_plants = len(PG.columns)
+            fig = plt.figure(figsize=(20, 10))
+            plt.title('%s (%s)' % (zone, resource.capitalize()), fontsize=22)
+            ax = fig.gca()
+
+            total = pd.DataFrame(PG.T.sum().rename(
+                'Total: %d plants (%d MW)' % (n_plants, capacity)))
+            total.name = "%s - %s" % (zone, resource)
+
+            np.random.seed(10)
+            if n_plants < 20:
+                print("Not enough %s plants in %s for variability analysis" \
+                      % (resource, zone))
+                return [None, (None, None), None]
+            else:
+                selected = np.random.choice(PG.columns, 15, 
+                                            replace=False).tolist()
+                norm = [capacity]
+                for i in [15, 8, 2]:
+                    norm += [sum(self.grid.genbus.loc[
+                        selected[:i]].GenMWMax.values)]
+                total['15 plants (%d MW)' % norm[1]] = PG[selected].T.sum()
+                total['8 plants (%d MW)' % norm[2]] = PG[selected[:8]].T.sum()
+                total['2 plants (%d MW)' % norm[3]] = PG[selected[:2]].T.sum()
+
+                if self.normalize:
+                    for i, col in enumerate(total.columns):
+                        total[col] = total[col].divide(
+                            norm[i] * self.timestep, axis='index')
+                
+                colors = ['black', 'red', 'green', 'blue']
+
+                ax =total.plot(alpha=0.7, lw=4, color=colors, ax=ax)
+
+                return [total, (ax, None), None]
+
     def _do_correlation(self, start_date, end_date, tz):
         """Do correlation analysis.
 
@@ -517,13 +591,9 @@ class AnalyzePG():
         """
 
         for r in self.resources:
-            if r == 'solar':
-                self.grid.read_solar_data()
-            elif r == 'wind':
-                self.grid.read_wind_data()
-            else:
+            if r not in ['solar', 'wind']:
                 print("Correlation analysis is only for renewable energies")
-                sys.exit('Error')
+                raise Exception('Invalid resource')
 
         if tz == 'local':
             print('Set US/Pacific for all zones')
@@ -536,7 +606,7 @@ class AnalyzePG():
             self.data.append(self._get_correlation(r))
 
     def _get_correlation(self, resource):
-        """Calculates correlation coefficient of PG for one resource
+        """Calculates correlation coefficient of PG for one resource.
 
         :param string resource: resource to consider.
         :return: correlation coefficients of PG for selected resource as a \ 
@@ -624,7 +694,18 @@ class AnalyzePG():
                     b = p.get_bbox()
                     val = format(int(b.x1), ',')
                     ax[i].annotate(val, (b.x1, b.y1-y_offset), fontsize=16)
- 
+        elif self.kind == 'variability':
+            ax[0].grid(color='black', axis='y')
+            ax[0].tick_params(labelsize=16)
+            ax[0].set_xlabel('')
+            handles, labels = ax[0].get_legend_handles_labels()
+            ax[0].legend(handles[::-1], labels[::-1], frameon=2,
+                         prop={'size': 16}, loc='lower right')
+            if self.normalize:
+                ax[0].set_ylabel('Normalized Generation', fontsize=20)
+            else:
+                ax[0].set_ylabel('Generation (MWh)', fontsize=20)
+
     def _get_plant_id(self, zone, resource):
         """Extracts the plant identification number of all the generators \ 
             located in one zone and using one specific resource.
@@ -753,5 +834,8 @@ class AnalyzePG():
             data = np.reshape(self.data, (1, len(self.resources), 3))[:, :, 0]
         elif self.kind == "chart":
             data = np.array([d[0] for d in self.data])
+        elif self.kind == 'variability':
+            data = np.reshape(self.data, (len(self.zones),
+                                          len(self.resources), 3))[:, :, 0]
 
         return data
