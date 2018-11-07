@@ -296,9 +296,9 @@ class AnalyzePG():
 
         PG, _ = self._get_PG(zone, self.resources)
         if PG is not None:
-            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 24))
-            ax1.set_title('Generation (MWh)', fontsize=22)
-            ax2.set_title('Resources (MW)', fontsize=22)
+            fig, ax = plt.subplots(2, 1, figsize=(12, 24))
+            ax[0].set_title('Generation (MWh)', fontsize=22)
+            ax[1].set_title('Resources (MW)', fontsize=22)
             
             PG_groups = PG.T.groupby(self.grid.genbus['type']).agg(sum).T
             PG_groups.name = "%s (Generation)" % zone
@@ -308,20 +308,34 @@ class AnalyzePG():
                 if type not in PG_groups.columns:
                     del type2label[type]
 
-            ax1 = PG_groups.sum().plot(
-                ax=ax1, kind='barh', alpha=0.7,
+            ax[0] = PG_groups.sum().plot(
+                ax=ax[0], kind='barh', alpha=0.7,
                 color=[self.grid.type2color[r] for r in type2label.keys()])
 
             capacity = self.grid.genbus.loc[PG.columns].groupby('type').agg(
                 sum).GenMWMax.rename(index=type2label)
             capacity.name = "%s (Capacity)" % zone
-            ax2 = capacity.plot(
-                ax=ax2, kind='barh', alpha=0.7,
+            ax[1] = capacity.plot(
+                ax=ax[1], kind='barh', alpha=0.7,
                 color=[self.grid.type2color[r] for r in type2label.keys()])
 
-            return [(PG_groups, capacity), (ax1, ax2), None]
+            y_offset = 0.3
+            for i in [0, 1]:
+                ax[i].tick_params(axis='y', labelsize=16)
+                ax[i].set_xticklabels('')
+                ax[i].set_ylabel('')
+                ax[i].spines['right'].set_visible(False)
+                ax[i].spines['top'].set_visible(False)
+                ax[i].spines['bottom'].set_visible(False)
+                ax[i].set_xticks([])
+                for p in ax[i].patches:
+                    b = p.get_bbox()
+                    val = format(int(b.x1), ',')
+                    ax[i].annotate(val, (b.x1, b.y1-y_offset), fontsize=16)
+
+            return (PG_groups, capacity)
         else:
-            return [None, (None, None), None]
+            return None
 
     def _do_stacked(self, start_date, end_date, tz):
         """Do stack analysis.
@@ -374,12 +388,23 @@ class AnalyzePG():
 
             ax.set_ylim([0, max(ax.get_ylim()[1], 1.1*demand.max().values[0])])
 
+            ax.grid(color='black', axis='y')
+            ax.tick_params(labelsize=16)
+            ax.set_xlabel('')
+            handles, labels = ax.get_legend_handles_labels()
+            ax.legend(handles[::-1], labels[::-1], frameon=2,
+                      prop={'size': 16}, loc='lower right')
+            if self.normalize:
+                ax.set_ylabel('Normalized Generation', fontsize=20)
+            else:
+                ax.set_ylabel('Generation (MWh)', fontsize=20)
+
             PG_stack['demand'] = demand
             PG_stack.name = zone
 
-            return [PG_stack, (ax, None), None]
+            return PG_stack
         else:
-            return [None, (None, None), None]
+            return None
 
     def _do_comp(self, start_date, end_date, tz):
         """Do stack analysis.
@@ -437,12 +462,22 @@ class AnalyzePG():
                                      ls=self.zone2style[z]['ls'],
                                      ax=ax)
 
+                ax.grid(color='black', axis='y')
+                ax.tick_params(labelsize=16)
+                ax.set_xlabel('')
+                handles, labels = ax.get_legend_handles_labels()
+                ax.legend(handles[::-1], labels[::-1], frameon=2,
+                          prop={'size': 16}, loc='lower right')
+                if self.normalize:
+                    ax.set_ylabel('Normalized Generation', fontsize=20)
+                else:
+                    ax.set_ylabel('Generation (MWh)', fontsize=20)
         if total.empty:
             plt.close()
-            return [None, (None, None), None]
+            return None
         else:
             total.name = resource
-            return [total, (ax, None), None]
+            return total
 
     def _do_curtailment(self, start_date, end_date, tz):
         """Do curtailment analysis.
@@ -480,7 +515,7 @@ class AnalyzePG():
 
         PG, capacity = self._get_PG(zone, [resource])
         if PG is None:
-            return [None, (None, None), None]
+            return None
         else:
             fig = plt.figure(figsize=(20, 10))
             plt.title('%s (%s)' % (zone, resource.capitalize()), fontsize=22)
@@ -507,8 +542,15 @@ class AnalyzePG():
             curtailment[['available', 'demand']].plot(ax=ax_twin, lw=4,
                 alpha=0.7, style={'available': 'g', 'demand': 'r'})
 
+            ax.tick_params(labelsize=16)
+            ax.grid(color='black', axis='y')
+            ax.set_xlabel('')
+            ax.set_ylabel('Curtailment [%]', fontsize=20)
+            ax_twin.set_ylabel('MWh', fontsize=20)
+            ax_twin.legend(loc='upper right', prop={'size': 16})
+
             curtailment.name = "%s - %s" % (zone, resource)
-            return [curtailment, (ax, ax_twin), None]
+            return curtailment
 
     def _do_variability(self, start_date, end_date, tz):
         """Do variability analysis.
@@ -542,7 +584,7 @@ class AnalyzePG():
 
         PG, capacity = self._get_PG(zone, [resource])
         if PG is None:
-            return [None, (None, None), None]
+            return None
         else:
             n_plants = len(PG.columns)
             fig = plt.figure(figsize=(20, 10))
@@ -557,7 +599,8 @@ class AnalyzePG():
             if n_plants < 20:
                 print("Not enough %s plants in %s for variability analysis" \
                       % (resource, zone))
-                return [None, (None, None), None]
+                plt.close()
+                return None
             else:
                 selected = np.random.choice(PG.columns, 15, 
                                             replace=False).tolist()
@@ -585,7 +628,18 @@ class AnalyzePG():
                 for col, c, lw, ls in zip(total.columns, colors, lws, lss):
                     total[col].plot(alpha=0.7, lw=lw, ls=ls, color= c, ax=ax)
 
-                return [total, (ax, None), None]
+                ax.grid(color='black', axis='y')
+                ax.tick_params(labelsize=16)
+                ax.set_xlabel('')
+                handles, labels = ax.get_legend_handles_labels()
+                ax.legend(handles[::-1], labels[::-1], frameon=2,
+                          prop={'size': 16}, loc='top right')
+                if self.normalize:
+                    ax.set_ylabel('Normalized Generation', fontsize=20)
+                else:
+                    ax.set_ylabel('Generation (MWh)', fontsize=20)
+
+                return total
 
     def _do_correlation(self, start_date, end_date, tz):
         """Do correlation analysis.
@@ -637,7 +691,7 @@ class AnalyzePG():
 
         if PG.empty:
             plt.close()
-            return [None, (None, None), None]
+            return None
         else:
             PG.name = resource
             corr = PG.corr()
@@ -652,63 +706,12 @@ class AnalyzePG():
                              lw=4)
 
             ax.set_yticklabels(PG.columns, rotation=40, ha='right')
-
+            ax.tick_params(labelsize=16)
             scatter = pd.plotting.scatter_matrix(PG, alpha=0.2,
                                                  figsize=(16,16),
                                                  diagonal='hist')
 
-            return [PG, (ax, None), None]
-
-    def _set_canvas(self, ax):
-        """Set attributes for plot.
-
-        :param matplotlib ax: axis object.
-        """
-
-        ax[0].set_facecolor('white')
-
-        if self.kind == 'stacked' or self.kind == 'comp':
-            ax[0].grid(color='black', axis='y')
-            ax[0].tick_params(labelsize=16)
-            ax[0].set_xlabel('')
-            handles, labels = ax[0].get_legend_handles_labels()
-            ax[0].legend(handles[::-1], labels[::-1], frameon=2,
-                         prop={'size': 16}, loc='lower right')
-            if self.normalize:
-                ax[0].set_ylabel('Normalized Generation', fontsize=20)
-            else:
-                ax[0].set_ylabel('Generation (MWh)', fontsize=20)
-        elif self.kind == 'curtailment':
-            ax[0].tick_params(labelsize=16)
-            ax[0].grid(color='black', axis='y')
-            ax[0].set_xlabel('')
-            ax[0].set_ylabel('Curtailment [%]', fontsize=20)
-            ax[1].set_ylabel('MWh', fontsize=20)
-            ax[1].legend(loc='upper right', prop={'size': 16})
-        elif self.kind == 'chart':
-            y_offset = 0.3
-            for i in [0, 1]:
-                ax[i].tick_params(axis='y', labelsize=16)
-                ax[i].set_xticklabels('')
-                ax[i].set_ylabel('')
-                ax[i].spines['right'].set_visible(False)
-                ax[i].spines['top'].set_visible(False)
-                ax[i].spines['bottom'].set_visible(False)
-                for p in ax[i].patches:
-                    b = p.get_bbox()
-                    val = format(int(b.x1), ',')
-                    ax[i].annotate(val, (b.x1, b.y1-y_offset), fontsize=16)
-        elif self.kind == 'variability':
-            ax[0].grid(color='black', axis='y')
-            ax[0].tick_params(labelsize=16)
-            ax[0].set_xlabel('')
-            handles, labels = ax[0].get_legend_handles_labels()
-            ax[0].legend(handles[::-1], labels[::-1], frameon=2,
-                         prop={'size': 16}, loc='top right')
-            if self.normalize:
-                ax[0].set_ylabel('Normalized Generation', fontsize=20)
-            else:
-                ax[0].set_ylabel('Generation (MWh)', fontsize=20)
+            return PG
 
     def _get_plant_id(self, zone, resource):
         """Extracts the plant identification number of all the generators \ 
@@ -816,10 +819,6 @@ class AnalyzePG():
         """Plots data.
 
         """
-        for data in self.data:
-            if data[0] is not None:
-                ax = data[1]
-                self._set_canvas(ax)
 
         plt.show()
 
@@ -828,18 +827,26 @@ class AnalyzePG():
 
         """
         if self.kind == "stacked":
-            data = np.array([d[0] for d in self.data])
-        elif self.kind == "comp":
-            data = np.reshape(self.data, (1, len(self.resources), 3))[:, :, 0]
-        elif self.kind == "curtailment":
-            data = np.reshape(self.data, (len(self.zones),
-                                          len(self.resources), 3))[:, :, 0]
-        elif self.kind == "correlation":
-            data = np.reshape(self.data, (1, len(self.resources), 3))[:, :, 0]
-        elif self.kind == "chart":
-            data = np.array([d[0] for d in self.data])
-        elif self.kind == 'variability':
-            data = np.reshape(self.data, (len(self.zones),
-                                          len(self.resources), 3))[:, :, 0]
+            data = {}
+            for i, z in enumerate(self.zones):
+                data[z] = self.data[i]
+        if self.kind == "chart":
+            data = {}
+            for i, z in enumerate(self.zones):
+                data[z] = {}
+                data[z]['Generation'] = self.data[i][0]
+                data[z]['Capacity'] = self.data[i][1]
+        elif self.kind == "comp" or self.kind == "correlation":
+            data = {}
+            for i, r in enumerate(self.resources):
+                data[r] = self.data[i]
+        elif self.kind == 'variability' or self.kind == "curtailment":
+            data = {}
+            index = 0
+            for z in self.zones:
+                data[z] = {}
+                for r in self.resources:
+                    data[z][r] = self.data[index]
+                    index += 1
 
         return data
