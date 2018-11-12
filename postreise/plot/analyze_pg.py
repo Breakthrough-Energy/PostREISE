@@ -1,5 +1,6 @@
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
+import matplotlib._pylab_helpers
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -283,6 +284,7 @@ class AnalyzePG():
 
         self._set_date_range(start_date, end_date)
         self.data = []
+        self.filename = []
         for z in self.zones:
             self.data.append(self._get_chart(z))
 
@@ -296,32 +298,31 @@ class AnalyzePG():
 
         PG, _ = self._get_PG(zone, self.resources)
         if PG is not None:
-            fig, ax = plt.subplots(2, 1, figsize=(12, 24))
-            ax[0].set_title('Generation (MWh)', fontsize=22)
-            ax[1].set_title('Resources (MW)', fontsize=22)
+            fig, ax = plt.subplots(1, 2, figsize=(20, 10), sharey=True)
+            plt.subplots_adjust(wspace=1)
+            ax[0].set_title('Generation (MWh)', fontsize=25)
+            ax[1].set_title('Resources (MW)', fontsize=25)
             
             PG_groups = PG.T.groupby(self.grid.genbus['type']).agg(sum).T
             PG_groups.name = "%s (Generation)" % zone
-            resources = PG_groups.columns
+            #resources = PG_groups.columns
             type2label = self.type2label.copy()
             for type in self.grid.ID2type.values():
                 if type not in PG_groups.columns:
                     del type2label[type]
 
-            ax[0] = PG_groups.sum().plot(
-                ax=ax[0], kind='barh', alpha=0.7,
+            ax[0] = PG_groups.sum().plot(ax=ax[0], kind='barh', alpha=0.7,
                 color=[self.grid.type2color[r] for r in type2label.keys()])
 
             capacity = self.grid.genbus.loc[PG.columns].groupby('type').agg(
                 sum).GenMWMax.rename(index=type2label)
             capacity.name = "%s (Capacity)" % zone
-            ax[1] = capacity.plot(
-                ax=ax[1], kind='barh', alpha=0.7,
+            ax[1] = capacity.plot(ax=ax[1], kind='barh', alpha=0.7,
                 color=[self.grid.type2color[r] for r in type2label.keys()])
 
             y_offset = 0.3
             for i in [0, 1]:
-                ax[i].tick_params(axis='y', labelsize=16)
+                ax[i].tick_params(axis='y', labelsize=20)
                 ax[i].set_xticklabels('')
                 ax[i].set_ylabel('')
                 ax[i].spines['right'].set_visible(False)
@@ -331,7 +332,11 @@ class AnalyzePG():
                 for p in ax[i].patches:
                     b = p.get_bbox()
                     val = format(int(b.x1), ',')
-                    ax[i].annotate(val, (b.x1, b.y1-y_offset), fontsize=16)
+                    ax[i].annotate(val, (b.x1, b.y1-y_offset), fontsize=20)
+
+            self.filename.append('%s_%s_%s-%s.png' % (
+                self.kind, zone, self.from_index.strftime('%Y%m%d%H'),
+                self.to_index.strftime('%Y%m%d%H')))
 
             return (PG_groups, capacity)
         else:
@@ -346,6 +351,7 @@ class AnalyzePG():
         """
 
         self.data = []
+        self.filename = []
         self.grid.read_demand_data()
         for z in self.zones:
             self.tz = self.zone2time[z] if tz == 'local' else tz
@@ -363,7 +369,7 @@ class AnalyzePG():
         PG, capacity = self._get_PG(zone, self.resources)
         if PG is not None:
             fig = plt.figure(figsize=(20, 10))
-            plt.title('%s' % zone, fontsize=22)
+            plt.title('%s' % zone, fontsize=25)
             ax = fig.gca()
 
             demand = self._get_demand(zone)
@@ -389,18 +395,22 @@ class AnalyzePG():
             ax.set_ylim([0, max(ax.get_ylim()[1], 1.1*demand.max().values[0])])
 
             ax.grid(color='black', axis='y')
-            ax.tick_params(labelsize=16)
+            ax.tick_params(labelsize=20)
             ax.set_xlabel('')
             handles, labels = ax.get_legend_handles_labels()
             ax.legend(handles[::-1], labels[::-1], frameon=2,
-                      prop={'size': 16}, loc='lower right')
+                      prop={'size': 18}, loc='lower right')
             if self.normalize:
-                ax.set_ylabel('Normalized Generation', fontsize=20)
+                ax.set_ylabel('Normalized Generation', fontsize=22)
             else:
-                ax.set_ylabel('Generation (MWh)', fontsize=20)
+                ax.set_ylabel('Generation (MWh)', fontsize=22)
 
             PG_stack['demand'] = demand
             PG_stack.name = zone
+
+            self.filename.append('%s_%s_%s-%s.png' % (
+                self.kind, zone, self.from_index.strftime('%Y%m%d%H'), 
+                self.to_index.strftime('%Y%m%d%H')))
 
             return PG_stack
         else:
@@ -421,6 +431,7 @@ class AnalyzePG():
             self.tz = tz
         self._set_date_range(start_date, end_date)
         self.data = []
+        self.filename = []
         for r in self.resources:
             self.data.append(self._get_comp(r))
 
@@ -433,7 +444,7 @@ class AnalyzePG():
         """
 
         fig = plt.figure(figsize=(20, 10))
-        plt.title('%s' % resource.capitalize(), fontsize=22)
+        plt.title('%s' % resource.capitalize(), fontsize=25)
 
         first = True
         total = pd.DataFrame()
@@ -463,19 +474,22 @@ class AnalyzePG():
                                      ax=ax)
 
                 ax.grid(color='black', axis='y')
-                ax.tick_params(labelsize=16)
+                ax.tick_params(labelsize=20)
                 ax.set_xlabel('')
                 handles, labels = ax.get_legend_handles_labels()
                 ax.legend(handles[::-1], labels[::-1], frameon=2,
-                          prop={'size': 16}, loc='lower right')
+                          prop={'size': 18}, loc='lower right')
                 if self.normalize:
-                    ax.set_ylabel('Normalized Generation', fontsize=20)
+                    ax.set_ylabel('Normalized Generation', fontsize=22)
                 else:
-                    ax.set_ylabel('Generation (MWh)', fontsize=20)
+                    ax.set_ylabel('Generation (MWh)', fontsize=22)
         if total.empty:
             plt.close()
             return None
         else:
+            self.filename.append('%s_%s_%s_%s-%s.png' % (self.kind, resource,
+                "-".join(self.zones), self.from_index.strftime('%Y%m%d%H'), 
+                self.to_index.strftime('%Y%m%d%H')))
             total.name = resource
             return total
 
@@ -497,6 +511,7 @@ class AnalyzePG():
                 raise Exception('Invalid resource')
 
         self.data = []
+        self.filename = []
         self.grid.read_demand_data()
         for z in self.zones:
             self.tz = self.zone2time[z] if tz == 'local' else tz
@@ -518,7 +533,7 @@ class AnalyzePG():
             return None
         else:
             fig = plt.figure(figsize=(20, 10))
-            plt.title('%s (%s)' % (zone, resource.capitalize()), fontsize=22)
+            plt.title('%s (%s)' % (zone, resource.capitalize()), fontsize=25)
             ax = fig.gca()
             ax_twin = ax.twinx()
 
@@ -542,14 +557,20 @@ class AnalyzePG():
             curtailment[['available', 'demand']].plot(ax=ax_twin, lw=4,
                 alpha=0.7, style={'available': 'g', 'demand': 'r'})
 
-            ax.tick_params(labelsize=16)
+            ax.tick_params(labelsize=20)
             ax.grid(color='black', axis='y')
             ax.set_xlabel('')
-            ax.set_ylabel('Curtailment [%]', fontsize=20)
-            ax_twin.set_ylabel('MWh', fontsize=20)
-            ax_twin.legend(loc='upper right', prop={'size': 16})
+            ax.set_ylabel('Curtailment [%]', fontsize=22)
+            ax_twin.tick_params(labelsize=20)
+            ax_twin.set_ylabel('MWh', fontsize=22)
+            ax_twin.legend(loc='upper right', prop={'size': 18})
 
             curtailment.name = "%s - %s" % (zone, resource)
+            
+            self.filename.append('%s_%s_%s_%s-%s.png' % (self.kind, resource,
+                zone, self.from_index.strftime('%Y%m%d%H'),
+                self.to_index.strftime('%Y%m%d%H')))
+            
             return curtailment
 
     def _do_variability(self, start_date, end_date, tz):
@@ -566,6 +587,7 @@ class AnalyzePG():
                 raise Exception('Invalid resource')
 
         self.data = []
+        self.filename = []
         for z in self.zones:
             self.tz = self.zone2time[z] if tz == 'local' else tz
             self._set_date_range(start_date, end_date)
@@ -588,7 +610,7 @@ class AnalyzePG():
         else:
             n_plants = len(PG.columns)
             fig = plt.figure(figsize=(20, 10))
-            plt.title('%s (%s)' % (zone, resource.capitalize()), fontsize=22)
+            plt.title('%s (%s)' % (zone, resource.capitalize()), fontsize=25)
             ax = fig.gca()
 
             total = pd.DataFrame(PG.T.sum().rename(
@@ -629,15 +651,19 @@ class AnalyzePG():
                     total[col].plot(alpha=0.7, lw=lw, ls=ls, color= c, ax=ax)
 
                 ax.grid(color='black', axis='y')
-                ax.tick_params(labelsize=16)
+                ax.tick_params(labelsize=20)
                 ax.set_xlabel('')
                 handles, labels = ax.get_legend_handles_labels()
                 ax.legend(handles[::-1], labels[::-1], frameon=2,
-                          prop={'size': 16}, loc='top right')
+                          prop={'size': 18}, loc='top right')
                 if self.normalize:
-                    ax.set_ylabel('Normalized Generation', fontsize=20)
+                    ax.set_ylabel('Normalized Generation', fontsize=22)
                 else:
-                    ax.set_ylabel('Generation (MWh)', fontsize=20)
+                    ax.set_ylabel('Generation (MWh)', fontsize=22)
+
+                self.filename.append('%s_%s_%s_%s-%s.png' % (self.kind, 
+                    resource, zone, self.from_index.strftime('%Y%m%d%H'), 
+                    self.to_index.strftime('%Y%m%d%H')))
 
                 return total
 
@@ -661,6 +687,7 @@ class AnalyzePG():
             self.tz = tz
         self._set_date_range(start_date, end_date)
         self.data = []
+        self.filename = []
         for r in self.resources:
             self.data.append(self._get_correlation(r))
 
@@ -672,8 +699,8 @@ class AnalyzePG():
             data frame along with an axis object containing information to plot.         
         """
 
-        fig = plt.figure(figsize=(20, 10))
-        plt.title('%s' % resource.capitalize(), fontsize=22)
+        fig = plt.figure(figsize=(12, 12))
+        plt.title('%s' % resource.capitalize(), fontsize=25)
 
         first = True
         PG = pd.DataFrame()
@@ -701,15 +728,20 @@ class AnalyzePG():
                 palette = 'Greens'
 
             ax = fig.gca()
-            ax = sns.heatmap(corr, annot=True, fmt=".2f", cmap=palette, ax=ax,
-                             square=True, cbar=False, annot_kws={"size": 18},
-                             lw=4)
-
+            ax = sns.heatmap(corr, annot=True, fmt=".2f", cmap=palette,
+                             ax=ax, square=True, cbar=False, 
+                             annot_kws={"size": 18}, lw=4)
             ax.set_yticklabels(PG.columns, rotation=40, ha='right')
-            ax.tick_params(labelsize=16)
-            scatter = pd.plotting.scatter_matrix(PG, alpha=0.2,
-                                                 figsize=(16,16),
-                                                 diagonal='hist')
+            ax.tick_params(labelsize=20)
+
+            pd.plotting.scatter_matrix(PG, alpha=0.2, diagonal='hist',
+                                       figsize=(12,12))
+            
+            for type in ['matrix', 'scatter']:
+                self.filename.append('%s-%s_%s_%s_%s-%s.png' % (
+                    self.kind, type, resource, "-".join(self.zones),
+                    self.from_index.strftime('%Y%m%d%H'), 
+                    self.to_index.strftime('%Y%m%dH')))
 
             return PG
 
@@ -815,10 +847,16 @@ class AnalyzePG():
         return self._convert_tz(profile[plant_id]).resample(
             self.freq, label='left').sum()[self.from_index:self.to_index]
 
-    def get_plot(self):
+    def get_plot(self, save=False):
         """Plots data.
 
         """
+
+        if save is True:
+            figures = [manager.canvas.figure for manager in \
+                       matplotlib._pylab_helpers.Gcf.get_all_fig_managers()]
+            for i, f in enumerate(figures):
+                f.savefig(self.filename[i], bbox_inches='tight', pad_inches=0)
 
         plt.show()
 
@@ -826,21 +864,21 @@ class AnalyzePG():
         """Returns data frame.
 
         """
-        if self.kind == "stacked":
+        if self.kind is "stacked":
             data = {}
             for i, z in enumerate(self.zones):
                 data[z] = self.data[i]
-        if self.kind == "chart":
+        if self.kind is "chart":
             data = {}
             for i, z in enumerate(self.zones):
                 data[z] = {}
                 data[z]['Generation'] = self.data[i][0]
                 data[z]['Capacity'] = self.data[i][1]
-        elif self.kind == "comp" or self.kind == "correlation":
+        elif self.kind is "comp" or self.kind is "correlation":
             data = {}
             for i, r in enumerate(self.resources):
                 data[r] = self.data[i]
-        elif self.kind == 'variability' or self.kind == "curtailment":
+        elif self.kind is 'variability' or self.kind is "curtailment":
             data = {}
             index = 0
             for z in self.zones:
