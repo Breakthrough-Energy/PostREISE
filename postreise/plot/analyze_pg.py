@@ -17,7 +17,7 @@ class AnalyzePG():
         :param tuple scenario: parameters related to scenario. 1st element \ 
             is a data frame of the power generated with id of the plants as \ 
             columns and UTC timestamp as indices. 2nd element is a grid \ 
-            instance. 3rd element is an int indicating by which factor the \ 
+            instance. 3rd element is an integer giving the factor by which \ 
             renewable energies have been increased. 
         :param tuple time: time related parameters. 1st element is the \ 
             starting date. 2nd element is the ending date (left out). 3rd \ 
@@ -300,6 +300,7 @@ class AnalyzePG():
         if PG is not None:
             fig, ax = plt.subplots(1, 2, figsize=(20, 10), sharey=True)
             plt.subplots_adjust(wspace=1)
+            plt.suptitle("%s" % zone, fontsize=30)
             ax[0].set_title('Generation (MWh)', fontsize=25)
             ax[1].set_title('Resources (MW)', fontsize=25)
             
