@@ -306,19 +306,23 @@ class AnalyzePG():
             
             PG_groups = PG.T.groupby(self.grid.genbus['type']).agg(sum).T
             PG_groups.name = "%s (Generation)" % zone
-            #resources = PG_groups.columns
             type2label = self.type2label.copy()
             for type in self.grid.ID2type.values():
                 if type not in PG_groups.columns:
                     del type2label[type]
 
-            ax[0] = PG_groups.sum().plot(ax=ax[0], kind='barh', alpha=0.7,
+            ax[0] = PG_groups[list(type2label.keys())].rename(
+                index=type2label).sum().plot(
+                ax=ax[0], kind='barh', alpha=0.7,
                 color=[self.grid.type2color[r] for r in type2label.keys()])
 
             capacity = self.grid.genbus.loc[PG.columns].groupby('type').agg(
-                sum).GenMWMax.rename(index=type2label)
+                sum).GenMWMax
             capacity.name = "%s (Capacity)" % zone
-            ax[1] = capacity.plot(ax=ax[1], kind='barh', alpha=0.7,
+
+            ax[1] = capacity[list(type2label.keys())].rename(
+                index=type2label).plot(
+                ax=ax[1], kind='barh', alpha=0.7,
                 color=[self.grid.type2color[r] for r in type2label.keys()])
 
             y_offset = 0.3
