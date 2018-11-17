@@ -17,8 +17,9 @@ class AnalyzePG():
         :param tuple scenario: parameters related to scenario. 1st element \ 
             is a data frame of the power generated with id of the plants as \ 
             columns and UTC timestamp as indices. 2nd element is a grid \ 
-            instance. 3rd element is an integer giving the factor by which \ 
-            renewable energies have been increased. 
+            instance. 3rd element is a data frame giving the factor by which \ 
+            renewable energies have been increased for each plant as column \ 
+            and the plant identification number as as inices.
         :param tuple time: time related parameters. 1st element is the \ 
             starting date. 2nd element is the ending date (left out). 3rd \ 
             element is the timezone, only *'utc'*, *'US/Pacific'* and \ 
@@ -250,7 +251,28 @@ class AnalyzePG():
                 self.to_index = last_available
             else:
                 self.to_index = pd.Timestamp(end_date, tz=self.tz)
-        elif self.freq == 'D' or self.freq == 'W':
+
+        elif self.freq == 'D':
+            if timestep[0] == timestep[1]:
+                first_full = pd.Timestamp(timestep.index.values[0], tz=self.tz)
+            else:
+                first_full = pd.Timestamp(timestep.index.values[1], tz=self.tz)
+            if timestep[-1] == timestep[-2]:
+                last_full = pd.Timestamp(timestep.index.values[-1], tz=self.tz)
+            else:
+                last_full = pd.Timestamp(timestep.index.values[-2], tz=self.tz)
+                
+            if first_available > first_full:
+                self.from_index = first_available.ceil('D')
+            else:
+                self.from_index = first_full
+            if last_available < pd.Timestamp(end_date, tz=self.tz):
+                self.to_index = last_available.floor('D') - \
+                                pd.Timedelta('1 days')
+            else:
+                self.to_index = last_full
+
+        elif self.freq == 'W':
             if timestep[0] == timestep[1]:
                 first_full = pd.Timestamp(timestep.index.values[0], tz=self.tz)
             else:
@@ -357,7 +379,6 @@ class AnalyzePG():
 
         self.data = []
         self.filename = []
-        self.grid.read_demand_data()
         for z in self.zones:
             self.tz = self.zone2time[z] if tz == 'local' else tz
             self._set_date_range(start_date, end_date)
@@ -507,17 +528,12 @@ class AnalyzePG():
         """
 
         for r in self.resources:
-            if r == 'solar':
-                self.grid.read_solar_data()
-            elif r == 'wind':
-                self.grid.read_wind_data()
-            else:
+            if r not in ['solar', 'wind']:
                 print("Curtailment analysis is only for renewable energies")
                 raise Exception('Invalid resource')
 
         self.data = []
         self.filename = []
-        self.grid.read_demand_data()
         for z in self.zones:
             self.tz = self.zone2time[z] if tz == 'local' else tz
             self._set_date_range(start_date, end_date)
@@ -548,9 +564,6 @@ class AnalyzePG():
             curtailment = pd.DataFrame(available.T.sum().rename('available'))
             curtailment['generated'] = PG.T.sum().values
             curtailment['demand'] = demand.values
-
-            multiplier = 1
-            curtailment['available'] *= self.multiplier
             curtailment['ratio'] = 100 * \
                 (1 - curtailment['generated'] / curtailment['available'])
 
@@ -848,6 +861,9 @@ class AnalyzePG():
             return None
 
         profile = eval('self.grid.'+resource+'_data_2016').tz_localize('utc')
+
+        for i in plant_id:
+            profile[i] *= int(self.multiplier.loc[i].values)
 
         return self._convert_tz(profile[plant_id]).resample(
             self.freq, label='left').sum()[self.from_index:self.to_index]
