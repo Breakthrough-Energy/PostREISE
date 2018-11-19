@@ -863,7 +863,7 @@ class AnalyzePG():
         profile = eval('self.grid.'+resource+'_data_2016').tz_localize('utc')
 
         for i in plant_id:
-            profile[i] *= int(self.multiplier.loc[i].values)
+            profile[i] *= float(self.multiplier.loc[i].values)
 
         return self._convert_tz(profile[plant_id]).resample(
             self.freq, label='left').sum()[self.from_index:self.to_index]
