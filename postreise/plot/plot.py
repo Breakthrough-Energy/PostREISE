@@ -1,4 +1,3 @@
-import sys
 from datetime import datetime, timedelta
 
 import matplotlib.pyplot as plt
@@ -9,11 +8,13 @@ import seaborn as sns
 from matplotlib.ticker import AutoMinorLocator
 from timezonefinder import TimezoneFinder
 
-from westernintnet.westernintnet import WesternIntNet
+from westernintnet.westernintnet import win_data as WI
 
-WI = WesternIntNet()
+WI.read_demand_data()
+WI.read_solar_data()
+WI.read_wind_data()
 
-sys.path.append("./test")
+path = "U:\\PGData\\Multiple_Oct2018\\"
 
 
 California = ['Northern California',
@@ -515,7 +516,7 @@ def scenarios_renewable_onezone(zone):
     for i, files in enumerate(scenarios.values()):
         for j, f in enumerate(files):
             if f:
-                PG_tmp = pd.read_pickle(f)
+                PG_tmp = pd.read_pickle(path + f)
                 allotment[i,j] = 100 * PG_tmp[plantID].sum(axis=1).sum() / PG_tmp[plantID_zone].sum(axis=1).sum()
 
     fig, ax = plt.subplots(figsize=(18,16))
@@ -579,7 +580,7 @@ def scenarios_onezone(zone):
     for i, files in enumerate(scenarios.values()):
         for j, f in enumerate(files):
             if f:
-                PG_zone = pd.read_pickle(f)[plantID]
+                PG_zone = pd.read_pickle(path + f)[plantID]
                 total = PG_zone.sum(axis=1).sum()
                 PG_groups = PG_zone.T.groupby(WI.genbus['type'])
                 PG_stack = PG_groups.agg(sum).T
@@ -659,7 +660,7 @@ def upgrade_impact(zone_ref, zone_tostudy, grid=0):
     for key, files in scenarios.items():
         f = files[grid]
         if f:
-            PG = pd.read_pickle(f)
+            PG = pd.read_pickle(path + f)
             allotment_scenario = pd.DataFrame(columns=['nuclear', 
                                                        'hydro', 
                                                        'coal', 
