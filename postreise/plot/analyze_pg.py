@@ -561,35 +561,37 @@ class AnalyzePG():
             demand = self._get_demand(zone)
             available = self._get_profile(zone, resource)
 
-            curtailment = pd.DataFrame(available.T.sum().rename('available'))
-            curtailment['generated'] = PG.T.sum().values
-            curtailment['demand'] = demand.values
-            curtailment['ratio'] = 100 * \
-                (1 - curtailment['generated'] / curtailment['available'])
-
+            data = pd.DataFrame(available.T.sum().rename('available'))
+            data['generated'] = PG.T.sum().values
+            data['demand'] = demand.values
+            data['curtailment'] = (1 - data['generated'] / data['available'])
+            data['curtailment'] *= 100
+            
             # Nnumerical precision
-            curtailment.loc[abs(curtailment['ratio']) < 1, 'ratio'] = 0
+            data.loc[abs(data['curtailment']) < 1, 'curtailment'] = 0
 
-            curtailment['ratio'].plot(ax=ax, legend=False, style='b', lw=4,
-                alpha=0.7)
-            curtailment[['available', 'demand']].plot(ax=ax_twin, lw=4,
-                alpha=0.7, style={'available': 'g', 'demand': 'r'})
-
+            data['curtailment'].plot(ax=ax, style='b', lw=4, alpha=0.7)
+            data['available'].rename("%s energy available" % resource).plot(
+                ax=ax_twin, lw=4, alpha=0.7, style={"%s energy available" % 
+                resource: self.grid.type2color[resource]})
+            data['demand'].plot(ax=ax_twin, lw=4, alpha=0.7,
+                style={'demand': 'r'})
             ax.tick_params(which='both', labelsize=20)
             ax.grid(color='black', axis='y')
             ax.set_xlabel('')
             ax.set_ylabel('Curtailment [%]', fontsize=22)
+            ax.legend(loc='upper left', prop={'size': 18})
             ax_twin.tick_params(which='both', labelsize=20)
             ax_twin.set_ylabel('MWh', fontsize=22)
             ax_twin.legend(loc='upper right', prop={'size': 18})
 
-            curtailment.name = "%s - %s" % (zone, resource)
+            data.name = "%s - %s" % (zone, resource)
             
             self.filename.append('%s_%s_%s_%s-%s.png' % (self.kind, resource,
                 zone, self.from_index.strftime('%Y%m%d%H'),
                 self.to_index.strftime('%Y%m%d%H')))
             
-            return curtailment
+            return data
 
     def _do_variability(self, start_date, end_date, tz):
         """Do variability analysis.
