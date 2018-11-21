@@ -349,7 +349,7 @@ class AnalyzePG():
 
             y_offset = 0.3
             for i in [0, 1]:
-                ax[i].tick_params(axis='y', labelsize=20)
+                ax[i].tick_params(axis='y', which='both', labelsize=20)
                 ax[i].set_xticklabels('')
                 ax[i].set_ylabel('')
                 ax[i].spines['right'].set_visible(False)
@@ -397,7 +397,9 @@ class AnalyzePG():
             fig = plt.figure(figsize=(20, 10))
             plt.title('%s' % zone, fontsize=25)
             ax = fig.gca()
-
+            ax.grid(color='black', axis='y')
+            ax.tick_params(which='both', labelsize=20)
+            
             demand = self._get_demand(zone)
 
             PG_groups = PG.T.groupby(self.grid.genbus['type'])
@@ -420,8 +422,6 @@ class AnalyzePG():
 
             ax.set_ylim([0, max(ax.get_ylim()[1], 1.1*demand.max().values[0])])
 
-            ax.grid(color='black', axis='y')
-            ax.tick_params(labelsize=20)
             ax.set_xlabel('')
             handles, labels = ax.get_legend_handles_labels()
             ax.legend(handles[::-1], labels[::-1], frameon=2,
@@ -500,7 +500,7 @@ class AnalyzePG():
                                      ax=ax)
 
                 ax.grid(color='black', axis='y')
-                ax.tick_params(labelsize=20)
+                ax.tick_params(which='both', labelsize=20)
                 ax.set_xlabel('')
                 handles, labels = ax.get_legend_handles_labels()
                 ax.legend(handles[::-1], labels[::-1], frameon=2,
@@ -575,11 +575,11 @@ class AnalyzePG():
             curtailment[['available', 'demand']].plot(ax=ax_twin, lw=4,
                 alpha=0.7, style={'available': 'g', 'demand': 'r'})
 
-            ax.tick_params(labelsize=20)
+            ax.tick_params(which='both', labelsize=20)
             ax.grid(color='black', axis='y')
             ax.set_xlabel('')
             ax.set_ylabel('Curtailment [%]', fontsize=22)
-            ax_twin.tick_params(labelsize=20)
+            ax_twin.tick_params(which='both', labelsize=20)
             ax_twin.set_ylabel('MWh', fontsize=22)
             ax_twin.legend(loc='upper right', prop={'size': 18})
 
@@ -669,7 +669,7 @@ class AnalyzePG():
                     total[col].plot(alpha=0.7, lw=lw, ls=ls, color= c, ax=ax)
 
                 ax.grid(color='black', axis='y')
-                ax.tick_params(labelsize=20)
+                ax.tick_params(which='both', labelsize=20)
                 ax.set_xlabel('')
                 handles, labels = ax.get_legend_handles_labels()
                 ax.legend(handles[::-1], labels[::-1], frameon=2,
@@ -750,7 +750,7 @@ class AnalyzePG():
                              ax=ax, square=True, cbar=False, 
                              annot_kws={"size": 18}, lw=4)
             ax.set_yticklabels(PG.columns, rotation=40, ha='right')
-            ax.tick_params(labelsize=20)
+            ax.tick_params(which='both', labelsize=20)
 
             pd.plotting.scatter_matrix(PG, alpha=0.2, diagonal='hist',
                                        figsize=(12,12))
