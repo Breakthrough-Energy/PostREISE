@@ -4,7 +4,7 @@ import matplotlib._pylab_helpers
 import numpy as np
 import pandas as pd
 import seaborn as sns
-
+import copy
 
 class AnalyzePG():
     """Manipulates PG.
@@ -337,9 +337,13 @@ class AnalyzePG():
                 index=type2label).sum().plot(
                 ax=ax[0], kind='barh', alpha=0.7,
                 color=[self.grid.type2color[r] for r in type2label.keys()])
-
-            capacity = self.grid.genbus.loc[PG.columns].groupby('type').agg(
-                sum).GenMWMax
+            
+            capacity = pd.DataFrame(
+                {'GenMWMax': self.grid.genbus.GenMWMax.values * 
+                 self.multiplier.multiplier.values,
+                 'type': self.grid.genbus.type},
+                 index=self.grid.genbus.index.values).loc[PG.columns].groupby(
+                 'type').agg(sum).GenMWMax
             capacity.name = "%s (Capacity)" % zone
 
             ax[1] = capacity[list(type2label.keys())].rename(
