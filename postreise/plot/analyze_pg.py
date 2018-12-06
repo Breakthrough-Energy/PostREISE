@@ -42,7 +42,8 @@ class AnalyzePG():
         self.PG = scenario[0].tz_localize('utc')
         self.grid = scenario[1]
         self.multiplier = scenario[2]
-
+        self._set_capacity()
+        
         # Check parameters
         self._check_dates(time[0], time[1])
         self._check_zones(zones)
@@ -227,6 +228,13 @@ class AnalyzePG():
         else:
             self.freq = 'W'
 
+    def _set_capacity(self):
+        self.capacity = pd.DataFrame(
+            {'GenMWMax': self.grid.genbus.GenMWMax.values * 
+                         self.multiplier[self.multiplier.columns[0]].values,
+             'type': self.grid.genbus.type},
+             index=self.grid.genbus.index.values)
+
     def _set_date_range(self, start_date, end_date):
         """Calculates the appropriate date range after resampling in \ 
             order to get an equal number of entries per sample.
@@ -339,13 +347,9 @@ class AnalyzePG():
                 index=type2label).sum().plot(
                 ax=ax[0], kind='barh', alpha=0.7,
                 color=[self.grid.type2color[r] for r in type2label.keys()])
-            
-            capacity = pd.DataFrame(
-                {'GenMWMax': self.grid.genbus.GenMWMax.values * 
-                 self.multiplier.multiplier.values,
-                 'type': self.grid.genbus.type},
-                 index=self.grid.genbus.index.values).loc[PG.columns].groupby(
-                 'type').agg(sum).GenMWMax
+
+            capacity = self.capacity.loc[PG.columns].groupby(
+                'type').agg(sum).GenMWMax
             capacity.name = "%s (Capacity)" % zone
 
             ax[1] = capacity[list(type2label.keys())].rename(
@@ -655,7 +659,7 @@ class AnalyzePG():
                                             replace=False).tolist()
                 norm = [capacity]
                 for i in [15, 8, 2]:
-                    norm += [sum(self.grid.genbus.loc[
+                    norm += [sum(self.capacity.loc[
                         selected[:i]].GenMWMax.values)]
                 total['15 plants (%d MW)' % norm[1]] = PG[selected].T.sum()
                 total['8 plants (%d MW)' % norm[2]] = PG[selected[:8]].T.sum()
@@ -826,7 +830,7 @@ class AnalyzePG():
             print("No %s plants in %s" % ("/".join(resources), zone))
             return [None] * 2
         else:
-            capacity = sum(self.grid.genbus.loc[plant_id].GenMWMax.values)
+            capacity = sum(self.capacity.loc[plant_id].GenMWMax.values)
             PG = self._convert_tz(self.PG[plant_id]).resample(
                 self.freq, label='left').sum()[self.from_index:self.to_index]
 
