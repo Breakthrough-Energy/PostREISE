@@ -294,7 +294,7 @@ class AnalyzePG():
         self.timestep = timestep[self.from_index:self.to_index]
 
     def _do_chart(self, start_date, end_date, tz):
-        """ Do chart analysis.
+        """Performs chart analysis.
 
         :param string start_date: starting timestamp.
         :param string end_date: ending timestamp.
@@ -311,11 +311,13 @@ class AnalyzePG():
             self.data.append(self._get_chart(z))
 
     def _get_chart(self, zone):
-        """Calculates proportion of resources for one zone.
+        """Calculates proportion of resources for zone.
 
         :param string zone: zone to consider.
-        :return: numerical proportion of resources for the selected zone \ 
-            along with axis object containing information to plot. 
+        :return: tuple of dataframe. First element is a time series of PG \ 
+            with type of generators as columns. Second element is a dataframe \ 
+            with type of generators as index and corresponding capacity as \ 
+            column. 
         """
 
         PG, _ = self._get_PG(zone, self.resources)
@@ -374,7 +376,7 @@ class AnalyzePG():
             return None
 
     def _do_stacked(self, start_date, end_date, tz):
-        """Do stack analysis.
+        """Performs stack analysis.
 
         :param string start_date: starting timestamp.
         :param string end_date: ending timestamp.
@@ -392,8 +394,8 @@ class AnalyzePG():
         """Calculates time series of PG and demand for one zone. 
 
         :param string zone: zone to consider.
-        :return: time series of PG and demand for selected zone along with \ 
-            axis object containing information to plot. 
+        :return: time series of PG and load for selected zone. Columns are \ 
+            type of generators and demand.
         """
 
         PG, capacity = self._get_PG(zone, self.resources)
@@ -447,7 +449,7 @@ class AnalyzePG():
             return None
 
     def _do_comp(self, start_date, end_date, tz):
-        """Do stack analysis.
+        """Performs comparison analysis.
 
         :param string start_date: starting timestamp.
         :param string end_date: ending timestamp.
@@ -469,8 +471,7 @@ class AnalyzePG():
         """Calculates time series of PG for one resource.
 
         :param string resource: resource to consider.
-        :return: time series of PG for selected resource along with axis \ 
-            object containing information to plot. 
+        :return: time series of PG for selected resource. Columns are zones.
         """
 
         fig = plt.figure(figsize=(20, 10))
@@ -524,7 +525,7 @@ class AnalyzePG():
             return total
 
     def _do_curtailment(self, start_date, end_date, tz):
-        """Do curtailment analysis.
+        """Performs curtailment analysis.
 
         :param string start_date: starting timestamp.
         :param string end_date: ending timestamp.
@@ -549,8 +550,11 @@ class AnalyzePG():
 
         :param string zone: zone to consider.
         :param string resource: resource to consider.
-        :return: time series of curtailment for selected zone along with \ 
-            axis object containing information to plot.
+        :return: time series of curtailment for selected zone and resource. \ 
+            Columns are energy available (in MWh) from type generators using \ 
+            resource in zone, energy generated (in MWh) from type generators \ 
+            using resource in zone, demand in specified zone (in MWh) and \ 
+            curtailment (in %).
         """
 
         PG, capacity = self._get_PG(zone, [resource])
@@ -598,7 +602,7 @@ class AnalyzePG():
             return data
 
     def _do_variability(self, start_date, end_date, tz):
-        """Do variability analysis.
+        """Performs variability analysis.
 
         :param string start_date: starting timestamp.
         :param string end_date: ending timestamp.
@@ -624,8 +628,7 @@ class AnalyzePG():
             chosen plants in the same zone and using the same resource.
 
         :param string resource: resource to consider.
-        :return: time series of PG for selected zone and selected plants \ 
-            along with axis object containing information to plot.         
+        :return: time series of PG for selected zone and selected plants. 
         """
 
         PG, capacity = self._get_PG(zone, [resource])
@@ -692,7 +695,7 @@ class AnalyzePG():
                 return total
 
     def _do_correlation(self, start_date, end_date, tz):
-        """Do correlation analysis.
+        """Performs correlation analysis.
 
         :param string start_date: starting timestamp.
         :param string end_date: ending timestamp.
@@ -719,8 +722,7 @@ class AnalyzePG():
         """Calculates correlation coefficient of PG for one resource.
 
         :param string resource: resource to consider.
-        :return: correlation coefficients of PG for selected resource as a \ 
-            data frame along with an axis object containing information to plot.         
+        :return: data frame of PG for selected resource. Columns are zones.     
         """
 
         fig = plt.figure(figsize=(12, 12))
@@ -806,13 +808,14 @@ class AnalyzePG():
         return id        
 
     def _get_PG(self, zone, resources):
-        """Get PG of all the generators located in one zone and powered by \ 
+        """Returns PG of all the generators located in one zone and powered by \ 
             resources.
 
         :param string zone: one of the zones.
         :param list resources: type of generators to consider.
-        :return: PG and capacity of all the generators located in one zone \ 
-            and using the specified resources.
+        :return: time series of PG and dataframe of the associated capacity \ 
+            for all generators located in one zone and using the specified \ 
+            resources. 
         """
 
         plant_id = []
@@ -830,10 +833,10 @@ class AnalyzePG():
             return PG, capacity
 
     def _get_demand(self, zone):
-        """Get demand profile for load zone, California or total.
+        """Returns demand profile for load zone, California or total.
 
         :param string zone: one of the zones.
-        :return: data frame of the load.
+        :return: time series of the load for specified zone (in MWh).
         """
 
         demand = self.grid.demand_data_2016.tz_localize('utc')
@@ -852,12 +855,12 @@ class AnalyzePG():
         return demand
 
     def _get_profile(self, zone, resource):
-        """Get profile for resource.
+        """Returns profile for resource.
 
         :param string zone: zone to consider
         :param string resource: type of generators to consider.
-        :return: data frame of the power output (in MW) for the selected \ 
-            resource
+        :return: time series of the generated energy (in MWh) for the \ 
+            selected resource
         """
 
         plant_id = self._get_plant_id(zone, resource)
@@ -872,8 +875,8 @@ class AnalyzePG():
             profile[i] *= float(self.multiplier.loc[i].values)
 
         return self._convert_tz(profile[plant_id]).resample(
-            self.freq, label='left').sum()[self.from_index:self.to_index]
-
+            self.freq, label='left').sum()[self.from_index:self.to_index]        
+        
     def get_plot(self, save=False):
         """Plots data.
 
@@ -888,7 +891,7 @@ class AnalyzePG():
         plt.show()
 
     def get_data(self):
-        """Returns data frame.
+        """Returns data.
 
         """
         if self.kind is "stacked":
