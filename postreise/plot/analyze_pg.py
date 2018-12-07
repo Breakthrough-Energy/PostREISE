@@ -7,7 +7,7 @@ import seaborn as sns
 import copy
 
 class AnalyzePG():
-    """Manipulates PG.
+    """Analysis based on PG.
 
     """
 
@@ -33,8 +33,8 @@ class AnalyzePG():
             ''*Oregon'*, *'Utah'*, *'Washington'*, *'Western'*, *'Wyoming'*.
         :param list resources: energy resources. Can be any combinations of \ 
             *'coal'*, *'hydro'*, *'ng'*, *'nuclear'*, *'solar'*, *'wind'*.
-        :param string kind: one of *'stacked'*, *'curtailment'*, *'comp'*, \ 
-            *'plants'*, *'correlation'*
+        :param string kind: one of *'stacked'*, *'comp'*, *'curtailment'*, \ 
+            *'correlation'*, *'chart'*, *'variability'* or *'yield'*.
         :param bool normalize: should generation be normalized by capacity.
         """
         plt.close('all')
@@ -135,7 +135,9 @@ class AnalyzePG():
             self._do_chart(time[0], time[1], time[2])
         elif kind == 'variability':
             self._do_variability(time[0], time[1], time[2])
-
+        elif kind == 'yield':
+            self._do_yield(time[0], time[1])
+            
     def _check_dates(self, start_date, end_date):
         """Test dates.
 
@@ -195,7 +197,7 @@ class AnalyzePG():
         :param string kind: type of analysis.
         """
         all = ['chart', 'stacked', 'comp', 'curtailment', 'correlation', 
-               'variability']
+               'variability', 'yield']
         if kind not in all:
             print("%s is incorrect. Possible analysis are: %s" % (kind, all))
             raise Exception('Invalid Analysis')
@@ -419,8 +421,8 @@ class AnalyzePG():
                 if type not in PG_stack.columns:
                     del type2label[type]
 
-            if self.normalize is True:
-                PG_stack = PG_stack.divide(capacity * self.timestep, 
+            if self.normalize:
+                PG_stack = PG_stack.divide(capacity * self.timestep,
                                            axis='index')
                 demand = demand.divide(capacity * self.timestep, axis='index')
 
@@ -557,7 +559,7 @@ class AnalyzePG():
         :return: time series of curtailment for selected zone and resource. \ 
             Columns are energy available (in MWh) from type generators using \ 
             resource in zone, energy generated (in MWh) from type generators \ 
-            using resource in zone, demand in specified zone (in MWh) and \ 
+            using resource in zone, demand in selected zone (in MWh) and \ 
             curtailment (in %).
         """
 
@@ -775,6 +777,67 @@ class AnalyzePG():
 
             return PG
 
+    def _do_yield(self, start_date, end_date):
+        """Performs yield analysis.
+
+        :param string start_date: starting timestamp.
+        :param string end_date: ending timestamp.
+        :param string tz: timezone.        
+        """
+
+        for r in self.resources:
+            if r not in ['solar', 'wind']:
+                print("Correlation analysis is only for renewable energies")
+                raise Exception('Invalid resource')
+
+        self.tz = 'utc'
+        self.data = []
+        self.filename = []
+        for z in self.zones:
+            self._set_date_range(start_date, end_date)
+            for r in self.resources:
+                self.data.append(self._get_yield(z, r))
+
+    def _get_yield(self, zone, resource):
+        """Calculates capacity factor for one zone and one resource.
+
+        :param string zone: zone to consider.
+        :param string resource: resource to consider.
+        :return: tuple. First element is the average ideal capacity factor \ 
+            for the selected zone and resource. Second element is the average \ 
+            curtailed capacity factor for the selected zone and resource.
+        """
+
+        PG, _ = self._get_PG(zone, [resource])
+        if PG is None:
+            return None
+        else:
+            available = self._get_profile(zone, resource)
+
+            capacity = self.capacity.loc[PG.columns].GenMWMax.values
+
+            pre = available.sum().divide(len(PG) * capacity, axis='index')
+            mean_pre = np.mean(pre)
+            post = PG.sum().divide(len(PG) * capacity, axis='index')
+            mean_post = np.mean(post)
+
+            if len(PG.columns) > 10:
+                fig = plt.figure(figsize=(12, 12))
+                plt.title('%s (%s)' % (zone, resource.capitalize()),
+                          fontsize=25)
+                ax = fig.gca()
+                cf = pd.DataFrame({'pre-sim': 100 * pre, 
+                                   'post-sim': 100 * post}, index=PG.columns)
+                cf.boxplot(ax=ax)
+                ax.tick_params(labelsize=20)
+                ax.set_ylabel('Capacity Factor [%]', fontsize=22)
+
+                self.filename.append('%s_%s_%s_%s-%s.png' % (self.kind,
+                    resource, zone, self.from_index.strftime('%Y%m%d%H'),
+                    self.to_index.strftime('%Y%m%d%H')))
+
+            return (mean_pre, mean_post)
+
     def _get_plant_id(self, zone, resource):
         """Extracts the plant identification number of all the generators \ 
             located in one zone and using one specific resource.
@@ -782,7 +845,7 @@ class AnalyzePG():
         :param string zone: zone to consider.
         :param string resource: type of generator to consider.
         :return: plant identification number of all the generators located \ 
-            in the specified zone and using the specified resource.
+            in the selected zone and using the selected resource.
         """
 
         id = []
@@ -818,7 +881,7 @@ class AnalyzePG():
         :param string zone: one of the zones.
         :param list resources: type of generators to consider.
         :return: time series of PG and dataframe of the associated capacity \ 
-            for all generators located in one zone and using the specified \ 
+            for all generators located in one zone and using the selected \ 
             resources. 
         """
 
@@ -840,7 +903,7 @@ class AnalyzePG():
         """Returns demand profile for load zone, California or total.
 
         :param string zone: one of the zones.
-        :return: time series of the load for specified zone (in MWh).
+        :return: time series of the load for selected zone (in MWh).
         """
 
         demand = self.grid.demand_data_2016.tz_localize('utc')
@@ -886,7 +949,7 @@ class AnalyzePG():
 
         """
 
-        if save is True:
+        if save:
             figures = [manager.canvas.figure for manager in \
                        matplotlib._pylab_helpers.Gcf.get_all_fig_managers()]
             for i, f in enumerate(figures):
@@ -898,21 +961,22 @@ class AnalyzePG():
         """Returns data.
 
         """
-        if self.kind is "stacked":
+        if self.kind == "stacked":
             data = {}
             for i, z in enumerate(self.zones):
                 data[z] = self.data[i]
-        if self.kind is "chart":
+        if self.kind == "chart":
             data = {}
             for i, z in enumerate(self.zones):
                 data[z] = {}
                 data[z]['Generation'] = self.data[i][0]
                 data[z]['Capacity'] = self.data[i][1]
-        elif self.kind is "comp" or self.kind is "correlation":
+        elif self.kind == "comp" or self.kind == "correlation":
             data = {}
             for i, r in enumerate(self.resources):
                 data[r] = self.data[i]
-        elif self.kind is 'variability' or self.kind is "curtailment":
+        elif self.kind == 'variability' or self.kind == "curtailment" or \
+             self.kind == 'yield':
             data = {}
             index = 0
             for z in self.zones:
