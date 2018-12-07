@@ -816,18 +816,20 @@ class AnalyzePG():
 
             capacity = self.capacity.loc[PG.columns].GenMWMax.values
 
-            pre = available.sum().divide(len(PG) * capacity, axis='index')
-            mean_pre = np.mean(pre)
-            post = PG.sum().divide(len(PG) * capacity, axis='index')
-            mean_post = np.mean(post)
+            uncurtailed = available.sum().divide(len(PG) * capacity,
+                                                 axis='index')
+            mean_uncurtailed = np.mean(uncurtailed)
+            curtailed = PG.sum().divide(len(PG) * capacity, axis='index')
+            mean_curtailed = np.mean(curtailed)
 
             if len(PG.columns) > 10:
                 fig = plt.figure(figsize=(12, 12))
                 plt.title('%s (%s)' % (zone, resource.capitalize()),
                           fontsize=25)
                 ax = fig.gca()
-                cf = pd.DataFrame({'pre-sim': 100 * pre, 
-                                   'post-sim': 100 * post}, index=PG.columns)
+                cf = pd.DataFrame({'uncurtailed': 100 * uncurtailed, 
+                                   'curtailed': 100 * curtailed},
+                                   index=PG.columns)
                 cf.boxplot(ax=ax)
                 ax.tick_params(labelsize=20)
                 ax.set_ylabel('Capacity Factor [%]', fontsize=22)
@@ -836,7 +838,7 @@ class AnalyzePG():
                     resource, zone, self.from_index.strftime('%Y%m%d%H'),
                     self.to_index.strftime('%Y%m%d%H')))
 
-            return (mean_pre, mean_post)
+            return (mean_uncurtailed, mean_curtailed)
 
     def _get_plant_id(self, zone, resource):
         """Extracts the plant identification number of all the generators \ 
