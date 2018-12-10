@@ -1,17 +1,18 @@
+import matplotlib._pylab_helpers
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
-import matplotlib._pylab_helpers
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import copy
+
 
 class AnalyzePG():
     """Analysis based on PG.
 
     """
 
-    def __init__(self, scenario, time, zones, resources, kind, normalize=False):
+    def __init__(self, scenario, time, zones, resources, kind,
+                 normalize=False):
         """Constructor.
 
         :param tuple scenario: parameters related to scenario. 1st element \ 
@@ -43,7 +44,7 @@ class AnalyzePG():
         self.grid = scenario[1]
         self.multiplier = scenario[2]
         self._set_capacity()
-        
+
         # Check parameters
         self._check_dates(time[0], time[1])
         self._check_zones(zones)
@@ -137,7 +138,7 @@ class AnalyzePG():
             self._do_variability(time[0], time[1], time[2])
         elif kind == 'yield':
             self._do_yield(time[0], time[1])
-            
+
     def _check_dates(self, start_date, end_date):
         """Test dates.
 
@@ -196,7 +197,7 @@ class AnalyzePG():
 
         :param string kind: type of analysis.
         """
-        all = ['chart', 'stacked', 'comp', 'curtailment', 'correlation', 
+        all = ['chart', 'stacked', 'comp', 'curtailment', 'correlation',
                'variability', 'yield']
         if kind not in all:
             print("%s is incorrect. Possible analysis are: %s" % (kind, all))
@@ -232,10 +233,10 @@ class AnalyzePG():
 
     def _set_capacity(self):
         self.capacity = pd.DataFrame(
-            {'GenMWMax': self.grid.genbus.GenMWMax.values * 
-                         self.multiplier[self.multiplier.columns[0]].values,
+            {'GenMWMax': self.grid.genbus.GenMWMax.values *
+                self.multiplier[self.multiplier.columns[0]].values,
              'type': self.grid.genbus.type},
-             index=self.grid.genbus.index.values)
+            index=self.grid.genbus.index.values)
 
     def _set_date_range(self, start_date, end_date):
         """Calculates the appropriate date range after resampling in \ 
@@ -271,7 +272,7 @@ class AnalyzePG():
                 last_full = pd.Timestamp(timestep.index.values[-1], tz=self.tz)
             else:
                 last_full = pd.Timestamp(timestep.index.values[-2], tz=self.tz)
-                
+
             if first_available > first_full:
                 self.from_index = first_available.ceil('D')
             else:
@@ -337,7 +338,7 @@ class AnalyzePG():
             plt.suptitle("%s" % zone, fontsize=30)
             ax[0].set_title('Generation (MWh)', fontsize=25)
             ax[1].set_title('Resources (MW)', fontsize=25)
-            
+
             PG_groups = PG.T.groupby(self.grid.genbus['type']).agg(sum).T
             PG_groups.name = "%s (Generation)" % zone
             type2label = self.type2label.copy()
@@ -411,7 +412,7 @@ class AnalyzePG():
             ax = fig.gca()
             ax.grid(color='black', axis='y')
             ax.tick_params(which='both', labelsize=20)
-            
+
             demand = self._get_demand(zone)
 
             PG_groups = PG.T.groupby(self.grid.genbus['type'])
@@ -524,9 +525,10 @@ class AnalyzePG():
             plt.close()
             return None
         else:
-            self.filename.append('%s_%s_%s_%s-%s.png' % (self.kind, resource,
-                "-".join(self.zones), self.from_index.strftime('%Y%m%d%H'), 
-                self.to_index.strftime('%Y%m%d%H')))
+            self.filename.append('%s_%s_%s_%s-%s.png' %
+                                 (self.kind, resource, "-".join(self.zones),
+                                  self.from_index.strftime('%Y%m%d%H'),
+                                  self.to_index.strftime('%Y%m%d%H')))
             total.name = resource
             return total
 
@@ -580,16 +582,17 @@ class AnalyzePG():
             data['demand'] = demand.values
             data['curtailment'] = (1 - data['generated'] / data['available'])
             data['curtailment'] *= 100
-            
+
             # Nnumerical precision
             data.loc[abs(data['curtailment']) < 1, 'curtailment'] = 0
 
             data['curtailment'].plot(ax=ax, style='b', lw=4, alpha=0.7)
             data['available'].rename("%s energy available" % resource).plot(
-                ax=ax_twin, lw=4, alpha=0.7, style={"%s energy available" % 
-                resource: self.grid.type2color[resource]})
+                ax=ax_twin, lw=4, alpha=0.7,
+                style={"%s energy available" %
+                       resource: self.grid.type2color[resource]})
             data['demand'].plot(ax=ax_twin, lw=4, alpha=0.7,
-                style={'demand': 'r'})
+                                style={'demand': 'r'})
             ax.tick_params(which='both', labelsize=20)
             ax.grid(color='black', axis='y')
             ax.set_xlabel('')
@@ -600,11 +603,12 @@ class AnalyzePG():
             ax_twin.legend(loc='upper right', prop={'size': 18})
 
             data.name = "%s - %s" % (zone, resource)
-            
-            self.filename.append('%s_%s_%s_%s-%s.png' % (self.kind, resource,
-                zone, self.from_index.strftime('%Y%m%d%H'),
-                self.to_index.strftime('%Y%m%d%H')))
-            
+
+            self.filename.append('%s_%s_%s_%s-%s.png' %
+                                 (self.kind, resource,
+                                  zone, self.from_index.strftime('%Y%m%d%H'),
+                                  self.to_index.strftime('%Y%m%d%H')))
+
             return data
 
     def _do_variability(self, start_date, end_date, tz):
@@ -634,7 +638,7 @@ class AnalyzePG():
             chosen plants in the same zone and using the same resource.
 
         :param string resource: resource to consider.
-        :return: time series of PG for selected zone and selected plants. 
+        :return: time series of PG for selected zone and selected plants.
         """
 
         PG, capacity = self._get_PG(zone, [resource])
@@ -652,12 +656,12 @@ class AnalyzePG():
 
             np.random.seed(10)
             if n_plants < 20:
-                print("Not enough %s plants in %s for variability analysis" \
+                print("Not enough %s plants in %s for variability analysis"
                       % (resource, zone))
                 plt.close()
                 return None
             else:
-                selected = np.random.choice(PG.columns, 15, 
+                selected = np.random.choice(PG.columns, 15,
                                             replace=False).tolist()
                 norm = [capacity]
                 for i in [15, 8, 2]:
@@ -672,16 +676,16 @@ class AnalyzePG():
                         total[col] = total[col].divide(
                             norm[i] * self.timestep, axis='index')
 
-                lws = [5,3,3,3]
-                lss = ['-','--','--','--']
+                lws = [5, 3, 3, 3]
+                lss = ['-', '--', '--', '--']
                 colors = [self.grid.type2color[resource]]
                 if resource == 'solar':
-                    colors += ['red','orangered','darkorange']
+                    colors += ['red', 'orangered', 'darkorange']
                 elif resource == 'wind':
-                    colors += ['dodgerblue','teal','turquoise']
+                    colors += ['dodgerblue', 'teal', 'turquoise']
 
                 for col, c, lw, ls in zip(total.columns, colors, lws, lss):
-                    total[col].plot(alpha=0.7, lw=lw, ls=ls, color= c, ax=ax)
+                    total[col].plot(alpha=0.7, lw=lw, ls=ls, color=c, ax=ax)
 
                 ax.grid(color='black', axis='y')
                 ax.tick_params(which='both', labelsize=20)
@@ -694,9 +698,11 @@ class AnalyzePG():
                 else:
                     ax.set_ylabel('Generation (MWh)', fontsize=22)
 
-                self.filename.append('%s_%s_%s_%s-%s.png' % (self.kind, 
-                    resource, zone, self.from_index.strftime('%Y%m%d%H'), 
-                    self.to_index.strftime('%Y%m%d%H')))
+                self.filename.append('%s_%s_%s_%s-%s.png' %
+                                     (self.kind,
+                                      resource, zone,
+                                      self.from_index.strftime('%Y%m%d%H'),
+                                      self.to_index.strftime('%Y%m%d%H')))
 
                 return total
 
@@ -705,7 +711,7 @@ class AnalyzePG():
 
         :param string start_date: starting timestamp.
         :param string end_date: ending timestamp.
-        :param string tz: timezone.        
+        :param string tz: timezone.
         """
 
         for r in self.resources:
@@ -728,7 +734,7 @@ class AnalyzePG():
         """Calculates correlation coefficient of PG for one resource.
 
         :param string resource: resource to consider.
-        :return: data frame of PG for selected resource. Columns are zones.     
+        :return: data frame of PG for selected resource. Columns are zones.
         """
 
         fig = plt.figure(figsize=(12, 12))
@@ -740,9 +746,9 @@ class AnalyzePG():
             PG_tmp, _ = self._get_PG(z, [resource])
             if PG_tmp is None:
                 pass
-            else:                
+            else:
                 if first:
-                    PG = pd.DataFrame({z: PG_tmp.sum(axis=1).values}, 
+                    PG = pd.DataFrame({z: PG_tmp.sum(axis=1).values},
                                       index=PG_tmp.index)
                     first = False
                 else:
@@ -761,19 +767,20 @@ class AnalyzePG():
 
             ax = fig.gca()
             ax = sns.heatmap(corr, annot=True, fmt=".2f", cmap=palette,
-                             ax=ax, square=True, cbar=False, 
+                             ax=ax, square=True, cbar=False,
                              annot_kws={"size": 18}, lw=4)
             ax.set_yticklabels(PG.columns, rotation=40, ha='right')
             ax.tick_params(which='both', labelsize=20)
 
             pd.plotting.scatter_matrix(PG, alpha=0.2, diagonal='hist',
-                                       figsize=(12,12))
-            
+                                       figsize=(12, 12))
+
             for type in ['matrix', 'scatter']:
-                self.filename.append('%s-%s_%s_%s_%s-%s.png' % (
-                    self.kind, type, resource, "-".join(self.zones),
-                    self.from_index.strftime('%Y%m%d%H'), 
-                    self.to_index.strftime('%Y%m%dH')))
+                self.filename.append('%s-%s_%s_%s_%s-%s.png' %
+                                     (self.kind, type, resource,
+                                      "-".join(self.zones),
+                                      self.from_index.strftime('%Y%m%d%H'),
+                                      self.to_index.strftime('%Y%m%dH')))
 
             return PG
 
@@ -782,7 +789,7 @@ class AnalyzePG():
 
         :param string start_date: starting timestamp.
         :param string end_date: ending timestamp.
-        :param string tz: timezone.        
+        :param string tz: timezone.
         """
 
         for r in self.resources:
@@ -827,16 +834,17 @@ class AnalyzePG():
                 plt.title('%s (%s)' % (zone, resource.capitalize()),
                           fontsize=25)
                 ax = fig.gca()
-                cf = pd.DataFrame({'uncurtailed': 100 * uncurtailed, 
+                cf = pd.DataFrame({'uncurtailed': 100 * uncurtailed,
                                    'curtailed': 100 * curtailed},
-                                   index=PG.columns)
+                                  index=PG.columns)
                 cf.boxplot(ax=ax)
                 ax.tick_params(labelsize=20)
                 ax.set_ylabel('Capacity Factor [%]', fontsize=22)
 
-                self.filename.append('%s_%s_%s_%s-%s.png' % (self.kind,
-                    resource, zone, self.from_index.strftime('%Y%m%d%H'),
-                    self.to_index.strftime('%Y%m%d%H')))
+                self.filename.append('%s_%s_%s_%s-%s.png' %
+                                     (self.kind, resource, zone,
+                                      self.from_index.strftime('%Y%m%d%H'),
+                                      self.to_index.strftime('%Y%m%d%H')))
 
             return (mean_uncurtailed, mean_curtailed)
 
@@ -874,17 +882,17 @@ class AnalyzePG():
             except KeyError:
                 pass
 
-        return id        
+        return id
 
     def _get_PG(self, zone, resources):
-        """Returns PG of all the generators located in one zone and powered by \ 
-            resources.
+        """Returns PG of all the generators located in one zone and powered \ 
+            by resources.
 
         :param string zone: one of the zones.
         :param list resources: type of generators to consider.
         :return: time series of PG and dataframe of the associated capacity \ 
             for all generators located in one zone and using the selected \ 
-            resources. 
+            resources.
         """
 
         plant_id = []
@@ -926,10 +934,10 @@ class AnalyzePG():
     def _get_profile(self, zone, resource):
         """Returns profile for resource.
 
-        :param string zone: zone to consider
+        :param string zone: zone to consider.
         :param string resource: type of generators to consider.
         :return: time series of the generated energy (in MWh) for the \ 
-            selected resource
+            selected resource.
         """
 
         plant_id = self._get_plant_id(zone, resource)
@@ -944,15 +952,15 @@ class AnalyzePG():
             profile[i] *= float(self.multiplier.loc[i].values)
 
         return self._convert_tz(profile[plant_id]).resample(
-            self.freq, label='left').sum()[self.from_index:self.to_index]        
-        
+            self.freq, label='left').sum()[self.from_index:self.to_index]
+
     def get_plot(self, save=False):
         """Plots data.
 
         """
 
         if save:
-            figures = [manager.canvas.figure for manager in \
+            figures = [manager.canvas.figure for manager in
                        matplotlib._pylab_helpers.Gcf.get_all_fig_managers()]
             for i, f in enumerate(figures):
                 f.savefig(self.filename[i], bbox_inches='tight', pad_inches=0)
@@ -978,7 +986,7 @@ class AnalyzePG():
             for i, r in enumerate(self.resources):
                 data[r] = self.data[i]
         elif self.kind == 'variability' or self.kind == "curtailment" or \
-             self.kind == 'yield':
+                self.kind == 'yield':
             data = {}
             index = 0
             for z in self.zones:
