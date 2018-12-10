@@ -838,6 +838,8 @@ class AnalyzePG():
                                    'curtailed': 100 * curtailed},
                                   index=PG.columns)
                 cf.boxplot(ax=ax)
+                plt.text(0.5, 0.9, '%d plants' % len(capacity), ha='center',
+                         va='center', transform=ax.transAxes, fontsize=22)
                 ax.tick_params(labelsize=20)
                 ax.set_ylabel('Capacity Factor [%]', fontsize=22)
 
