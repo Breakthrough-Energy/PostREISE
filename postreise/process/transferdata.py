@@ -5,10 +5,10 @@ from pathlib import Path
 import pandas as pd
 import paramiko
 
+
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+
 import const
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 
 class OutputData(object):
     """Output Data class.
