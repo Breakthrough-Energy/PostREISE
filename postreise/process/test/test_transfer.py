@@ -1,9 +1,9 @@
 import os
 import sys
 
-import transferdata as td
-
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+import transferdata as td
 
 
 def test_setup_server_connection():
