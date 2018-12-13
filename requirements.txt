@@ -1,9 +1,7 @@
-datetime
 matlab
 matplotlib
 numpy
-pytz
 pandas
+seaborn
 sys
-timezonefinder
 westernintnet
