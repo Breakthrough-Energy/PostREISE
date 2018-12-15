@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
+plt.ioff()
+
 
 class AnalyzePG:
     """Analysis based on PG.
@@ -11,7 +13,7 @@ class AnalyzePG:
     """
 
     def __init__(self, scenario, time, zones, resources, kind,
-                 normalize=False):
+                 normalize=False, seed=0):
         """Constructor.
 
         :param tuple scenario: parameters related to scenario. 1st element \ 
@@ -19,12 +21,12 @@ class AnalyzePG:
             columns and UTC timestamp as indices. 2nd element is a grid \ 
             instance. 3rd element is a data frame giving the factor by which \ 
             renewable energies have been increased for each plant as column \ 
-            and the plant identification number as as inices.
+            and the plant identification number as indices.
         :param tuple time: time related parameters. 1st element is the \ 
             starting date. 2nd element is the ending date (left out). 3rd \ 
             element is the timezone, only *'utc'*, *'US/Pacific'* and \ 
             *'local'* are possible. 4th element is the frequency for \ 
-            resampling, can be *'D'*, *'W'* or *'auto'*.
+            resampling, can be *'H'*, *'D'*, *'W'* or *'auto'*.
         :param list zones: geographical zones. Any combinations of \ 
             *'Arizona'*, *'California'*, *'Bay Area'*, \ 
             *'Central California'*, *'Northern California'*, \ 
@@ -36,6 +38,8 @@ class AnalyzePG:
         :param string kind: one of *'stacked'*, *'comp'*, *'curtailment'*, \ 
             *'correlation'*, *'chart'*, *'variability'* or *'yield'*.
         :param bool normalize: should generation be normalized by capacity.
+        :param int seed: seed for random number generator. Only used in the \ 
+            *'variability'* analysis.
         """
         plt.close('all')
 
@@ -58,6 +62,7 @@ class AnalyzePG:
         self.resources = resources
         self.kind = kind
         self.normalize = normalize
+        self.seed = seed
         self.zone2time = {'Arizona': 'US/Mountain',
                           'Bay Area': 'US/Pacific',
                           'California': 'US/Pacific',
@@ -652,7 +657,7 @@ class AnalyzePG:
                 'Total: %d plants (%d MW)' % (n_plants, capacity)))
             total.name = "%s - %s" % (zone, resource)
 
-            np.random.seed(10)
+            np.random.seed(self.seed)
             if n_plants < 20:
                 print("Not enough %s plants in %s for variability analysis"
                       % (resource, zone))
@@ -760,18 +765,28 @@ class AnalyzePG:
             corr = pg.corr()
             if resource == 'solar':
                 palette = 'OrRd'
+                color = 'red'
             else:
                 palette = 'Greens'
+                color = 'green'
 
-            ax = fig.gca()
-            ax = sns.heatmap(corr, annot=True, fmt=".2f", cmap=palette,
-                             ax=ax, square=True, cbar=False,
-                             annot_kws={"size": 18}, lw=4)
-            ax.set_yticklabels(pg.columns, rotation=40, ha='right')
-            ax.tick_params(which='both', labelsize=20)
+            ax_matrix = fig.gca()
+            ax_matrix = sns.heatmap(corr, annot=True, fmt=".2f", cmap=palette,
+                                    ax=ax_matrix, square=True, cbar=False,
+                                    annot_kws={"size": 18}, lw=4)
+            ax_matrix.set_yticklabels(pg.columns, rotation=40, ha='right')
+            ax_matrix.tick_params(which='both', labelsize=20)
 
-            pd.plotting.scatter_matrix(pg, alpha=0.2, diagonal='hist',
-                                       figsize=(12, 12))
+            scatter = pd.plotting.scatter_matrix(pg, alpha=0.2, diagonal='kde',
+                                                 figsize=(12, 12), color=color,
+                                                 density_kwds={'color': color,
+                                                               'lw': 4})
+            for ax_scatter in scatter.ravel():
+                ax_scatter.tick_params(labelsize=20)
+                ax_scatter.set_xlabel(ax_scatter.get_xlabel(), fontsize = 22,
+                                      rotation = 0)
+                ax_scatter.set_ylabel(ax_scatter.get_ylabel(), fontsize = 22,
+                                      rotation = 90)
 
             for t in ['matrix', 'scatter']:
                 self.filename.append('%s-%s_%s_%s_%s-%s.png' %
@@ -876,8 +891,8 @@ class AnalyzePG:
                     pass
         else:
             try:
-                plant_id = self.grid.genbus.groupby(['ZoneName', 'type']).get_group(
-                    (zone, resource)).index.values.tolist()
+                plant_id = self.grid.genbus.groupby(['ZoneName',
+                    'type']).get_group((zone, resource)).index.values.tolist()
             except KeyError:
                 pass
 
