@@ -2,6 +2,8 @@ matlab
 matplotlib
 numpy
 pandas
+paramiko
+pathlib
 seaborn
 sys
 westernintnet
