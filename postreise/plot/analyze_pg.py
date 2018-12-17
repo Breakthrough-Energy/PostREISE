@@ -1,4 +1,3 @@
-import matplotlib._pylab_helpers
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -143,7 +142,8 @@ class AnalyzePG:
         elif kind == 'yield':
             self._do_yield(time[0], time[1])
 
-    def _check_dates(self, start_date, end_date):
+    @staticmethod
+    def _check_dates(start_date, end_date):
         """Test dates.
 
         :param string start_date: starting date
@@ -159,59 +159,63 @@ class AnalyzePG:
 
         :param list zones: geographical zones.
         """
-        all = list(self.grid.load_zones.values()) + ['California', 'Western']
+        possible = list(self.grid.load_zones.values()) + ['California', 'Western']
         for z in zones:
-            if z not in all:
-                print("%s is incorrect. Possible zones are: %s" % (z, all))
+            if z not in possible:
+                print("%s is incorrect. Possible zones are: %s" % (z, possible))
                 raise Exception('Invalid zone(s)')
 
-    def _check_resources(self, resources):
+    @staticmethod
+    def _check_resources(resources):
         """Test resources.
 
         :param list resources: type of generators.
         """
-        all = ['nuclear', 'hydro', 'coal', 'ng', 'solar', 'wind']
+        possible = ['nuclear', 'hydro', 'coal', 'ng', 'solar', 'wind']
         for r in resources:
-            if r not in all:
-                print("%s is incorrect. Possible resources are: %s" % (r, all))
+            if r not in possible:
+                print("%s is incorrect. Possible resources are: %s" % (r, possible))
                 raise Exception('Invalid resource(s)')
 
-    def _check_tz(self, tz):
+    @staticmethod
+    def _check_tz(tz):
         """Test time zone.
 
         :param string tz: time zone.
         """
-        all = ['utc', 'US/Pacific', 'local']
-        if tz not in all:
-            print("%s is incorrect. Possible time zones are: %s" % (tz, all))
+        possible = ['utc', 'US/Pacific', 'local']
+        if tz not in possible:
+            print("%s is incorrect. Possible time zones are: %s" % (tz, possible))
             raise Exception('Invalid time zone')
 
-    def _check_freq(self, freq):
+    @staticmethod
+    def _check_freq(freq):
         """Test freq.
 
-        :param string freq: frequency for resampling.
+        :param string freq: frequency for re-sampling.
         """
-        all = ['H', 'D', 'W', 'auto']
-        if freq not in all:
-            print("%s is incorrect. Possible frequency are: %s" % (freq, all))
+        possible = ['H', 'D', 'W', 'auto']
+        if freq not in possible:
+            print("%s is incorrect. Possible frequency are: %s" % (freq, possible))
             raise Exception('Invalid frequency')
 
-    def _check_kind(self, kind):
+    @staticmethod
+    def _check_kind(kind):
         """Test kind.
 
         :param string kind: type of analysis.
         """
-        all = ['chart', 'stacked', 'comp', 'curtailment', 'correlation',
-               'variability', 'yield']
-        if kind not in all:
-            print("%s is incorrect. Possible analysis are: %s" % (kind, all))
+        possible = ['chart', 'stacked', 'comp', 'curtailment', 'correlation',
+                    'variability', 'yield']
+        if kind not in possible:
+            print("%s is incorrect. Possible analysis are: %s" % (kind, possible))
             raise Exception('Invalid Analysis')
 
     def _convert_tz(self, df_utc):
-        """Convert dataframe fron UTC time zone to desired time zone.
+        """Convert data frame fron UTC time zone to desired time zone.
 
         :param pandas df_utc: data frame with UTC timestamp as indices.
-        :param return: data frame vonverted to desired time zone.
+        :param return: data frame converted to desired time zone.
         """
 
         df_new = df_utc.tz_convert(self.tz)
@@ -328,15 +332,15 @@ class AnalyzePG:
         """Calculates proportion of resources for zone.
 
         :param string zone: zone to consider.
-        :return: tuple of dataframe. First element is a time series of PG \ 
-            with type of generators as columns. Second element is a dataframe \ 
+        :return: tuple of data frame. First element is a time series of PG \
+            with type of generators as columns. Second element is a data frame \
             with type of generators as index and corresponding capacity as \ 
             column. 
         """
 
         pg, _ = self._get_pg(zone, self.resources)
         if pg is not None:
-            fig, ax = plt.subplots(1, 2, figsize=(20, 10), sharey=True)
+            fig, ax = plt.subplots(1, 2, figsize=(20, 10), sharey='row')
             plt.subplots_adjust(wspace=1)
             plt.suptitle("%s" % zone, fontsize=30)
             ax[0].set_title('Generation (MWh)', fontsize=25)
@@ -783,9 +787,9 @@ class AnalyzePG:
                                                                'lw': 4})
             for ax_scatter in scatter.ravel():
                 ax_scatter.tick_params(labelsize=20)
-                ax_scatter.set_xlabel(ax_scatter.get_xlabel(), fontsize = 22,
+                ax_scatter.set_xlabel(ax_scatter.get_xlabel(), fontsize=22,
                                       rotation = 0)
-                ax_scatter.set_ylabel(ax_scatter.get_ylabel(), fontsize = 22,
+                ax_scatter.set_ylabel(ax_scatter.get_ylabel(), fontsize=22,
                                       rotation = 90)
 
             for t in ['matrix', 'scatter']:
@@ -891,8 +895,9 @@ class AnalyzePG:
                     pass
         else:
             try:
-                plant_id = self.grid.genbus.groupby(['ZoneName',
-                    'type']).get_group((zone, resource)).index.values.tolist()
+                plant_id = self.grid.genbus.groupby(
+                    ['ZoneName', 'type']).get_group(
+                    (zone, resource)).index.values.tolist()
             except KeyError:
                 pass
 
@@ -904,7 +909,7 @@ class AnalyzePG:
 
         :param string zone: one of the zones.
         :param list resources: type of generators to consider.
-        :return: time series of PG and dataframe of the associated capacity \ 
+        :return: time series of PG and data frame of the associated capacity \
             for all generators located in one zone and using the selected \ 
             resources.
         """
@@ -974,11 +979,10 @@ class AnalyzePG:
         """
 
         if save:
-            figures = [manager.canvas.figure for manager in
-                       matplotlib._pylab_helpers.Gcf.get_all_fig_managers()]
-            for i, f in enumerate(figures):
-                f.savefig(self.filename[i], bbox_inches='tight', pad_inches=0)
-
+            for i in plt.get_fignums():
+                plt.figure(i)
+                plt.savefig(self.filename[i-1], bbox_inches='tight',
+                            pad_inches=0)
         plt.show()
 
     def get_data(self):
