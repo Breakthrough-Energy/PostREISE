@@ -51,7 +51,7 @@ class OutputData(object):
             )
         except FileNotFoundError:
             print('Local file not found will',
-                  'download data from server and save localy.')
+                  'download data from server and save locally.')
             try:
                 p_out = self.TD.get_data(run_name, field_name)
             except FileNotFoundError as e:
