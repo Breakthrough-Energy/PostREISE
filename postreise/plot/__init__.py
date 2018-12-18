@@ -1,1 +1,1 @@
-__all__ = ["plot", "analyze_pg"]
+__all__ = ["analyze_pg", "analyze_set"]
