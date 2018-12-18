@@ -34,7 +34,7 @@ class AnalyzePG:
             ''*Oregon'*, *'Utah'*, *'Washington'*, *'Western'*, *'Wyoming'*.
         :param list resources: energy resources. Can be any combinations of \ 
             *'coal'*, *'hydro'*, *'ng'*, *'nuclear'*, *'solar'*, *'wind'*.
-        :param string kind: one of *'stacked'*, *'comp'*, *'curtailment'*, \ 
+        :param str kind: one of *'stacked'*, *'comp'*, *'curtailment'*, \ 
             *'correlation'*, *'chart'*, *'variability'* or *'yield'*.
         :param bool normalize: should generation be normalized by capacity.
         :param int seed: seed for random number generator. Only used in the \ 
@@ -146,8 +146,9 @@ class AnalyzePG:
     def _check_dates(start_date, end_date):
         """Test dates.
 
-        :param string start_date: starting date
-        :param string end_date: ending date
+        :param str start_date: starting date.
+        :param str end_date: ending date.
+        :raise Exception: if dates are invalid.
         """
 
         if pd.Timestamp(start_date) > pd.Timestamp(end_date):
@@ -158,11 +159,14 @@ class AnalyzePG:
         """Test zones.
 
         :param list zones: geographical zones.
+        :raise Exception: if zone(s) are invalid.
         """
-        possible = list(self.grid.load_zones.values()) + ['California', 'Western']
+        possible = list(self.grid.load_zones.values()) + \
+            ['California', 'Western']
         for z in zones:
             if z not in possible:
-                print("%s is incorrect. Possible zones are: %s" % (z, possible))
+                print("%s is incorrect. Possible zones are: %s" %
+                      (z, possible))
                 raise Exception('Invalid zone(s)')
 
     @staticmethod
@@ -170,45 +174,53 @@ class AnalyzePG:
         """Test resources.
 
         :param list resources: type of generators.
+        :raise Exception: if resource(s) are invalid.
         """
         possible = ['nuclear', 'hydro', 'coal', 'ng', 'solar', 'wind']
         for r in resources:
             if r not in possible:
-                print("%s is incorrect. Possible resources are: %s" % (r, possible))
+                print("%s is incorrect. Possible resources are: %s" %
+                      (r, possible))
                 raise Exception('Invalid resource(s)')
 
     @staticmethod
     def _check_tz(tz):
         """Test time zone.
 
-        :param string tz: time zone.
+        :param str tz: time zone.
+        :raise Exception: if time zone is invalid.
         """
         possible = ['utc', 'US/Pacific', 'local']
         if tz not in possible:
-            print("%s is incorrect. Possible time zones are: %s" % (tz, possible))
+            print("%s is incorrect. Possible time zones are: %s" %
+                  (tz, possible))
             raise Exception('Invalid time zone')
 
     @staticmethod
     def _check_freq(freq):
         """Test freq.
 
-        :param string freq: frequency for re-sampling.
+        :param str freq: frequency for re-sampling.
+        :raise Exception: if frequency is invalid.
         """
         possible = ['H', 'D', 'W', 'auto']
         if freq not in possible:
-            print("%s is incorrect. Possible frequency are: %s" % (freq, possible))
+            print("%s is incorrect. Possible frequency are: %s" %
+                  (freq, possible))
             raise Exception('Invalid frequency')
 
     @staticmethod
     def _check_kind(kind):
         """Test kind.
 
-        :param string kind: type of analysis.
+        :param str kind: type of analysis.
+        :raise Exception: if analysis is invalid.
         """
         possible = ['chart', 'stacked', 'comp', 'curtailment', 'correlation',
                     'variability', 'yield']
         if kind not in possible:
-            print("%s is incorrect. Possible analysis are: %s" % (kind, possible))
+            print("%s is incorrect. Possible analysis are: %s" %
+                  (kind, possible))
             raise Exception('Invalid Analysis')
 
     def _convert_tz(self, df_utc):
@@ -226,8 +238,8 @@ class AnalyzePG:
     def _set_frequency(self, start_date, end_date):
         """Sets frequency for resampling.
 
-        :param string start_date: starting timestamp.
-        :param string end_date: ending timestamp.
+        :param str start_date: starting timestamp.
+        :param str end_date: ending timestamp.
         """
 
         delta = pd.Timestamp(start_date) - pd.Timestamp(end_date)
@@ -250,8 +262,8 @@ class AnalyzePG:
         """Calculates the appropriate date range after resampling in \ 
             order to get an equal number of entries per sample.
 
-        :param string start_date: starting timestamp.
-        :param string end_date: ending timestamp.
+        :param str start_date: starting timestamp.
+        :param str end_date: ending timestamp.
         """
 
         first_available = self.pg.index[0].tz_convert(self.tz)
@@ -304,7 +316,7 @@ class AnalyzePG:
             if first_available > first_full:
                 self.from_index = min(timestep[first_available:].index)
             else:
-                self.from_index = first_full            
+                self.from_index = first_full
             if last_available < last_full:
                 self.to_index = max(timestep[:last_available].index)
             else:
@@ -315,8 +327,8 @@ class AnalyzePG:
     def _do_chart(self, start_date, end_date):
         """Performs chart analysis.
 
-        :param string start_date: starting timestamp.
-        :param string end_date: ending timestamp.
+        :param str start_date: starting timestamp.
+        :param str end_date: ending timestamp.
         """
 
         print('Set UTC for all zones')
@@ -331,11 +343,11 @@ class AnalyzePG:
     def _get_chart(self, zone):
         """Calculates proportion of resources for zone.
 
-        :param string zone: zone to consider.
+        :param str zone: zone to consider.
         :return: tuple of data frame. First element is a time series of PG \
-            with type of generators as columns. Second element is a data frame \
-            with type of generators as index and corresponding capacity as \ 
-            column. 
+            with type of generators as columns. Second element is a data \ 
+            frame with type of generators as index and corresponding \ 
+            capacity as column.
         """
 
         pg, _ = self._get_pg(zone, self.resources)
@@ -392,9 +404,9 @@ class AnalyzePG:
     def _do_stacked(self, start_date, end_date, tz):
         """Performs stack analysis.
 
-        :param string start_date: starting timestamp.
-        :param string end_date: ending timestamp.
-        :param string tz: timezone.
+        :param str start_date: starting timestamp.
+        :param str end_date: ending timestamp.
+        :param str tz: timezone.
         """
 
         self.data = []
@@ -407,7 +419,7 @@ class AnalyzePG:
     def _get_stacked(self, zone):
         """Calculates time series of PG and demand for one zone. 
 
-        :param string zone: zone to consider.
+        :param str zone: zone to consider.
         :return: time series of PG and load for selected zone. Columns are \ 
             type of generators and demand.
         """
@@ -465,9 +477,9 @@ class AnalyzePG:
     def _do_comp(self, start_date, end_date, tz):
         """Performs comparison analysis.
 
-        :param string start_date: starting timestamp.
-        :param string end_date: ending timestamp.
-        :param string tz: timezone.
+        :param str start_date: starting timestamp.
+        :param str end_date: ending timestamp.
+        :param str tz: timezone.
         """
 
         if tz == 'local':
@@ -484,7 +496,7 @@ class AnalyzePG:
     def _get_comp(self, resource):
         """Calculates time series of PG for one resource.
 
-        :param string resource: resource to consider.
+        :param str resource: resource to consider.
         :return: time series of PG for selected resource. Columns are zones.
         """
 
@@ -523,7 +535,7 @@ class AnalyzePG:
                 ax.set_xlabel('')
                 handles, labels = ax.get_legend_handles_labels()
                 ax.legend(handles[::-1], labels[::-1], frameon=2,
-                          prop={'size': 18}, loc='lower right')
+                          prop={'size': 18})
                 if self.normalize:
                     ax.set_ylabel('Normalized Generation', fontsize=22)
                 else:
@@ -542,9 +554,9 @@ class AnalyzePG:
     def _do_curtailment(self, start_date, end_date, tz):
         """Performs curtailment analysis.
 
-        :param string start_date: starting timestamp.
-        :param string end_date: ending timestamp.
-        :param string tz: timezone.
+        :param str start_date: starting timestamp.
+        :param str end_date: ending timestamp.
+        :param str tz: timezone.
         """
 
         for r in self.resources:
@@ -563,8 +575,8 @@ class AnalyzePG:
     def _get_curtailment(self, zone, resource):
         """Calculates time series of curtailment for one zone and one resource.
 
-        :param string zone: zone to consider.
-        :param string resource: resource to consider.
+        :param str zone: zone to consider.
+        :param str resource: resource to consider.
         :return: time series of curtailment for selected zone and resource. \ 
             Columns are energy available (in MWh) from type generators using \ 
             resource in zone, energy generated (in MWh) from type generators \ 
@@ -621,9 +633,9 @@ class AnalyzePG:
     def _do_variability(self, start_date, end_date, tz):
         """Performs variability analysis.
 
-        :param string start_date: starting timestamp.
-        :param string end_date: ending timestamp.
-        :param string tz: timezone.
+        :param str start_date: starting timestamp.
+        :param str end_date: ending timestamp.
+        :param str tz: timezone.
         """
 
         for r in self.resources:
@@ -644,7 +656,7 @@ class AnalyzePG:
             calculates the time series of the PG of 2, 8 and 15 randomly \ 
             chosen plants in the same zone and using the same resource.
 
-        :param string resource: resource to consider.
+        :param str resource: resource to consider.
         :return: time series of PG for selected zone and selected plants.
         """
 
@@ -716,9 +728,9 @@ class AnalyzePG:
     def _do_correlation(self, start_date, end_date, tz):
         """Performs correlation analysis.
 
-        :param string start_date: starting timestamp.
-        :param string end_date: ending timestamp.
-        :param string tz: timezone.
+        :param str start_date: starting timestamp.
+        :param str end_date: ending timestamp.
+        :param str tz: timezone.
         """
 
         for r in self.resources:
@@ -740,7 +752,7 @@ class AnalyzePG:
     def _get_correlation(self, resource):
         """Calculates correlation coefficient of PG for one resource.
 
-        :param string resource: resource to consider.
+        :param str resource: resource to consider.
         :return: data frame of PG for selected resource. Columns are zones.
         """
 
@@ -788,9 +800,9 @@ class AnalyzePG:
             for ax_scatter in scatter.ravel():
                 ax_scatter.tick_params(labelsize=20)
                 ax_scatter.set_xlabel(ax_scatter.get_xlabel(), fontsize=22,
-                                      rotation = 0)
+                                      rotation=0)
                 ax_scatter.set_ylabel(ax_scatter.get_ylabel(), fontsize=22,
-                                      rotation = 90)
+                                      rotation=90)
 
             for t in ['matrix', 'scatter']:
                 self.filename.append('%s-%s_%s_%s_%s-%s.png' %
@@ -804,8 +816,8 @@ class AnalyzePG:
     def _do_yield(self, start_date, end_date):
         """Performs yield analysis.
 
-        :param string start_date: starting timestamp.
-        :param string end_date: ending timestamp.
+        :param str start_date: starting timestamp.
+        :param str end_date: ending timestamp.
         """
 
         for r in self.resources:
@@ -824,8 +836,8 @@ class AnalyzePG:
     def _get_yield(self, zone, resource):
         """Calculates capacity factor for one zone and one resource.
 
-        :param string zone: zone to consider.
-        :param string resource: resource to consider.
+        :param str zone: zone to consider.
+        :param str resource: resource to consider.
         :return: tuple. First element is the average ideal capacity factor \ 
             for the selected zone and resource. Second element is the average \ 
             curtailed capacity factor for the selected zone and resource.
@@ -870,8 +882,8 @@ class AnalyzePG:
         """Extracts the plant identification number of all the generators \ 
             located in one zone and using one specific resource.
 
-        :param string zone: zone to consider.
-        :param string resource: type of generator to consider.
+        :param str zone: zone to consider.
+        :param str resource: type of generator to consider.
         :return: plant identification number of all the generators located \ 
             in the selected zone and using the selected resource.
         """
@@ -907,7 +919,7 @@ class AnalyzePG:
         """Returns PG of all the generators located in one zone and powered \ 
             by resources.
 
-        :param string zone: one of the zones.
+        :param str zone: one of the zones.
         :param list resources: type of generators to consider.
         :return: time series of PG and data frame of the associated capacity \
             for all generators located in one zone and using the selected \ 
@@ -931,7 +943,7 @@ class AnalyzePG:
     def _get_demand(self, zone):
         """Returns demand profile for load zone, California or total.
 
-        :param string zone: one of the zones.
+        :param str zone: one of the zones.
         :return: time series of the load for selected zone (in MWh).
         """
 
@@ -953,8 +965,8 @@ class AnalyzePG:
     def _get_profile(self, zone, resource):
         """Returns profile for resource.
 
-        :param string zone: zone to consider.
-        :param string resource: type of generators to consider.
+        :param str zone: zone to consider.
+        :param str resource: type of generators to consider.
         :return: time series of the generated energy (in MWh) for the \ 
             selected resource.
         """
