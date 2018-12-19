@@ -227,7 +227,7 @@ class AnalyzePG:
         """Convert data frame fron UTC time zone to desired time zone.
 
         :param pandas df_utc: data frame with UTC timestamp as indices.
-        :param return: data frame converted to desired time zone.
+        :param return: (*pandas*) data frame converted to desired time zone.
         """
 
         df_new = df_utc.tz_convert(self.tz)
@@ -252,6 +252,9 @@ class AnalyzePG:
             self.freq = 'W'
 
     def _set_capacity(self):
+        """Sets capacity of the generators.
+
+        """
         self.capacity = pd.DataFrame(
             {'GenMWMax': self.grid.genbus.GenMWMax.values *
                 self.multiplier[self.multiplier.columns[0]].values,
@@ -344,10 +347,9 @@ class AnalyzePG:
         """Calculates proportion of resources for zone.
 
         :param str zone: zone to consider.
-        :return: tuple of data frame. First element is a time series of PG \
-            with type of generators as columns. Second element is a data \ 
-            frame with type of generators as index and corresponding \ 
-            capacity as column.
+        :return: (*tuple*) -- First element is a time series of PG with type \ 
+            of generators as columns. Second element is a data frame with \ 
+            type of generators as indices and corresponding capacity as column.
         """
 
         pg, _ = self._get_pg(zone, self.resources)
@@ -420,8 +422,8 @@ class AnalyzePG:
         """Calculates time series of PG and demand for one zone. 
 
         :param str zone: zone to consider.
-        :return: time series of PG and load for selected zone. Columns are \ 
-            type of generators and demand.
+        :return: (*pandas*) -- time series of PG and load for selected zone. \ 
+            Columns are type of generators and demand.
         """
 
         pg, capacity = self._get_pg(zone, self.resources)
@@ -497,7 +499,8 @@ class AnalyzePG:
         """Calculates time series of PG for one resource.
 
         :param str resource: resource to consider.
-        :return: time series of PG for selected resource. Columns are zones.
+        :return: (*pandas*) -- time series of PG for selected resource. \ 
+            Columns are zones.
         """
 
         fig = plt.figure(figsize=(20, 10))
@@ -577,11 +580,11 @@ class AnalyzePG:
 
         :param str zone: zone to consider.
         :param str resource: resource to consider.
-        :return: time series of curtailment for selected zone and resource. \ 
-            Columns are energy available (in MWh) from type generators using \ 
-            resource in zone, energy generated (in MWh) from type generators \ 
-            using resource in zone, demand in selected zone (in MWh) and \ 
-            curtailment (in %).
+        :return: (*pandas*) -- time series of curtailment for selected zone \ 
+            and resource. Columns are energy available (in MWh) from \ 
+            generators using resource in zone, energy generated (in MWh) \ 
+            from generators using resource in zone, demand in selected zone \ 
+            (in MWh) and curtailment (in %).
         """
 
         pg, capacity = self._get_pg(zone, [resource])
@@ -657,7 +660,7 @@ class AnalyzePG:
             chosen plants in the same zone and using the same resource.
 
         :param str resource: resource to consider.
-        :return: time series of PG for selected zone and selected plants.
+        :return: (*pandas*) -- time series of PG for selected zone and plants.
         """
 
         pg, capacity = self._get_pg(zone, [resource])
@@ -753,7 +756,8 @@ class AnalyzePG:
         """Calculates correlation coefficient of PG for one resource.
 
         :param str resource: resource to consider.
-        :return: data frame of PG for selected resource. Columns are zones.
+        :return: (*pandas*) -- data frame of PG for selected resource. \ 
+            Columns are zones.
         """
 
         fig = plt.figure(figsize=(12, 12))
@@ -838,9 +842,10 @@ class AnalyzePG:
 
         :param str zone: zone to consider.
         :param str resource: resource to consider.
-        :return: tuple. First element is the average ideal capacity factor \ 
-            for the selected zone and resource. Second element is the average \ 
-            curtailed capacity factor for the selected zone and resource.
+        :return: (*tuple*) -- First element is the average ideal capacity \ 
+            factor for the selected zone and resource. Second element is the \ 
+            average curtailed capacity factor for the selected zone and \ 
+            resource.
         """
 
         pg, _ = self._get_pg(zone, [resource])
@@ -884,8 +889,8 @@ class AnalyzePG:
 
         :param str zone: zone to consider.
         :param str resource: type of generator to consider.
-        :return: plant identification number of all the generators located \ 
-            in the selected zone and using the selected resource.
+        :return: (*list*) -- plant identification number of all the \ 
+            generators located in zone and using resource.
         """
 
         plant_id = []
@@ -921,9 +926,9 @@ class AnalyzePG:
 
         :param str zone: one of the zones.
         :param list resources: type of generators to consider.
-        :return: time series of PG and data frame of the associated capacity \
-            for all generators located in one zone and using the selected \ 
-            resources.
+        :return: (*tuple*) -- time series of PG and data frame of the \ 
+            associated capacity for all generators located in zone and using \ 
+            the resources.
         """
 
         plant_id = []
@@ -944,7 +949,7 @@ class AnalyzePG:
         """Returns demand profile for load zone, California or total.
 
         :param str zone: one of the zones.
-        :return: time series of the load for selected zone (in MWh).
+        :return: (*pandas*) -- time series of the load in zone (in MWh).
         """
 
         demand = self.grid.demand_data_2016.tz_localize('utc')
@@ -967,8 +972,8 @@ class AnalyzePG:
 
         :param str zone: zone to consider.
         :param str resource: type of generators to consider.
-        :return: time series of the generated energy (in MWh) for the \ 
-            selected resource.
+        :return: (*pandas*) -- time series of the generated energy (in MWh) \ 
+            in zone by generators using resource.
         """
 
         plant_id = self._get_plant_id(zone, resource)
@@ -998,8 +1003,20 @@ class AnalyzePG:
         plt.show()
 
     def get_data(self):
-        """Returns data.
+        """Get data.
 
+        :return: (*dict*) -- the formatting of the data depends on the \ 
+            selected analysis.
+            * *'stacked'*: 1D dictionary. Keys are zones and associated value \ 
+            is a data frame.
+            * *'chart'*: 2D dictionary. First key is zone and associated \ 
+            value is a dictionary, which has *'Generation'* and *'Capacity'* \ 
+            as keys and a data frame for value.
+            *  *'comp'* and *'correlation'*:  1D dictionary. Keys are \ 
+            resources and associated value is a data frame.
+            *  *'variability'*, *'curtailment'* and *'yield'*: 2D \ 
+            dictionary. First key is zone and associated value is a \ 
+            dictionary, which has resources as keys and a data frame for value. 
         """
         data = None
         if self.kind == "stacked":
