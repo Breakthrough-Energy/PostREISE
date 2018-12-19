@@ -12,13 +12,12 @@ import const
 
 class OutputData(object):
     """Output Data class.
-        This class enables you to download data from the server as well
-        as from a local folder. The get_data function will first look locally
-        if it can find the data requested. If it can't find locally it will
+        This class enables you to download data from the server as well as \ 
+        from a local folder. The get_data function will first look locally \ 
+        if it can find the data requested. If it can't find locally it will \ 
         download it from the server if it can find it there.
 
-        :param str data_dir: Defined local folder location
-            to read or save data.
+    :param str data_dir: define local folder location to read or save data.
 
     """
 
@@ -34,14 +33,14 @@ class OutputData(object):
             print('Use ', self.data_dir, ' to save/load local scenario data.')
 
     def get_data(self, run_name, field_name):
-        """Get data either from server or from local dir.
+        """Get data either from server or from local directory.
 
-            :param str run_name: Name of run to get data from.
-            :param str field_name: PG or PF data.
-            :return: Returns pandas DataFrame.
-            :raises FileNotFoundError: run_name file neither localy nor on
-                the server.
-            :raises NameError: If type not PG or PF.
+        :param str run_name: name of run to get data from.
+        :param str field_name: PG or PF data.
+        :return: (*pandas*) --  data frame of PG or PF.
+        :raises FileNotFoundError: run_name file neither localy or on the \ 
+            server.
+        :raises NameError: If type not PG or PF.
         """
         if field_name not in ['PG', 'PF']:
             raise NameError('Can only get PG or PF data.')
@@ -83,13 +82,13 @@ class TransferData(object):
     def get_data(self, run_name, field_name):
         """Get data either from server.
 
-            :param str run_name: Name of run to get data from.
-            :param str field_name: PG or PF data.
-            :return: Returns pandas DataFrame.
-            :raises NameError: If type not PG or PF.
-            :raises FileNotFoundError: run name file not on server.
-            :raises LookupError: If run_name can not be found in scenario_list
-                or more than one entry found.
+        :param str run_name: name of run to get data from.
+        :param str field_name: PG or PF data.
+        :return: (*pandas*) -- data frame.
+        :raises NameError: If type not PG or PF.
+        :raises FileNotFoundError: run name file not on server.
+        :raises LookupError: If run_name can not be found in scenario_list \ 
+            or more than one entry found.
         """
         if field_name not in ['PG', 'PF']:
             raise NameError('Can only get PG or PF data.')
@@ -116,7 +115,7 @@ class TransferData(object):
         return p_out
 
     def show_scenario_list(self):
-        """Show scenario list
+        """Show scenario list.
 
         """
         if not self.sftp:
@@ -127,7 +126,7 @@ class TransferData(object):
 def _setup_server_connection():
     """This function setup the connection to the server.
 
-        :return sftp: Returns the sftp object.
+        :return sftp: (*paramiko*) -- SFTP client object.
     """
 
     client = paramiko.SSHClient()
@@ -156,8 +155,8 @@ def _setup_server_connection():
 def _get_scenario_file_from_server(sftp):
     """Get scenario list from server.
 
-        :param sftp: Takes an sftp object.
-        :return scenario_list: Returns scenario_list pandas DataFrame
+        :param paramiko sftp: Takes an SFTP client object.
+        :return scenario_list: (*pandas*) -- data frame.
     """
 
     full_file_path = const.SCENARIO_LIST_LOCATION
