@@ -1,16 +1,9 @@
-import sys
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.ticker import AutoMinorLocator
 from westernintnet.westernintnet import win_data as grid
-
-sys.path.append("../process")
-
-
-import transferdata as td
-
+from postreise.process import transferdata as td
 
 od = td.OutputData()
 
