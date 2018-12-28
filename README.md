@@ -1,53 +1,53 @@
-This package contains the following modules:
-  * extract
-  * process
-  * analyze
-  * plot
+# PostREISE
+---
 
-## extract
-This module reads from the cases database to get information about the location
-of the data and the data range of the data.
-It extracts the data from the MATLAB results.
-It saves the data as csv files.
-## process
-### Transfer Data
-This module is used to handle the simulation output data. 
-The simulation output data is located on the server.
-To work more efficiently this module will download the data from the server
-to a local folder.
+## 1. Setup/Install
+This package requires MATLAB and WesternInterconnectNetwork.
 
-First, create a OutputData instance. You can pass a local address, where you
-want to store the data. If no location is specifies the data will be stored in
-your home directory in the *scenario_data* folder.
+### A. MATLAB
+Install MATLAB and proceed as follows
+```
+cd "matlabroot\extern\engines\python"
+python setup.py install
+```
+for Windows system.
+```
+cd "matlabroot/extern/engines/python"
+python setup.py install
+```
+for Mac or Linux systems.
 
-Second, call the get_data method, where you specify which data from which 
-scenario you want to get the data. Here is an example:
+
+### B. WesternInterconnectNetwork
+In the WesternInterconnect package, locate the ***setup.py*** file and type: `pip3 install .` Do not forget to update your PYTHONPATH environment variable.
+
+
+### C. PostREISE
+In the PostREISE package, locate the ***setup.py*** file and type: `pip3 install .` Do not forget to update your PYTHONPATH environment variable.
+
+
+
+## 2. Extract Data
+The aim of the extract module is three fold: it locates the outputs of the simulation; it  extracts the results from the MATLAB files and it saves these data in csv files.
+
+
+
+## 3. Transfer Data
+Simulation output data are located on the server and hence need to be transferred for analysis. The process module will download the data from the server to a local folder on your computer.
+
+First, a `OutputData` instance needs to be created. The path to the local folder where the data will be stored can be specified. If no location is specified the data will be stored in a *scenario_data* folder in home.
+
+Then, the `get_data` method can be called. The scenario name along with the type of data (PG or PF) must be specified. The call to the function is illustrated below.
 ```python
 from postreise.process.transferdata import OutputData
 od = OutputData()
 PGtest = od.get_data('western_scenarioUnitTest02','PG')
 PFtest = od.get_data('western_scenarioUnitTest02','PF')
-``` 
-## analyze 
-Reads the data from the database and performs the analyze of the data.
-It first performs validation(Data within range, correct type, ...)  and verification(Compare data with input data of case from preprocessing ) of the data.
-## plot
-This module reads the data from the analyze process and plots the output.
-This module could be combined with the analyze step.
+```
 
-## Setup/Install
-This package requires Matlab.
-### For Matlab the following setup is required:
-On Windows systems —
-'''
-cd "matlabroot\extern\engines\python"
-python setup.py install
-'''
-On Mac or Linux systems —
-'''
-cd "matlabroot/extern/engines/python"
-python setup.py install
-'''
-### Install this package
-In the folder with the setup.py file type:
-`pip3 install .`
+
+## analyze
+Reads the data from the database and performs the analyze of the data. It first performs validation (data within range, correct type, ...) and verification (compare data with input data of case from preprocessing) of the data.
+
+## plot
+This module reads the data from the analyze process and plots the output. This module could be combined with the analyze step.
