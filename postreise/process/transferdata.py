@@ -5,17 +5,15 @@ from pathlib import Path
 import pandas as pd
 import paramiko
 
+from postreise.process import const
 
-sys.path.append(os.path.abspath(os.path.dirname(__file__)))
-
-import const
 
 class OutputData(object):
     """Output Data class.
         This class enables you to download data from the server as well as \ 
-        from a local folder. The get_data function will first look locally \ 
-        if it can find the data requested. If it can't find locally it will \ 
-        download it from the server if it can find it there.
+        from a local folder. The :meth:`~get_data` function will first look \ 
+        locally if it can find the data requested. If it can't find locally \ 
+        it will download it from the server if it can find it there.
 
     :param str data_dir: define local folder location to read or save data.
 
