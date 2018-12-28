@@ -9,36 +9,58 @@ plt.ioff()
 class AnalyzePG:
     """Analysis based on PG.
 
+    :param tuple scenario: parameters related to scenario. 1st element \ 
+        is a data frame of the power generated with id of the plants as \ 
+        columns and UTC timestamp as indices. 2nd element is a grid \ 
+        instance. 3rd element is a data frame giving the factor by which \ 
+        renewable energies have been increased for each plant as column \ 
+        and the plant identification number as indices.
+    :param tuple time: time related parameters. 1st element is the \ 
+        starting date. 2nd element is the ending date (left out). 3rd \ 
+        element is the timezone, only *'utc'*, *'US/Pacific'* and \ 
+        *'local'* are possible. 4th element is the frequency for \ 
+        resampling, can be *'H'*, *'D'*, *'W'* or *'auto'*.
+    :param list zones: geographical zones. Any combinations of \ 
+        *'Arizona'*, *'California'*, *'Bay Area'*, \ 
+        *'Central California'*, *'Northern California'*, \ 
+        *'Southeast California'*, *'Southwest California'*, *'Colorado'*, \ 
+        *'El Paso'*, *'Idaho'*, *'Montana'*, *'Nevada'*, *'New Mexico'*, \ 
+        *'Oregon'*, *'Utah'*, *'Washington'*, *'Western'*, *'Wyoming'*.
+    :param list resources: energy resources. Can be any combinations of \ 
+        *'coal'*, *'hydro'*, *'ng'*, *'nuclear'*, *'solar'*, *'wind'*.
+    :param str kind: one of: *'stacked'*, *'comp'*, *'curtailment'*, \ 
+        *'correlation'*, *'chart'*, *'variability'* or *'yield'*.
+    :param bool normalize: should generation be normalized by capacity.
+    :param int seed: seed for random number generator. Only used in the \ 
+        *'variability'* analysis.
+    
+    .. note::    
+        * 'stacked': \ 
+            calculates time series of power generated and demand in one zone.
+        * *'comp'*: \ 
+            calculates time series of power generated for one resource in \ 
+            multiple zones.
+        * *'curtailment'*: \ 
+            calculates time series of curtailment for one resource in one zone.
+        * *'correlation'*: \ 
+            calculates correlation coefficients of power generated between \ 
+            multiple zones for one resource.
+        * *'chart'*: \ 
+            calculates proportion of resources and generation in one zone.
+        * *'variability'*: \ 
+            calculates time series of power generated in one zone for one \ 
+            resource. Also calculates the time series of the power generated \ 
+            of 2, 8 and 15 randomly chosen plants in the same zone and using \ 
+            the same resource.
+        * *'yield'*: \ 
+            calculates capacity factor of one resource in one zone.
+
     """
 
     def __init__(self, scenario, time, zones, resources, kind,
                  normalize=False, seed=0):
         """Constructor.
 
-        :param tuple scenario: parameters related to scenario. 1st element \ 
-            is a data frame of the power generated with id of the plants as \ 
-            columns and UTC timestamp as indices. 2nd element is a grid \ 
-            instance. 3rd element is a data frame giving the factor by which \ 
-            renewable energies have been increased for each plant as column \ 
-            and the plant identification number as indices.
-        :param tuple time: time related parameters. 1st element is the \ 
-            starting date. 2nd element is the ending date (left out). 3rd \ 
-            element is the timezone, only *'utc'*, *'US/Pacific'* and \ 
-            *'local'* are possible. 4th element is the frequency for \ 
-            resampling, can be *'H'*, *'D'*, *'W'* or *'auto'*.
-        :param list zones: geographical zones. Any combinations of \ 
-            *'Arizona'*, *'California'*, *'Bay Area'*, \ 
-            *'Central California'*, *'Northern California'*, \ 
-            *'Southeast California'*, *'Southwest California'*, *'Colorado'*, \ 
-            *'El Paso'*, *'Idaho'*, *'Montana'*, *'Nevada'*, *'New Mexico'*, \ 
-            ''*Oregon'*, *'Utah'*, *'Washington'*, *'Western'*, *'Wyoming'*.
-        :param list resources: energy resources. Can be any combinations of \ 
-            *'coal'*, *'hydro'*, *'ng'*, *'nuclear'*, *'solar'*, *'wind'*.
-        :param str kind: one of *'stacked'*, *'comp'*, *'curtailment'*, \ 
-            *'correlation'*, *'chart'*, *'variability'* or *'yield'*.
-        :param bool normalize: should generation be normalized by capacity.
-        :param int seed: seed for random number generator. Only used in the \ 
-            *'variability'* analysis.
         """
         plt.close('all')
 
@@ -344,7 +366,7 @@ class AnalyzePG:
             self.data.append(self._get_chart(z))
 
     def _get_chart(self, zone):
-        """Calculates proportion of resources for zone.
+        """Calculates proportion of resources and generation in one zone.
 
         :param str zone: zone to consider.
         :return: (*tuple*) -- First element is a time series of PG with type \ 
@@ -419,7 +441,7 @@ class AnalyzePG:
             self.data.append(self._get_stacked(z))
 
     def _get_stacked(self, zone):
-        """Calculates time series of PG and demand for one zone. 
+        """Calculates time series of PG and demand in one zone. 
 
         :param str zone: zone to consider.
         :return: (*pandas*) -- time series of PG and load for selected zone. \ 
@@ -576,7 +598,7 @@ class AnalyzePG:
                 self.data.append(self._get_curtailment(z, r))
 
     def _get_curtailment(self, zone, resource):
-        """Calculates time series of curtailment for one zone and one resource.
+        """Calculates time series of curtailment for one resource in one zone.
 
         :param str zone: zone to consider.
         :param str resource: resource to consider.
@@ -655,7 +677,7 @@ class AnalyzePG:
                 self.data.append(self._get_variability(z, r))
 
     def _get_variability(self, zone, resource):
-        """Calculates time series of PG for one zone and one resource. Also \
+        """Calculates time series of PG in one zone for one resource. Also \
             calculates the time series of the PG of 2, 8 and 15 randomly \ 
             chosen plants in the same zone and using the same resource.
 
@@ -753,7 +775,8 @@ class AnalyzePG:
             self.data.append(self._get_correlation(r))
 
     def _get_correlation(self, resource):
-        """Calculates correlation coefficient of PG for one resource.
+        """Calculates correlation coefficients of power generated between \ 
+            multiple zones for one resource.
 
         :param str resource: resource to consider.
         :return: (*pandas*) -- data frame of PG for selected resource. \ 
@@ -838,7 +861,7 @@ class AnalyzePG:
                 self.data.append(self._get_yield(z, r))
 
     def _get_yield(self, zone, resource):
-        """Calculates capacity factor for one zone and one resource.
+        """Calculates capacity factor of one resource in one zone.
 
         :param str zone: zone to consider.
         :param str resource: resource to consider.
@@ -991,8 +1014,9 @@ class AnalyzePG:
             self.freq, label='left').sum()[self.from_index:self.to_index]
 
     def get_plot(self, save=False):
-        """Plots data.
+        """Plots analysis.
 
+        :param bool save: should plot be saved.
         """
 
         if save:
@@ -1007,16 +1031,23 @@ class AnalyzePG:
 
         :return: (*dict*) -- the formatting of the data depends on the \ 
             selected analysis.
-            * *'stacked'*: 1D dictionary. Keys are zones and associated value \ 
-            is a data frame.
-            * *'chart'*: 2D dictionary. First key is zone and associated \ 
-            value is a dictionary, which has *'Generation'* and *'Capacity'* \ 
-            as keys and a data frame for value.
-            *  *'comp'* and *'correlation'*:  1D dictionary. Keys are \ 
-            resources and associated value is a data frame.
-            *  *'variability'*, *'curtailment'* and *'yield'*: 2D \ 
-            dictionary. First key is zone and associated value is a \ 
-            dictionary, which has resources as keys and a data frame for value. 
+            
+        .. note::
+            * *'stacked'*: \ 
+                1D dictionary. Keys are zones and associated value is a data \ 
+                frame.
+            * *'chart'*: \ 
+                2D dictionary. First key is zone and associated value is a \ 
+                dictionary, which has *'Generation'* and *'Capacity'* as \ 
+                keys and a data frame for value.
+            *  *'comp'* and *'correlation'*:  \ 
+                1D dictionary. Keys are resources and associated value is a \ 
+                data frame.
+            *  *'variability'*, *'curtailment'* and *'yield'*: \ 
+                2D dictionary. First key is zone and associated value is a \ 
+                dictionary, which has resources as keys and a data frame for \ 
+                value.
+ 
         """
         data = None
         if self.kind == "stacked":
