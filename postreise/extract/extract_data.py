@@ -9,14 +9,14 @@ this_dirname = os.path.dirname(__file__)
 eng.addpath(this_dirname)
 
 def extract_data(scenario_name, data_location, start_index, end_index):
-    """Takes subintervals from simulation in matlab
-    binary formate, converts and connects it into csv format.
-    It uses the matlab functions get_power_output_from_gen
-    and get_load_on_branch to extract data.
+    """Takes subintervals from simulation in MATLAB binary formats, \ 
+        converts and connects it into csv format. It uses the MATLAB \ 
+        functions to extract data.
 
-    WARNING:
-    date_range is hard coded
-
+    :param str scenario_name: scenario name.
+    :param str data_location: data location.
+    :param int start_index: starting index.
+    :param int end_index: ending index.
     """
 
     start = time.process_time()
@@ -57,15 +57,27 @@ def extract_data(scenario_name, data_location, start_index, end_index):
 
 def extract_data_and_save(scenario_name, data_location, save_location,
                           start_index, end_index):
-    """Extract data and save as csv in locSave locaton."""
+    """Extract data and save as csv.
+    
+    :param str scenario_name: scenario name.
+    :param str data location: data location.
+    :param str save location: save location.
+    :param int start_index: starting index.
+    :param int end_index: ending index.
+    """
 
-    (pg, pf) = extract_data(scenario_name, data_location, start_index, end_index)
+    (pg, pf) = extract_data(scenario_name, data_location, start_index,
+                            end_index)
 
     pg.to_csv(save_location+scenario_name+'PG.csv')
     pf.to_csv(save_location+scenario_name+'PF.csv')
 
+
 def extract_scenario(scenario_name):
-    """Extract data given scenario_name. Lookup data from ScenarioList.csv """
+    """Extracts data.
+    
+    :param str scenario_name: scenario name.
+    """
     scenario_dirname = '/home/EGM/'
     scenario_list = pd.read_csv(scenario_dirname + 'ScenarioList.csv')
 
