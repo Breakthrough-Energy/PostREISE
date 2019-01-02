@@ -1,5 +1,5 @@
 # PostREISE
----
+This package is dedicated to the analysis and plotting of the output data. It also handles the extraction of the data and its transfer from the server to the local machine.
 
 ## 1. Setup/Install
 This package requires MATLAB and WesternInterconnectNetwork.
