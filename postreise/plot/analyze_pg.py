@@ -736,7 +736,7 @@ class AnalyzePG:
                 ax.set_xlabel('')
                 handles, labels = ax.get_legend_handles_labels()
                 ax.legend(handles[::-1], labels[::-1], frameon=2,
-                          prop={'size': 18}, loc='top right')
+                          prop={'size': 18}, loc='best')
                 if self.normalize:
                     ax.set_ylabel('Normalized Generation', fontsize=22)
                 else:
