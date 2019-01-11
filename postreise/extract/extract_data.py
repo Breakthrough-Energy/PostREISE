@@ -33,11 +33,17 @@ def extract_data_batch(scenario_name, data_location, start_index, end_index,
     eng.quit()
     print("MATLAB terminated")
 
-    pg = pd.read_csv(data_location+scenario_name+'PG.csv', header=None).T
-    pf = pd.read_csv(data_location+scenario_name+'PF.csv', header=None).T
+    pg = pd.read_csv(
+                data_location+scenario_name+'fromMatlabPG.csv',
+                header=None
+            ).T
+    pf = pd.read_csv(
+                data_location+scenario_name+'fromMatlabPF.csv',
+                header=None
+            ).T
 
-    pf.index = date_range[(start_index-1):(end_index)]
-    pg.index = date_range[(start_index-1):(end_index)]
+    pg.index = date_range
+    pf.index = date_range
 
     return (pg, pf)
 
@@ -89,8 +95,8 @@ def extract_scenario(scenario_name):
     extract_data_and_save(scenario_name,
                           scenario.output_data_location.values[0],
                           scenario.output_data_location.values[0],
-                          scenario.start_index.values[0],
-                          scenario.end_index.values[0],
+                          int(scenario.start_index.values[0]),
+                          int(scenario.end_index.values[0]),
                           date_range)
 
 

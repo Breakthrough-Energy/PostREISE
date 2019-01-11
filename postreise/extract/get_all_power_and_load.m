@@ -28,7 +28,7 @@ for k = start_index:end_index
     tot_out_PF = [tot_out_PF,out_PF];
 end
 
-dlmwrite(strcat(location,name,'PG.csv'),tot_out_PG,'precision',12);
-dlmwrite(strcat(location,name,'PF.csv'),tot_out_PF,'precision',12);
+dlmwrite(strcat(location,name,'fromMatlabPG.csv'),tot_out_PG,'precision',12);
+dlmwrite(strcat(location,name,'fromMatlabPF.csv'),tot_out_PF,'precision',12);
 done = 1;
 end
