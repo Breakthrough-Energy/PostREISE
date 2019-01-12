@@ -1,1 +1,1 @@
-from .extract_data import extract_scenario
+__all__ = ["extract_data"]
