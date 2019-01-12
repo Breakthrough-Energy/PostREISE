@@ -3,6 +3,7 @@
 
 This package contains the following modules:
   * extract
+  * process
   * analyze
   * plot
   
@@ -28,10 +29,28 @@ from postreise.extract.test import test_extract
 test_extract.test()
 ```
 
+## 3. Transfer Data
+This module is used to handle the simulation output data. 
+The simulation output data is located on the server.
+To work more efficiently this module will download the data from the server
+to a local folder.
 
-## 3. Analyzing data 
+First, create a OutputData instance. You can pass a local address, where you
+want to store the data. If no location is specifies the data will be stored in
+your home directory in the *scenario_data* folder.
+
+Second, call the get_data method, where you specify which data from which 
+scenario you want to get the data. Here is an example:
+```python
+from postreise.process.transferdata import OutputData
+od = OutputData()
+PGtest = od.get_data('western_scenarioUnitTest02','PG')
+PFtest = od.get_data('western_scenarioUnitTest02','PF')
+``` 
+
+## 4. Analyzing data 
 Reads the data from the database and performs the data analysis. It first performs validation (data within range, correct type, ...) and verification (compare data with input data of case from preprocessing) of the data.
 
 
-## 4. Plot
+## 5. Plot
 This module reads the data from the analyze process and plots the output. Note that this module could be combined with the analyze step.
