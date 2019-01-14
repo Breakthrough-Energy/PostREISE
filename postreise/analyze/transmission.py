@@ -11,7 +11,7 @@ def generate_cong_stats(cong_df, branches_df, name):
     :param pandas cong_df: Power flow data frame, values normalized to capacity
     :param pandas branches_df: network branches in format created by \ 
         WesternIntnet.
-    :param string name: filename of output
+    :param string name: filename of output.
     :return: (*pandas*) -- data frame with *'hutil1'*, *'hutil0p9-1'*, 
         *'hutil0p8-0p9'*, *'hutil0p75-0p8'*, *'hutil>=0p9'*, *'hutil>=0p8'*, \ 
         *'hutil>=0p75'*, *'dist'*, *'zscore'* and *'pvalue'*.
@@ -55,8 +55,9 @@ def generate_cong_stats(cong_df, branches_df, name):
                                                        2: 'hutil>=0p75'})
 
     branches_df['dist'] = branches_df.apply(
-        lambda row: haversine([row['from_lat'], row['from_lon']],
-                              [row['to_lat'], row['to_lon']]), axis=1)
+        lambda row: _greatCircleDistance(
+        math.radians(row['from_lat']), math.radians(row['from_lon']),
+        math.radians(row['to_lat']), math.radians(row['to_lon'])), axis=1)    
 
     cong_stats = pd.concat([cong_stats, branches_df['dist']], axis=1)
 
@@ -74,34 +75,19 @@ def generate_cong_stats(cong_df, branches_df, name):
     return cong_stats
 
 
-def haversine(coord1: object, coord2: object):
-    """Calculate great circle distance between 2 points
+def _greatCircleDistance(lat1, lon1, lat2, lon2):
+    """Calculates distance between two sites.
 
-    :param coord1: latitude and longitude in decimal degrees of point 1
-    :param coord2: latitude and longitude in decimal degrees of point 2
-    :return: (*float*) -- distance in kilometers
+    :param float lat1: latitude of first site (in rad.).
+    :param float lon1: longitude of first site (in rad.).
+    :param float lat2: latitude of second site (in rad.).
+    :param float lon2: longitude of second site (in rad.).
+    :return: (*float*) -- distance between two sites (in km.).
     """
+    R = 6368
 
-    # Coordinates in decimal degrees (e.g. 2.89078, 12.79797)
-    lat1, lon1 = coord1
-    lat2, lon2 = coord2
-
-    R = 6371000  # radius of Earth in meters
-    phi_1 = math.radians(lat1)
-    phi_2 = math.radians(lat2)
-
-    delta_phi = math.radians(lat2-lat1)
-    delta_lambda = math.radians(lon2-lon1)
-
-    a = (math.sin(delta_phi/2.0)**2
-         + math.cos(phi_1)*math.cos(phi_2)*math.sin(delta_lambda/2.0)**2)
-
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-
-    meters = R*c  # output distance in meters
-    km = meters/1000.0  # output distance in kilometers
-
-    meters = round(meters, 3)
-    km = round(km, 3)
-
-    return km
+    def haversin(x):
+        return math.sin(x/2)**2
+    return R*2 * math.asin(math.sqrt(
+        haversin(lat2-lat1) +
+        math.cos(lat1) * math.cos(lat2) * haversin(lon2-lon1)))
