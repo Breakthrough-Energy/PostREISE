@@ -33,8 +33,8 @@ class AnalyzePG:
     :param bool normalize: should generation be normalized by capacity.
     :param int seed: seed for random number generator. Only used in the \ 
         *'variability'* analysis.
-    
-    .. note::    
+
+    .. note::
         * 'stacked': \ 
             calculates time series of power generated and demand in one zone.
         * *'comp'*: \ 
