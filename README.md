@@ -1,58 +1,64 @@
 # PostREISE
----
-
-This package contains the following modules:
-  * extract
-  * process
-  * analyze
-  * plot
-  
-It requires the Matlab simulation engine.
+This package is dedicated to the analysis and plotting of the output data. It also handles the extraction of the data and its transfer from the server to the local machine.
 
 ## 1. Setup/Install
+This package requires MATLAB and WesternInterconnectNetwork.
+
+### A. MATLAB
+Install MATLAB and proceed as follows
 ```
 cd "matlabroot\extern\engines\python"
 python setup.py install
 ```
-
-## 2. Extracting Data
-This module reads from the cases database to get information about the location and range of the data. It extracts the data from the MATLAB results and saves the data as csv files. This module runs only on the server for now.
-
-To extract results from the MATLAB results after a simulation you can run:
-```python
-from postreise.extract import extract_data
-extract_data.extract_scenario('western_scenarioUnitTest02')
+for Windows system.
 ```
-To run a test:
-```python
-from postreise.extract.test import test_extract
-test_extract.test()
+cd "matlabroot/extern/engines/python"
+python setup.py install
 ```
+for Mac or Linux systems.
+
+
+### B. WesternInterconnectNetwork
+In the WesternInterconnect package, locate the ***setup.py*** file and type: `pip3 install .` Do not forget to update your PYTHONPATH environment variable.
+
+
+### C. PostREISE
+In the PostREISE package, locate the ***setup.py*** file and type: `pip3 install .` Do not forget to update your PYTHONPATH environment variable.
+
+
+
+## 2. Extract Data
+The aim of the `postreise.extract.extract_data` module is three fold:
+* locate the outputs of the simulation;
+* extract the results from the MATLAB files and;
+* save the data in csv files.
+
+
 
 ## 3. Transfer Data
-This module is used to handle the simulation output data. 
-The simulation output data is located on the server.
-To work more efficiently this module will download the data from the server
-to a local folder.
+Simulation output data are located on the server. These can be easily transferred to your local machine using the `postreise.procees.transferdata` module.
 
-First, create a OutputData instance. You can pass a local address, where you
-want to store the data. If no location is specifies the data will be stored in
-your home directory in the *scenario_data* folder.
+First, create a `OutputData` instance. Note that the path to the local folder where the data will be stored can be specified. If no location is specified the data will be stored in a *scenario_data* folder in home.
 
-Second, call the get_data method, where you specify which data from which 
-scenario you want to get the data. Here is an example:
+Then, call the `get_data` method with the scenario name along with the type of data (PG or PF) as arguments. The call to the function is illustrated below:
 ```python
 from postreise.process.transferdata import OutputData
 od = OutputData()
-PGtest = od.get_data('western_scenarioUnitTest02','PG')
-PFtest = od.get_data('western_scenarioUnitTest02','PF')
-``` 
+PGtest = od.get_data('western_scenarioUnitTest02', 'PG')
+PFtest = od.get_data('western_scenarioUnitTest02', 'PF')
+```
 
-## 4. Analyzing data 
-Reads the data from the database and performs the data analysis. It first performs validation (data within range, correct type, ...) and verification (compare data with input data of case from preprocessing) of the data.
 
-### Transmission Congestion Analysis
-To carry out transmission congestion analyses per scenario, (1) download the power flow output; (2) calculate congestion statistics; (3) display the data. The notebook postreise/analyze/demo/transmission_analysis_demo.ipynb shows the steps for downloading and calculation of various statistics. The notebook postreise/analyze/demo/WECC_Congestion_interactive_map.ipynb shows how the output of the transmission_analyses notebook is used to display the congested transmission lines. (Note that since the plot outputs are meant to be interactive, they may not render on github. A sample static shot is in demo/sampleTransmissionCongestion.png.)
+## 4. Analyze
+The `postreise.analyze` module encloses the congestion analysis.
+
+### A. Transmission Congestion Analysis
+To carry out transmission congestion analyses per scenario:
+1. download the power flow output;
+2. calculate congestion statistics;
+3. display the data.
+
+The notebook [transmission_analysis_demo.ipynb](https://github.com/intvenlab/PostREISE/tree/mlh/postreise/analyze/demo/transmission_analysis_demo.ipynb) notebook shows the steps for downloading and calculation of various statistics. The notebook [WECC_Congestion_interactive_map.ipynb](https://github.com/intvenlab/PostREISE/tree/mlh/postreise/analyze/demo/WECC_Congestion_interactive_map.ipynb) notebook shows how the output of the transmission_analyses notebook is used to display the congested transmission lines. (Note that since the plot outputs are meant to be interactive, they may not render on GitHub. A sample static shot can be found [here](https://github.com/intvenlab/PostREISE/tree/mlh/postreise/analyze/demo/sampleTransmissionCongestion.PNG).)
 
 
 ## 5. Plot
