@@ -51,6 +51,9 @@ PFtest = od.get_data('western_scenarioUnitTest02','PF')
 ## 4. Analyzing data 
 Reads the data from the database and performs the data analysis. It first performs validation (data within range, correct type, ...) and verification (compare data with input data of case from preprocessing) of the data.
 
+### Transmission Congestion Analysis
+To carry out transmission congestion analyses per scenario, (1) download the power flow output; (2) calculate congestion statistics; (3) display the data. The notebook transmission_analysis_demo.ipynb shows the steps for downloading and calculation of various statistics. The notebook WECC_Congestion_interactive_map.ipynb shows how the output of the transmission_analyses notebook is used to display the congested transmission lines.
+
 
 ## 5. Plot
 This module reads the data from the analyze process and plots the output. Note that this module could be combined with the analyze step.
