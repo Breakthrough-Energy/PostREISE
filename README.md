@@ -9,7 +9,7 @@ This package contains the following modules:
   
 It requires the Matlab simulation engine.
 
-## 1. Setuo/Install
+## 1. Setup/Install
 ```
 cd "matlabroot\extern\engines\python"
 python setup.py install
@@ -52,7 +52,7 @@ PFtest = od.get_data('western_scenarioUnitTest02','PF')
 Reads the data from the database and performs the data analysis. It first performs validation (data within range, correct type, ...) and verification (compare data with input data of case from preprocessing) of the data.
 
 ### Transmission Congestion Analysis
-To carry out transmission congestion analyses per scenario, (1) download the power flow output; (2) calculate congestion statistics; (3) display the data. The notebook transmission_analysis_demo.ipynb shows the steps for downloading and calculation of various statistics. The notebook WECC_Congestion_interactive_map.ipynb shows how the output of the transmission_analyses notebook is used to display the congested transmission lines.
+To carry out transmission congestion analyses per scenario, (1) download the power flow output; (2) calculate congestion statistics; (3) display the data. The notebook postreise/analyze/demo/transmission_analysis_demo.ipynb shows the steps for downloading and calculation of various statistics. The notebook postreise/analyze/demo/WECC_Congestion_interactive_map.ipynb shows how the output of the transmission_analyses notebook is used to display the congested transmission lines. (Note that since the plot outputs are meant to be interactive, they may not render on github. A sample static shot is in demo/sampleTransmissionCongestion.png.)
 
 
 ## 5. Plot
