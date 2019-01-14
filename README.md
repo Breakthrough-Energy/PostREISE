@@ -58,8 +58,8 @@ To carry out transmission congestion analyses per scenario:
 2. calculate congestion statistics;
 3. display the data.
 
-The notebook [transmission_analysis_demo.ipynb](https://github.com/intvenlab/PostREISE/tree/mlh/postreise/analyze/demo/transmission_analysis_demo.ipynb) notebook shows the steps for downloading and calculation of various statistics. The notebook [WECC_Congestion_interactive_map.ipynb](https://github.com/intvenlab/PostREISE/tree/mlh/postreise/analyze/demo/WECC_Congestion_interactive_map.ipynb) notebook shows how the output of the transmission_analyses notebook is used to display the congested transmission lines. (Note that since the plot outputs are meant to be interactive, they may not render on GitHub. A sample static shot can be found [here](https://github.com/intvenlab/PostREISE/tree/mlh/postreise/analyze/demo/sampleTransmissionCongestion.PNG).)
+The notebook [transmission_analysis_demo.ipynb](https://github.com/intvenlab/PostREISE/tree/mlh/postreise/analyze/demo/transmission_analysis_demo.ipynb) notebook shows the steps for downloading and calculation of various statistics. The notebook [WECC_Congestion_interactive_map.ipynb](https://github.com/intvenlab/PostREISE/tree/mlh/postreise/analyze/demo/WECC_Congestion_interactive_map.ipynb) notebook shows how the output of the transmission_analyses notebook is used to display the congested transmission lines. (Note that since the plot outputs are meant to be interactive, they may not render on GitHub. A sample static shot can be found [here](https://github.com/intvenlab/PostREISE/tree/mlh/postreise/analyze/demo/sampleTransmissionCongestion.PNG)).
 
 
 ## 5. Plot
-This module reads the data from the analyze process and plots the output. Note that this module could be combined with the analyze step.
+This module reads the data from the analyze process and plots the output.
