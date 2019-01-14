@@ -1,65 +1,7 @@
-import os
-import sys
-from pathlib import Path
-
 import pandas as pd
 import paramiko
 
 from postreise.process import const
-
-
-class OutputData(object):
-    """Output Data class.
-        This class enables you to download data from the server as well as \ 
-        from a local folder. The :meth:`~get_data` function will first look \ 
-        locally if it can find the data requested. If it can't find locally \ 
-        it will download it from the server if it can find it there.
-
-    :param str data_dir: define local folder location to read or save data.
-
-    """
-
-    def __init__(self, data_dir=None):
-
-        self.data_dir = data_dir
-        self.TD = TransferData()
-        # Check if data can be found localy
-        if not data_dir:
-            home_dir = str(Path.home())
-            self.data_dir = os.path.join(home_dir, 'scenario_data', '')
-
-            print('Use ', self.data_dir, ' to save/load local scenario data.')
-
-    def get_data(self, run_name, field_name):
-        """Get data either from server or from local directory.
-
-        :param str run_name: name of run to get data from.
-        :param str field_name: PG or PF data.
-        :return: (*pandas*) --  data frame of PG or PF.
-        :raises FileNotFoundError: run_name file neither localy or on the \ 
-            server.
-        :raises NameError: If type not PG or PF.
-        """
-        if field_name not in ['PG', 'PF']:
-            raise NameError('Can only get PG or PF data.')
-        try:
-            p_out = pd.read_pickle(
-                self.data_dir + run_name + field_name + '.pkl'
-            )
-        except FileNotFoundError:
-            print('Local file not found will',
-                  'download data from server and save locally.')
-            try:
-                p_out = self.TD.get_data(run_name, field_name)
-            except FileNotFoundError as e:
-                raise FileNotFoundError(
-                    'File found neither localy nor on server.'
-                ) from e
-            if not os.path.exists(self.data_dir):
-                os.makedirs(self.data_dir)
-            print('Saving file localy.')
-            p_out.to_pickle(self.data_dir + run_name + field_name + '.pkl')
-        return p_out
 
 
 class TransferData(object):
@@ -77,28 +19,33 @@ class TransferData(object):
         self.sftp = _setup_server_connection()
         self.scenario_list = _get_scenario_file_from_server(self.sftp)
 
-    def get_data(self, run_name, field_name):
-        """Get data either from server.
+    def get_data(self, scenario_name, field_name):
+        """Get data from server.
 
-        :param str run_name: name of run to get data from.
-        :param str field_name: PG or PF data.
+        :param str scenario_name: name of scenario to get data from.
+        :param str field_name: *'PG'*, *'PF'*, *'demand'*, *'hydro'*, \ 
+            *'solar'* or *'wind'*.
         :return: (*pandas*) -- data frame.
-        :raises NameError: If type not PG or PF.
-        :raises FileNotFoundError: run name file not on server.
-        :raises LookupError: If run_name can not be found in scenario_list \ 
-            or more than one entry found.
+        :raises NameError: If type not *'PG'*, *'PF'*, *'demand'*, *'hydro'*, \ 
+            *'solar'* or *'wind'*.
+        :raises FileNotFoundError: file not found on server.
+        :raises LookupError: if scenario not found or more than one entry \ 
+            is found.        
         """
-        if field_name not in ['PG', 'PF']:
-            raise NameError('Can only get PG or PF data.')
+
+        if field_name not in ['PG', 'PF', 'demand', 'hydro', 'solar', 'wind']:
+            raise NameError('Can only get PG, PF, demand, hydro, solar and \
+                            wind data.')
         if not self.sftp:
             self._late_init()
-        run = self.scenario_list[self.scenario_list['name'] == run_name]
-        if run.shape[0] == 0:
-            raise LookupError('Run name not found in scenario list.')
-        elif run.shape[0] > 1:
-            print('More than one run found with same name.')
-            raise LookupError('More than one run found with same name.')
-        output_file = run.output_data_location.values[0] + run_name
+        scenario = self.scenario_list[
+            self.scenario_list['name'] == scenario_name]
+        if scenario.shape[0] == 0:
+            raise LookupError('Scenario name not found in scenario list.')
+        elif scenario.shape[0] > 1:
+            print('More than one scenario found with same name.')
+            raise LookupError('More than one scenario found with same name.')
+        output_file = scenario.output_data_location.values[0] + scenario_name
         output_file = output_file + field_name + '.csv'
         try:
             output_object = self.sftp.file(output_file, 'rb')
