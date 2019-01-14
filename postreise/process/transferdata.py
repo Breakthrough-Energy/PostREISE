@@ -45,18 +45,27 @@ class TransferData(object):
         elif scenario.shape[0] > 1:
             print('More than one scenario found with same name.')
             raise LookupError('More than one scenario found with same name.')
-        output_file = scenario.output_data_location.values[0] + scenario_name
-        output_file = output_file + field_name + '.csv'
+        if field_name == "PG" or field_name == "PF":
+            output_file = scenario.output_data_location.values[0] + \
+                          scenario_name
+            file = output_file + '_' + field_name + '.csv'
+        else:
+            input_file = scenario.input_data_location.values[0] + \
+                         scenario_name
+            file = input_file + '_' + field_name + '.csv'            
         try:
-            output_object = self.sftp.file(output_file, 'rb')
+            file_object = self.sftp.file(file, 'rb')
         except FileNotFoundError:
             print('File not found on server in location:')
-            print(output_file)
+            print(file)
             print('File may not be converted from .mat format.')
             raise
         print('Reading ' + field_name + ' file from server.')
-        p_out = pd.read_csv(output_object, index_col=0, parse_dates=True)
-        p_out.columns = p_out.columns.astype(int)
+        p_out = pd.read_csv(file_object, index_col=0, parse_dates=True)
+        
+        if field_name != "demand":
+            p_out.columns = p_out.columns.astype(int)
+        
         return p_out
 
     def show_scenario_list(self):
