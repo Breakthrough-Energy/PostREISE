@@ -1,30 +1,25 @@
-import os
-import sys
-from math import *
+import math
 
 import numpy as np
 import pandas as pd
-
-sys.path.append("..")
+import scipy.special as scsp
 
 
 def generate_cong_stats(cong_df, branches_df, name):
-    '''
-    Generates congestion statistics from the input congestion data.
-    :param dataframe cong_df: Power flow dataframe, \ 
-    values normalized to Capacity
-    :param dataframe branches_df: network branches in format created \ 
-    by WesternIntnet
+    """Generates congestion statistics from the input congestion data.
+
+    :param pandas cong_df: Power flow data frame, values normalized to capacity
+    :param pandas branches_df: network branches in format created by \ 
+        WesternIntnet.
     :param string name: filename of output
-    :return: pandas dataframe with columns = ['hutil1','hutil0p9-1', \ 
-                                              'hutil0p8-0p9','hutil0p75-0p8', \ 
-                                              'hutil>=0p9','hutil>=0p8', \ 
-                                              'hutil>=0p75', \ 
-                                              'dist','zscore','pvalue']
-    '''
-    import numpy as np
-    import scipy.special as scsp
-    import math
+    :return: (*pandas*) -- data frame with *'hutil1'*, *'hutil0p9-1'*, 
+        *'hutil0p8-0p9'*, *'hutil0p75-0p8'*, *'hutil>=0p9'*, *'hutil>=0p8'*, \ 
+        *'hutil>=0p75'*, *'dist'*, *'zscore'* and *'pvalue'*.
+
+    .. todo::
+        Current version assumes normal distibution; calculate real \ 
+        distribution, then do a lookup depending on distribution type.
+    """
 
     cong_stats = pd.concat([branches_df['Capacity'],
                             cong_df[(cong_df == 1)].describe().loc['count', :],
@@ -59,24 +54,18 @@ def generate_cong_stats(cong_df, branches_df, name):
                                                        1: 'hutil>=0p8',
                                                        2: 'hutil>=0p75'})
 
-    branches_df['dist'] = branches_df\
-                            .apply(lambda row: haversine([row['from_lat'],
-                                                          row['from_lon']],
-                                                         [row['to_lat'],
-                                                          row['to_lon']]),
-                                   axis=1)
+    branches_df['dist'] = branches_df.apply(
+        lambda row: haversine([row['from_lat'], row['from_lon']],
+                              [row['to_lat'], row['to_lon']]), axis=1)
 
     cong_stats = pd.concat([cong_stats, branches_df['dist']], axis=1)
 
     total_hours = len(cong_df)
-    p_cong = cong_stats.loc[cong_stats['Capacity'] != 99999]\
-        .describe()\
-        .loc['mean']['hutil>=0p75']/total_hours
+    p_cong = cong_stats.loc[cong_stats['Capacity'] != 99999].describe().loc[
+        'mean']['hutil>=0p75']/total_hours
     mu = total_hours*p_cong
     var = total_hours*p_cong*(1 - p_cong)
 
-    # TO DO: Current version assumes normal distibution; calculate
-    # real distribution, then do a lookup depending on distribution type.
     cong_stats['zscore'] = (cong_stats['hutil>=0p75'] - mu)/math.sqrt(var)
     cong_stats['pvalue'] = cong_stats['zscore'].apply(lambda x: 1-scsp.ndtr(x))
 
@@ -86,16 +75,12 @@ def generate_cong_stats(cong_df, branches_df, name):
 
 
 def haversine(coord1: object, coord2: object):
-    '''
-    Calculate great circle distance between 2 points
+    """Calculate great circle distance between 2 points
 
     :param coord1: latitude and longitude in decimal degrees of point 1
     :param coord2: latitude and longitude in decimal degrees of point 2
-    :return: distance in kilometers
-
-    '''
-
-    import math
+    :return: (*float*) -- distance in kilometers
+    """
 
     # Coordinates in decimal degrees (e.g. 2.89078, 12.79797)
     lat1, lon1 = coord1
