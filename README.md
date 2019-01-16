@@ -67,3 +67,4 @@ The `postreise.plot.analyze_pg` module is dedicated to the analysis of the PG (P
 Check out the notebooks within the [demo](https://github.com/intvenlab/PostREISE/tree/addAnalyzeAndPlot/postreise/plot/demo/) folder for demo.
 
 The `postreise.plot.analyze_set` module accomplishes a similar job for a set of scenario. The [october_meeting](https://github.com/intvenlab/PostREISE/tree/addAnalyzeAndPlot/postreise/plot/demo/october_meeting.ipynb) Jupyter notebook illustrates the plot routines implemented.
+
