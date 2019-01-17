@@ -6,19 +6,17 @@ import numpy as np
 import pandas as pd
 from pandas.core.indexes.datetimes import date_range
 
+def extract_data(scenario_name, data_location, start_index, end_index):
+    """Takes subintervals from simulation in MATLAB binary formats, \ 
+        converts and connects it into csv format. It uses the MATLAB \ 
+        functions to extract data.
 
-def extract_data_batch(scenario_name, data_location, start_index, end_index,
-                       date_range):
-    """This function extracts the data in batches using the MATLAB function \ 
-        get_all_power_and_load. The MATLAB function saves the output in csv \ 
-        files.
-
-    :param str scenario_name: Name of scenario.
-    :param str data_location: Location of data to be extracted.
-    :param int start_index: Start index of the file to be extracted.
-    :param int end_index: End index of the file to be extracted.
-    :param date_range: pandas date_range object.
-    :return: pg and pf pandas dataframe.
+    :param str scenario_name: scenario name.
+    :param str data_location: data location.
+    :param int start_index: starting index.
+    :param int end_index: ending index.
+    :return: (*tuple*) -- data frames of power generated (PG) and \ 
+      power flow (PF).
     """
 
     # Start MATLAB engine
@@ -49,31 +47,29 @@ def extract_data_batch(scenario_name, data_location, start_index, end_index,
 
 
 def extract_data_and_save(scenario_name, data_location, save_location,
-                          start_index, end_index, date_range):
-    """Receives data and save as csv in save_location.
-
-    :param str scenario_name: Name of scenario to be extracted.
-    :param str data_location: Location of data to be extracted.
-    :param str save_location: Location where the extracted data should be \ 
-        stored.
-    :param int start_index: Start index of the file to be extracted.
-    :param int end_index: End index of the file to be extracted.
-    :param date_range: Pandas date_range object.
+                          start_index, end_index):
+    """Extract data and save as csv.
+    
+    :param str scenario_name: scenario name.
+    :param str data location: data location.
+    :param str save location: save location.
+    :param int start_index: starting index.
+    :param int end_index: ending index.
     """
 
-    (pg, pf) = extract_data_batch(scenario_name, data_location, start_index,
-                                  end_index, date_range)
+    (pg, pf) = extract_data(scenario_name, data_location, start_index,
+                            end_index)
 
     pg.to_csv(save_location+scenario_name+'PG.csv')
     pf.to_csv(save_location+scenario_name+'PF.csv')
 
 
 def extract_scenario(scenario_name):
-    """Extract data given scenario_name. Lookup data from ScenarioList.csv.
-
-    :param str scenario_name: Name of scenario to be extracted.
-    """
+    """Extracts data.
     
+    :param str scenario_name: scenario name.
+    """
+
     scenario_dirname = '/home/EGM/'
     scenario_list = pd.read_csv(scenario_dirname + 'ScenarioList.csv')
 
