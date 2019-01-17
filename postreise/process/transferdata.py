@@ -69,13 +69,20 @@ class TransferData(object):
         return p_out
 
     def show_scenario_list(self):
-        """Show scenario list.
+        """Shows scenario list.
 
         """
         if not self.sftp:
             self._late_init()
         print(self.scenario_list['name'])
 
+    def get_scenario_list(self):
+        """Returns scenario list.
+
+        """
+        if not self.sftp:
+            self._late_init()
+        return self.scenario_list['name'].values
 
 def _setup_server_connection():
     """This function setup the connection to the server.
