@@ -85,6 +85,15 @@ class TransferData(object):
             self._late_init()
         return self.scenario_list['name'].values
 
+    def get_scenario_table(self):
+        """Returns scenario data frame.
+
+        :return: (*pandas*) -- scenario data frame.
+        """
+        if not self.sftp:
+            self._late_init()
+        return self.scenario_list
+
 def _setup_server_connection():
     """This function setup the connection to the server.
 
