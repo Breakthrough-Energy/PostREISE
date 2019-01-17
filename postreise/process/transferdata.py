@@ -79,6 +79,7 @@ class TransferData(object):
     def get_scenario_list(self):
         """Returns scenario list.
 
+        :return: (*list*) -- list of available scenarios.
         """
         if not self.sftp:
             self._late_init()
