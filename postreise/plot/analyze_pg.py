@@ -35,7 +35,7 @@ class AnalyzePG:
         *'variability'* analysis.
 
     .. note::
-        * 'stacked': \ 
+        * *'stacked'*: \ 
             calculates time series of power generated and demand in one zone.
         * *'comp'*: \ 
             calculates time series of power generated for one resource in \ 
