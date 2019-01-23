@@ -4,7 +4,7 @@ import paramiko
 from postreise.process import const
 
 
-class TransferData(object):
+class PullData(object):
     """This class setup the connection to the server and gets the data from
         the server.
     """
