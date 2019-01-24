@@ -19,7 +19,7 @@ class PullData(object):
         self.sftp = _setup_server_connection()
         self.scenario_list = _get_scenario_file_from_server(self.sftp)
 
-    def get_data(self, scenario_name, field_name):
+    def download_data(self, scenario_name, field_name):
         """Get data from server.
 
         :param str scenario_name: name of scenario to get data from.
