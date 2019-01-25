@@ -25,7 +25,7 @@ class PullData(object):
         self.sftp = ssh.open_sftp()
         self.scenario_list = _get_scenario_file_from_server(self.sftp)
 
-    def download_data(self, scenario_name, field_name):
+    def download(self, scenario_name, field_name):
         """Download data from server.
 
         :param str scenario_name: name of scenario to get data frome.
@@ -126,7 +126,7 @@ class PushData(object):
             print("Local folder %s does not exist. Return." % local_dir)
             return
 
-    def upload_data(self, scenario_name, field_name):
+    def upload(self, scenario_name, field_name):
         """Upload data to server.
 
         :param str scenario_name: name of scenario.
