@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 import paramiko
 
@@ -10,19 +12,23 @@ class PullData(object):
     """
 
     def __init__(self):
+        """Constructor.
+
+        """
         self.sftp = None
 
     def _late_init(self):
         """This init is called when data is requested.
 
         """
-        self.sftp = _setup_server_connection()
+        ssh = _setup_server_connection()
+        self.sftp = ssh.open_sftp()
         self.scenario_list = _get_scenario_file_from_server(self.sftp)
 
     def download_data(self, scenario_name, field_name):
-        """Get data from server.
+        """Download data from server.
 
-        :param str scenario_name: name of scenario to get data from.
+        :param str scenario_name: name of scenario to get data frome.
         :param str field_name: *'PG'*, *'PF'*, *'demand'*, *'hydro'*, \ 
             *'solar'* or *'wind'*.
         :return: (*pandas*) -- data frame.
@@ -30,12 +36,11 @@ class PullData(object):
             *'solar'* or *'wind'*.
         :raises FileNotFoundError: file not found on server.
         :raises LookupError: if scenario not found or more than one entry \ 
-            is found.        
+            is found.
         """
-
         if field_name not in ['PG', 'PF', 'demand', 'hydro', 'solar', 'wind']:
-            raise NameError('Can only get PG, PF, demand, hydro, solar and \
-                            wind data.')
+            raise NameError('Can only download PG, PF, demand, hydro, solar \
+                            and wind data.')
         if not self.sftp:
             self._late_init()
         scenario = self.scenario_list[
@@ -52,7 +57,7 @@ class PullData(object):
         else:
             input_file = scenario.input_data_location.values[0] + \
                          scenario_name
-            file = input_file + '_' + field_name + '.csv'            
+            file = input_file + '_' + field_name + '.csv'
         try:
             file_object = self.sftp.file(file, 'rb')
         except FileNotFoundError:
@@ -62,10 +67,10 @@ class PullData(object):
             raise
         print('Reading ' + field_name + ' file from server.')
         p_out = pd.read_csv(file_object, index_col=0, parse_dates=True)
-        
+
         if field_name != "demand":
             p_out.columns = p_out.columns.astype(int)
-        
+
         return p_out
 
     def show_scenario_list(self):
@@ -94,10 +99,79 @@ class PullData(object):
             self._late_init()
         return self.scenario_list
 
+
+class PushData(object):
+    """This class setup the connection to the server and gets the data from
+        the server.
+
+    :param str local_dir: path to local folder where data are enclosed.
+    """
+
+    def __init__(self, local_dir=None):
+        """Constructor.
+
+        """
+        self._check_dir(local_dir)
+
+        # Set attributes
+        self.local_dir = local_dir
+
+    @staticmethod
+    def _check_dir(local_dir):
+        """Chekcs if local directory exists.
+
+        :param str local_dir: path to local folder where data are enclosed.
+        """
+        if os.path.isdir(local_dir) is False:
+            print("Local folder %s does not exist. Return." % local_dir)
+            return
+
+    def upload_data(self, scenario_name, field_name):
+        """Upload data to server.
+
+        :param str scenario_name: name of scenario.
+        :param str field_name: *'demand'*, *'hydro'*, *'solar'*, *'wind'* or \ 
+            *'ct'*.
+        :raises NameError: If type not *'demand'*, *'hydro'*, *'solar'*, \ 
+            *'wind'* or *'ct'*.
+        :raises FileNotFoundError: file not found locally.
+        :raises LookupError: if scenario not found or more than one entry \ 
+            is found.
+        """
+        if field_name not in ['demand', 'hydro', 'solar', 'wind', 'ct']:
+            raise NameError('Can only upload demand, hydro, solar, wind and \
+                            change table data.')
+        extension = ".pkl" if field_name == 'ct' else ".csv"
+        file_name = scenario_name + "_" + field_name + extension
+        local_file_path = os.path.join(self.local_dir, file_name)
+        if os.path.isfile(local_file_path) is False:
+            print("Can't find %s. Return." % local_file_path)
+            return
+        else:
+            ssh = _setup_server_connection()
+            sftp = ssh.open_sftp()
+            scenario_list = _get_scenario_file_from_server(sftp)
+            scenario = scenario_list[scenario_list['name'] == scenario_name]
+            if scenario.shape[0] == 0:
+                raise LookupError('Scenario name not found in scenario list.')
+            elif scenario.shape[0] > 1:
+                print('More than one scenario found with same name.')
+                raise LookupError('More than one scenario found with same name.')
+            remote_dir = scenario.input_data_location.values[0]
+            remote_file_path = os.path.join(remote_dir, file_name)
+            stdin, stdout, stderr = ssh.exec_command("ls " + remote_file_path)
+            if len(stderr.readlines()) == 0:
+                print("File already exists on server. Return.")
+                return
+            else:
+                print("Transferring %s to server." % file_name)
+                sftp.put(local_file_path, remote_file_path)
+                sftp.close()
+
 def _setup_server_connection():
     """This function setup the connection to the server.
 
-        :return sftp: (*paramiko*) -- SFTP client object.
+        :return client: (*paramiko*) -- SSH client object.
     """
 
     client = paramiko.SSHClient()
@@ -119,8 +193,7 @@ def _setup_server_connection():
                 )
 
     client.connect(const.SERVER_ADDRESS)
-    sftp = client.open_sftp()
-    return sftp
+    return client
 
 
 def _get_scenario_file_from_server(sftp):
