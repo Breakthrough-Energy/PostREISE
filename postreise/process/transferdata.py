@@ -65,7 +65,7 @@ class PullData(object):
             print(file)
             print('File may not be converted from .mat format.')
             raise
-        print('Reading ' + field_name + ' file from server.')
+        print('Reading %s file from server.' % field_name)
         p_out = pd.read_csv(file_object, index_col=0, parse_dates=True)
 
         if field_name != "demand":
