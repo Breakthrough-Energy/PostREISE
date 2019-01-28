@@ -29,18 +29,19 @@ class PullData(object):
         """Download data from server.
 
         :param str scenario_name: name of scenario to get data frome.
-        :param str field_name: *'PG'*, *'PF'*, *'demand'*, *'hydro'*, \ 
-            *'solar'* or *'wind'*.
+        :param str field_name: *'PG'*, *'PF'*, *'demand'*, *'hydro'*, \
+            *'solar'*, *'wind'* or *'ct'*.
         :return: (*pandas*) -- data frame.
-        :raises NameError: If type not *'PG'*, *'PF'*, *'demand'*, *'hydro'*, \ 
+        :raises NameError: If type not *'PG'*, *'PF'*, *'demand'*, *'hydro'*, \
             *'solar'* or *'wind'*.
         :raises FileNotFoundError: file not found on server.
-        :raises LookupError: if scenario not found or more than one entry \ 
+        :raises LookupError: if scenario not found or more than one entry \
             is found.
         """
-        if field_name not in ['PG', 'PF', 'demand', 'hydro', 'solar', 'wind']:
-            raise NameError('Can only download PG, PF, demand, hydro, solar \
-                            and wind data.')
+        if field_name not in ['PG', 'PF',
+                              'demand', 'hydro', 'solar', 'wind', 'ct']:
+            raise NameError('Can only download PG, PF, demand, hydro,',
+                            'solar, wind and change table data.')
         if not self.sftp:
             self._late_init()
         scenario = self.scenario_list[
@@ -55,9 +56,10 @@ class PullData(object):
                           scenario_name
             file = output_file + '_' + field_name + '.csv'
         else:
+            extension = '.pkl' if field_name == 'ct' else '.csv'
             input_file = scenario.input_data_location.values[0] + \
                          scenario_name
-            file = input_file + '_' + field_name + '.csv'
+            file = input_file + '_' + field_name + extension
         try:
             file_object = self.sftp.file(file, 'rb')
         except FileNotFoundError:
@@ -66,9 +68,12 @@ class PullData(object):
             print('File may not be converted from .mat format.')
             raise
         print('Reading %s file from server.' % field_name)
-        p_out = pd.read_csv(file_object, index_col=0, parse_dates=True)
+        if field_name == 'ct':
+            p_out = pd.read_pickle(file_object)
+        else:
+            p_out = pd.read_csv(file_object, index_col=0, parse_dates=True)
 
-        if field_name != "demand":
+        if field_name not in ['demand', 'ct']:
             p_out.columns = p_out.columns.astype(int)
 
         return p_out
@@ -130,17 +135,17 @@ class PushData(object):
         """Upload data to server.
 
         :param str scenario_name: name of scenario.
-        :param str field_name: *'demand'*, *'hydro'*, *'solar'*, *'wind'* or \ 
+        :param str field_name: *'demand'*, *'hydro'*, *'solar'*, *'wind'* or \
             *'ct'*.
-        :raises NameError: If type not *'demand'*, *'hydro'*, *'solar'*, \ 
+        :raises NameError: If type not *'demand'*, *'hydro'*, *'solar'*, \
             *'wind'* or *'ct'*.
         :raises FileNotFoundError: file not found locally.
-        :raises LookupError: if scenario not found or more than one entry \ 
+        :raises LookupError: if scenario not found or more than one entry \
             is found.
         """
         if field_name not in ['demand', 'hydro', 'solar', 'wind', 'ct']:
-            raise NameError('Can only upload demand, hydro, solar, wind and \
-                            change table data.')
+            raise NameError('Can only upload demand, hydro, solar, wind',
+                            'and change table data.')
         extension = ".pkl" if field_name == 'ct' else ".csv"
         file_name = scenario_name + "_" + field_name + extension
         local_file_path = os.path.join(self.local_dir, file_name)
@@ -156,7 +161,8 @@ class PushData(object):
                 raise LookupError('Scenario name not found in scenario list.')
             elif scenario.shape[0] > 1:
                 print('More than one scenario found with same name.')
-                raise LookupError('More than one scenario found with same name.')
+                raise LookupError('More than one scenario found with same',
+                                  'name.')
             remote_dir = scenario.input_data_location.values[0]
             remote_file_path = os.path.join(remote_dir, file_name)
             stdin, stdout, stderr = ssh.exec_command("ls " + remote_file_path)
