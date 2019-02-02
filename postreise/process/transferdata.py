@@ -21,7 +21,7 @@ class PullData(object):
         """This init is called when data is requested.
 
         """
-        ssh = _setup_server_connection()
+        ssh = setup_server_connection()
         self.sftp = ssh.open_sftp()
         self.scenario_list = _get_scenario_file_from_server(self.sftp)
 
@@ -153,7 +153,7 @@ class PushData(object):
             print("Can't find %s. Return." % local_file_path)
             return
         else:
-            ssh = _setup_server_connection()
+            ssh = setup_server_connection()
             sftp = ssh.open_sftp()
             scenario_list = _get_scenario_file_from_server(sftp)
             scenario = scenario_list[scenario_list['name'] == scenario_name]
@@ -174,7 +174,7 @@ class PushData(object):
                 sftp.put(local_file_path, remote_file_path)
                 sftp.close()
 
-def _setup_server_connection():
+def setup_server_connection():
     """This function setup the connection to the server.
 
         :return client: (*paramiko*) -- SSH client object.
