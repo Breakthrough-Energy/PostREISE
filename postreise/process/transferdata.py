@@ -25,47 +25,43 @@ class PullData(object):
         self.sftp = ssh.open_sftp()
         self.scenario_list = _get_scenario_file_from_server(self.sftp)
 
-    def download(self, scenario_name, field_name):
+    def download(self, scenario_id, field_name):
         """Download data from server.
 
-        :param str scenario_name: name of scenario to get data frome.
+        :param str scenario_id: scenario index.
         :param str field_name: *'PG'*, *'PF'*, *'demand'*, *'hydro'*, \
             *'solar'*, *'wind'* or *'ct'*.
         :return: (*pandas*) -- data frame.
         :raises NameError: If type not *'PG'*, *'PF'*, *'demand'*, *'hydro'*, \
-            *'solar'* or *'wind'*.
+            *'solar'*, *'wind'* or *'ct'*.
         :raises FileNotFoundError: file not found on server.
-        :raises LookupError: if scenario not found or more than one entry \
-            is found.
+        :raises LookupError: if scenario not found.
         """
         if field_name not in ['PG', 'PF',
                               'demand', 'hydro', 'solar', 'wind', 'ct']:
-            raise NameError('Can only download PG, PF, demand, hydro,',
-                            'solar, wind and change table data.')
+            raise NameError('Choose among PG, PF, demand, hydro,',
+                            'solar, wind and ct data.')
+
         if not self.sftp:
             self._late_init()
-        scenario = self.scenario_list[
-            self.scenario_list['name'] == scenario_name]
-        if scenario.shape[0] == 0:
-            raise LookupError('Scenario name not found in scenario list.')
-        elif scenario.shape[0] > 1:
-            print('More than one scenario found with same name.')
-            raise LookupError('More than one scenario found with same name.')
+
+        if int(scenario_id) not in self.scenario_list.index.tolist():
+            raise LookupError("Scenario not found")
+        else:
+            scenario = self.scenario_list[
+                self.scenario_list.index == int(scenario_id)]
+
         if field_name == "PG" or field_name == "PF":
-            output_file = scenario.output_data_location.values[0] + \
-                          scenario_name
+            output_file = scenario.output_data_location.values[0] + scenario_id
             file = output_file + '_' + field_name + '.csv'
         else:
             extension = '.pkl' if field_name == 'ct' else '.csv'
-            input_file = scenario.input_data_location.values[0] + \
-                         scenario_name
+            input_file = scenario.input_data_location.values[0] + scenario_id
             file = input_file + '_' + field_name + extension
         try:
             file_object = self.sftp.file(file, 'rb')
         except FileNotFoundError:
-            print('File not found on server in location:')
-            print(file)
-            print('File may not be converted from .mat format.')
+            print('File not found on server in location: %s' % file)
             raise
         print('Reading %s file from server.' % field_name)
         if field_name == 'ct':
@@ -93,7 +89,7 @@ class PullData(object):
         """
         if not self.sftp:
             self._late_init()
-        return self.scenario_list['name'].values
+        return self.scenario_list['name'].tolist()
 
     def get_scenario_table(self):
         """Returns scenario data frame.
@@ -117,8 +113,6 @@ class PushData(object):
 
         """
         self._check_dir(local_dir)
-
-        # Set attributes
         self.local_dir = local_dir
 
     @staticmethod
@@ -131,23 +125,22 @@ class PushData(object):
             print("Local folder %s does not exist. Return." % local_dir)
             return
 
-    def upload(self, scenario_name, field_name):
+    def upload(self, scenario_id, field_name):
         """Upload data to server.
 
-        :param str scenario_name: name of scenario.
+        :param str scenario_id: scenario index.
         :param str field_name: *'demand'*, *'hydro'*, *'solar'*, *'wind'* or \
             *'ct'*.
         :raises NameError: If type not *'demand'*, *'hydro'*, *'solar'*, \
             *'wind'* or *'ct'*.
         :raises FileNotFoundError: file not found locally.
-        :raises LookupError: if scenario not found or more than one entry \
-            is found.
+        :raises LookupError: if scenario not found.
         """
         if field_name not in ['demand', 'hydro', 'solar', 'wind', 'ct']:
             raise NameError('Can only upload demand, hydro, solar, wind',
-                            'and change table data.')
+                            'and ct data.')
         extension = ".pkl" if field_name == 'ct' else ".csv"
-        file_name = scenario_name + "_" + field_name + extension
+        file_name = scenario_id + "_" + field_name + extension
         local_file_path = os.path.join(self.local_dir, file_name)
         if os.path.isfile(local_file_path) is False:
             print("Can't find %s. Return." % local_file_path)
@@ -156,13 +149,7 @@ class PushData(object):
             ssh = setup_server_connection()
             sftp = ssh.open_sftp()
             scenario_list = _get_scenario_file_from_server(sftp)
-            scenario = scenario_list[scenario_list['name'] == scenario_name]
-            if scenario.shape[0] == 0:
-                raise LookupError('Scenario name not found in scenario list.')
-            elif scenario.shape[0] > 1:
-                print('More than one scenario found with same name.')
-                raise LookupError('More than one scenario found with same',
-                                  'name.')
+            scenario = self.scenario_list[self.scenario_list.index == id]
             remote_dir = scenario.input_data_location.values[0]
             remote_file_path = os.path.join(remote_dir, file_name)
             stdin, stdout, stderr = ssh.exec_command("ls " + remote_file_path)
