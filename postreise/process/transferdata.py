@@ -63,7 +63,7 @@ class PullData(object):
         except FileNotFoundError:
             print('File not found on server in location: %s' % file)
             raise
-        print('Reading %s file from server.' % field_name)
+        print('Reading file from server')
         if field_name == 'ct':
             p_out = pd.read_pickle(file_object)
         else:
