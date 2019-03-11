@@ -68,8 +68,6 @@ class PullData(object):
             p_out = pd.read_pickle(file_object)
         else:
             p_out = pd.read_csv(file_object, index_col=0, parse_dates=True)
-
-        if field_name not in ['demand', 'ct']:
             p_out.columns = p_out.columns.astype(int)
 
         return p_out
