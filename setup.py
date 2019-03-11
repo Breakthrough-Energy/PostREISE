@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='postreise',
-      version='0.1',
+      version='0.2',
       description='Extract, analyze and plot data from scenario',
       url='https://github.com/intvenlab/PostREISE',
       author='Kaspar Mueller',
