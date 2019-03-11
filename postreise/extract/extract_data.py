@@ -1,71 +1,75 @@
-import numpy as np
-import pandas as pd
-import time
 import os
+import time
 
 import matlab.engine
-eng = matlab.engine.start_matlab()
-this_dirname = os.path.dirname(__file__)
-eng.addpath(this_dirname)
+import numpy as np
+import pandas as pd
+from pandas.core.indexes.datetimes import date_range
 
 def extract_data(scenario_name, data_location, start_index, end_index):
-    """Takes subintervals from simulation in matlab
-    binary formate, converts and connects it into csv format.
-    It uses the matlab functions get_power_output_from_gen
-    and get_load_on_branch to extract data.
+    """Takes subintervals from simulation in MATLAB binary formats, \ 
+        converts and connects it into csv format. It uses the MATLAB \ 
+        functions to extract data.
 
-    WARNING:
-    date_range is hard coded
-
+    :param str scenario_name: scenario name.
+    :param str data_location: data location.
+    :param int start_index: starting index.
+    :param int end_index: ending index.
+    :return: (*tuple*) -- data frames of power generated (PG) and \ 
+      power flow (PF).
     """
 
-    start = time.process_time()
-    for i in range(start_index, end_index+1):
-        print('Reading'+str(i))
-        filename = scenario_name + '_sub_result_' + str(i)
-        # Call matlab functions
-        matlab_pg = eng.get_power_output_from_gen(data_location + filename)
-        matlab_pf = eng.get_load_on_branch(data_location + filename)
-        if i > start_index:
-            pg = pg.append(pd.DataFrame(np.array(matlab_pg._data).reshape(
-                matlab_pg.size[::-1])))
-            pf = pf.append(pd.DataFrame(np.array(matlab_pf._data).reshape(
-                matlab_pf.size[::-1])))
-        else:
-            pg = pd.DataFrame(np.array(matlab_pg._data).reshape(
-                matlab_pg.size[::-1]))
-            pg.name = scenario_name + 'PG'
-            pf = pd.DataFrame(np.array(matlab_pf._data).reshape(
-                matlab_pf.size[::-1]))
-            pf.name = scenario_name + 'PF'
-    end = time.process_time()
-    print('Reading time ' + str(100 * (end-start)) + 's')
+    # Start MATLAB engine
+    print("Starting MATLAB")
+    eng = matlab.engine.start_matlab()
+    this_dirname = os.path.dirname(__file__)
+    eng.addpath(this_dirname)
+    print("Starting extracting data")
+    eng.get_all_power_and_load(scenario_name, data_location,
+                               int(start_index), int(end_index))
+    print("Done extracting data")
+    eng.quit()
+    print("MATLAB terminated")
 
-    # Set data range
-    date_start = pd.Timestamp('2010-01-01')
-    date_end = pd.Timestamp('2012-12-31 23:00:00')
-    date_range = pd.date_range(date_start, date_end, freq='H')
+    pg = pd.read_csv(
+                data_location+scenario_name+'fromMatlabPG.csv',
+                header=None
+            ).T
+    pf = pd.read_csv(
+                data_location+scenario_name+'fromMatlabPF.csv',
+                header=None
+            ).T
 
-    pf.index = date_range[(start_index-1)*4*24:(end_index)*4*24]
-    pg.index = date_range[(start_index-1)*4*24:(end_index)*4*24]
-
-    # Shift index of PG becasue bus index in matlab
-    pg = pg.rename(columns=lambda x: x+1)
+    pg.index = date_range
+    pf.index = date_range
 
     return (pg, pf)
 
 
 def extract_data_and_save(scenario_name, data_location, save_location,
                           start_index, end_index):
-    """Extract data and save as csv in locSave locaton."""
+    """Extract data and save as csv.
+    
+    :param str scenario_name: scenario name.
+    :param str data location: data location.
+    :param str save location: save location.
+    :param int start_index: starting index.
+    :param int end_index: ending index.
+    """
 
-    (pg, pf) = extract_data(scenario_name, data_location, start_index, end_index)
+    (pg, pf) = extract_data(scenario_name, data_location, start_index,
+                            end_index)
 
     pg.to_csv(save_location+scenario_name+'PG.csv')
     pf.to_csv(save_location+scenario_name+'PF.csv')
 
+
 def extract_scenario(scenario_name):
-    """Extract data given scenario_name. Lookup data from ScenarioList.csv """
+    """Extracts data.
+    
+    :param str scenario_name: scenario name.
+    """
+
     scenario_dirname = '/home/EGM/'
     scenario_list = pd.read_csv(scenario_dirname + 'ScenarioList.csv')
 
@@ -76,16 +80,22 @@ def extract_scenario(scenario_name):
     if scenario.shape[0] == 0:
         print('No scenario with name ' + scenario_name)
         return
-    if scenario.extract.values[0] == True:
-        print('Scenario already extracted or does not want to be extracted.')
+    if scenario.extract.values[0]:
+        print('Scenario already extracted or does not want to be extracted')
         return
+    # Set data range
+    date_start = pd.Timestamp(scenario.start_date.values[0])
+    date_end = pd.Timestamp(scenario.end_date.values[0])
+    date_range = pd.date_range(date_start, date_end, freq='H')
+
     extract_data_and_save(scenario_name,
                           scenario.output_data_location.values[0],
                           scenario.output_data_location.values[0],
-                          scenario.start_index.values[0],
-                          scenario.end_index.values[0])
+                          int(scenario.start_index.values[0]),
+                          int(scenario.end_index.values[0]),
+                          date_range)
+
 
 if __name__ == "__main__":
     import sys
-    extract_data_and_save(sys.argv[1], sys.argv[2], sys.argv[3], int(
-        sys.argv[4]), int(sys.argv[5]))
+    extract_scenario(sys.argv[1])
