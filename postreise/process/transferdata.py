@@ -147,7 +147,7 @@ class PushData(object):
             ssh = setup_server_connection()
             sftp = ssh.open_sftp()
             scenario_list = _get_scenario_file_from_server(sftp)
-            scenario = self.scenario_list[self.scenario_list.index == id]
+            scenario = scenario_list[scenario_list.index == int(scenario_id)]
             remote_dir = scenario.input_data_location.values[0]
             remote_file_path = os.path.join(remote_dir, file_name)
             stdin, stdout, stderr = ssh.exec_command("ls " + remote_file_path)
