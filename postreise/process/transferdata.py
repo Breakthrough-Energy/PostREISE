@@ -52,16 +52,16 @@ class PullData(object):
                 self.scenario_list.index == int(scenario_id)]
 
         if field_name == "PG" or field_name == "PF":
-            output_file = scenario.output_data_location.values[0] + scenario_id
-            file = output_file + '_' + field_name + '.csv'
+            dir = scenario.output_data_location.values[0]
+            file = scenario_id + '_' + field_name + '.csv'
         else:
             extension = '.pkl' if field_name == 'ct' else '.csv'
-            input_file = scenario.input_data_location.values[0] + scenario_id
-            file = input_file + '_' + field_name + extension
+            dir = scenario.input_data_location.values[0]
+            file = scenario_id + '_' + field_name + extension
         try:
-            file_object = self.sftp.file(file, 'rb')
+            file_object = self.sftp.file(dir + file, 'rb')
         except FileNotFoundError:
-            print('File not found on server in location: %s' % file)
+            print('Server: %s not found in %s' % (file, dir))
             raise
         print('Reading file from server')
         if field_name == 'ct':
