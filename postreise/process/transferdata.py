@@ -45,18 +45,18 @@ class PullData(object):
         if not self.sftp:
             self._late_init()
 
-        if int(scenario_id) not in self.scenario_list.index.tolist():
+        if int(scenario_id) not in self.scenario_list.id.tolist():
             raise LookupError("Scenario not found")
         else:
             scenario = self.scenario_list[
-                self.scenario_list.index == int(scenario_id)]
+                self.scenario_list.id == int(scenario_id)]
 
         if field_name == "PG" or field_name == "PF":
-            dir = scenario.output_data_location.values[0]
+            dir = const.REMOTE_DIR_OUTPUT
             file = scenario_id + '_' + field_name + '.csv'
         else:
             extension = '.pkl' if field_name == 'ct' else '.csv'
-            dir = scenario.input_data_location.values[0]
+            dir = const.REMOTE_DIR_INPUT
             file = scenario_id + '_' + field_name + extension
         try:
             file_object = self.sftp.file(dir + file, 'rb')
@@ -147,9 +147,8 @@ class PushData(object):
             ssh = setup_server_connection()
             sftp = ssh.open_sftp()
             scenario_list = _get_scenario_file_from_server(sftp)
-            scenario = scenario_list[scenario_list.index == int(scenario_id)]
-            remote_dir = scenario.input_data_location.values[0]
-            remote_file_path = os.path.join(remote_dir, file_name)
+            scenario = scenario_list[scenario_list.id == int(scenario_id)]
+            remote_file_path = os.path.join(const.REMOTE_DIR_INPUT, file_name)
             stdin, stdout, stderr = ssh.exec_command("ls " + remote_file_path)
             if len(stderr.readlines()) == 0:
                 print("File already exists on server. Return.")
