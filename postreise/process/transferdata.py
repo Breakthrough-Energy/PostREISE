@@ -59,7 +59,7 @@ class PullData(object):
             dir = const.REMOTE_DIR_INPUT
             file = scenario_id + '_' + field_name + extension
         try:
-            file_object = self.sftp.file(dir + file, 'rb')
+            file_object = self.sftp.file(dir + '/' + file, 'rb')
         except FileNotFoundError:
             print('Server: %s not found in %s' % (file, dir))
             raise
@@ -154,7 +154,7 @@ class PushData(object):
                 print("File already exists on server. Return.")
                 return
             else:
-                print("Transferring %s to server." % file_name)
+                print("Transferring %s to server." % local_file_path)
                 sftp.put(local_file_path, remote_file_path)
                 sftp.close()
 
