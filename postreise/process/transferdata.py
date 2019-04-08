@@ -63,7 +63,7 @@ class PullData(object):
             file_object = self.sftp.file(dir + '/' + file, 'rb')
         except FileNotFoundError:
             print("%s not found in %s on server" % (file, dir))
-            return
+            raise
 
         print('Reading file from server')
         if field_name == 'ct':
@@ -148,7 +148,7 @@ class PushData(object):
                 print("File already on server. Return.")
                 return
             else:
-                print("Transferring %s to server." % local_file_path)
+                print("Transferring %s to server" % local_file_path)
                 sftp.put(local_file_path, remote_file_path)
                 sftp.close()
 
