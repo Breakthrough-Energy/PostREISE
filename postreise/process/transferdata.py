@@ -45,11 +45,10 @@ class PullData(object):
         if not self.sftp:
             self._late_init()
 
-        if int(scenario_id) not in self.scenario_list.id.tolist():
+        if scenario_id not in self.scenario_list.id.tolist():
             raise LookupError("Scenario not found")
         else:
-            scenario = self.scenario_list[
-                self.scenario_list.id == int(scenario_id)]
+            scenario = self.scenario_list[self.scenario_list.id == scenario_id]
 
         if field_name == "PG" or field_name == "PF":
             dir = const.REMOTE_DIR_OUTPUT
@@ -141,7 +140,7 @@ class PushData(object):
             ssh = setup_server_connection()
             sftp = ssh.open_sftp()
             scenario_list = _get_scenario_file_from_server(sftp)
-            scenario = scenario_list[scenario_list.id == int(scenario_id)]
+            scenario = scenario_list[scenario_list.id == scenario_id]
             remote_file_path = os.path.join(const.REMOTE_DIR_INPUT, file_name)
             stdin, stdout, stderr = ssh.exec_command("ls " + remote_file_path)
             if len(stderr.readlines()) == 0:
@@ -187,4 +186,5 @@ def _get_scenario_file_from_server(sftp):
     full_file_path = const.SCENARIO_LIST_LOCATION
     file_object = sftp.file(full_file_path, 'rb')
     scenario_list = pd.read_csv(file_object)
-    return scenario_list
+    scenario_list.fillna('', inplace=True)
+    return scenario_list.astype(str)
