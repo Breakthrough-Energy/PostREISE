@@ -25,6 +25,7 @@ class PullData(object):
         ssh = setup_server_connection()
         self.sftp = ssh.open_sftp()
         self.scenario_list = _get_scenario_file_from_server(self.sftp)
+        self.execute_list = _get_execute_file_from_server(self.sftp)
 
     def download(self, scenario_id, field_name):
         """Download data from server.
@@ -99,6 +100,15 @@ class PullData(object):
             self._late_init()
         return self.scenario_list
 
+    def get_execute_table(self):
+        """Returns scenario table.
+
+        :return: (*pandas*) -- execute table.
+        """
+        if not self.sftp:
+            self._late_init()
+        return self.execute_list
+
 
 class PushData(object):
     """This class setup the connection to the server and gets the data from
@@ -154,9 +164,8 @@ class PushData(object):
 def setup_server_connection():
     """This function setup the connection to the server.
 
-    :return client: (*paramiko*) -- SSH client object.
+    :return: (*paramiko*) -- SSH client object.
     """
-
     client = paramiko.SSHClient()
     try:
         client.load_system_host_keys()
@@ -180,11 +189,22 @@ def _get_scenario_file_from_server(sftp):
     """Get scenario list from server.
 
     :param paramiko sftp: Takes an SFTP client object.
-    :return scenario_list: (*pandas*) -- data frame.
+    :return: (*pandas*) -- data frame.
     """
-
     full_file_path = const.SCENARIO_LIST_LOCATION
     file_object = sftp.file(full_file_path, 'rb')
     scenario_list = pd.read_csv(file_object)
     scenario_list.fillna('', inplace=True)
     return scenario_list.astype(str)
+
+def _get_execute_file_from_server(sftp):
+    """Get execute list from server.
+
+    :param paramiko sftp: Takes an SFTP client object.
+    :return: (*pandas*) -- data frame.
+    """
+    full_file_path = const.EXECUTE_LIST_LOCATION
+    file_object = sftp.file(full_file_path, 'rb')
+    execute_list = pd.read_csv(file_object)
+    execute_list.fillna('', inplace=True)
+    return execute_list.astype(str)
