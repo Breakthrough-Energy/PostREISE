@@ -134,6 +134,7 @@ class PushData(object):
             *'ct'*.
         :raises ValueError: if second argument is not one of *'demand'*, \
             *'hydro'*, *'solar'*, *'wind'* or *'ct'*.
+        :raises IOError: if file already exists on server.
         """
         possible = ['demand', 'hydro', 'solar', 'wind', 'ct']
         if field_name not in possible:
@@ -154,8 +155,8 @@ class PushData(object):
             remote_file_path = os.path.join(const.REMOTE_DIR_INPUT, file_name)
             stdin, stdout, stderr = ssh.exec_command("ls " + remote_file_path)
             if len(stderr.readlines()) == 0:
-                print("File already on server. Return.")
-                return
+                raise IOError("%s already exists in %s on server" %
+                                (file_name, const.REMOTE_DIR_INPUT))
             else:
                 print("Transferring %s to server" % local_file_path)
                 sftp.put(local_file_path, remote_file_path)
