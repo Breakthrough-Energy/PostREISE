@@ -52,11 +52,11 @@ class PullData(object):
             scenario = self.scenario_list[self.scenario_list.id == scenario_id]
 
         if field_name == "PG" or field_name == "PF":
-            dir = const.REMOTE_DIR_OUTPUT
+            dir = const.OUTPUT_DIR
             file = scenario_id + '_' + field_name + '.csv'
         else:
             extension = '.pkl' if field_name == 'ct' else '.csv'
-            dir = const.REMOTE_DIR_INPUT
+            dir = const.INPUT_DIR
             file = scenario_id + '_' + field_name + extension
 
         try:
@@ -152,11 +152,11 @@ class PushData(object):
             sftp = ssh.open_sftp()
             scenario_list = _get_scenario_file_from_server(sftp)
             scenario = scenario_list[scenario_list.id == scenario_id]
-            remote_file_path = os.path.join(const.REMOTE_DIR_INPUT, file_name)
+            remote_file_path = os.path.join(const.INPUT_DIR, file_name)
             stdin, stdout, stderr = ssh.exec_command("ls " + remote_file_path)
             if len(stderr.readlines()) == 0:
                 raise IOError("%s already exists in %s on server" %
-                                (file_name, const.REMOTE_DIR_INPUT))
+                                (file_name, const.INPUT_DIR))
             else:
                 print("Transferring %s to server" % local_file_path)
                 sftp.put(local_file_path, remote_file_path)
@@ -192,7 +192,7 @@ def _get_scenario_file_from_server(sftp):
     :param paramiko sftp: Takes an SFTP client object.
     :return: (*pandas*) -- data frame.
     """
-    full_file_path = const.SCENARIO_LIST_LOCATION
+    full_file_path = const.SCENARIO_LIST
     file_object = sftp.file(full_file_path, 'rb')
     scenario_list = pd.read_csv(file_object)
     scenario_list.fillna('', inplace=True)
@@ -204,7 +204,7 @@ def _get_execute_file_from_server(sftp):
     :param paramiko sftp: Takes an SFTP client object.
     :return: (*pandas*) -- data frame.
     """
-    full_file_path = const.EXECUTE_LIST_LOCATION
+    full_file_path = const.EXECUTE_LIST
     file_object = sftp.file(full_file_path, 'rb')
     execute_list = pd.read_csv(file_object)
     execute_list.fillna('', inplace=True)

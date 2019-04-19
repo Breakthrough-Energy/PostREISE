@@ -1,7 +1,8 @@
 SERVER_ADDRESS = 'zeus.intvenlab.com'
-SCENARIO_LIST_LOCATION = '/home/EGM/v2/ScenarioList.csv'
-EXECUTE_LIST_LOCATION = '/home/EGM/v2/ExecuteList.csv'
-REMOTE_DIR_BASE = '/home/EGM/v2/raw'
-REMOTE_DIR_INPUT = '/home/EGM/v2/data/input'
-REMOTE_DIR_OUTPUT = '/home/EGM/v2/data/output'
+SCENARIO_LIST = '/home/EGM/v2/ScenarioList.csv'
+EXECUTE_LIST = '/home/EGM/v2/ExecuteList.csv'
+EXECUTE_DIR = '/home/EGM/v2/tmp'
+BASE_PROFILE_DIR = '/home/EGM/v2/raw'
+INPUT_DIR = '/home/EGM/v2/data/input'
+OUTPUT_DIR = '/home/EGM/v2/data/output'
 LOCAL_DIR = None
