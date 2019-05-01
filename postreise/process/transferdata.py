@@ -6,7 +6,6 @@ import paramiko
 from pathlib import Path
 
 
-
 class PullData(object):
     """This class setup the connection to the server and gets the data from
         the server.
@@ -27,12 +26,13 @@ class PullData(object):
         self.scenario_list = _get_scenario_file_from_server(self.sftp)
         self.execute_list = _get_execute_file_from_server(self.sftp)
 
-    def download(self, scenario_id, field_name):
+    def download(self, scenario_id, field_name, from_dir):
         """Download data from server.
 
         :param str scenario_id: scenario id.
         :param str field_name: *'PG'*, *'PF'*, *'demand'*, *'hydro'*, \
             *'solar'*, *'wind'* or *'ct'*.
+        :param str from_dir: remote directory.
         :return: (*pandas*) -- data frame.
         :raises ValueError: if second argument is not one of *'PG'*, \
             *'PF'*, *'demand'*, *'hydro'*, *'solar'*, *'wind'* or *'ct'*.
@@ -51,18 +51,13 @@ class PullData(object):
         else:
             scenario = self.scenario_list[self.scenario_list.id == scenario_id]
 
-        if field_name == "PG" or field_name == "PF":
-            dir = const.OUTPUT_DIR
-            file = scenario_id + '_' + field_name + '.csv'
-        else:
-            extension = '.pkl' if field_name == 'ct' else '.csv'
-            dir = const.INPUT_DIR
-            file = scenario_id + '_' + field_name + extension
+        extension = '.pkl' if field_name == 'ct' else '.csv'
+        file = scenario_id + '_' + field_name + extension
 
         try:
-            file_object = self.sftp.file(dir + '/' + file, 'rb')
+            file_object = self.sftp.file(from_dir + '/' + file, 'rb')
         except FileNotFoundError:
-            print("%s not found in %s on server" % (file, dir))
+            print("%s not found in %s on server" % (file, from_dir))
             raise
 
         print('Reading file from server')
@@ -116,22 +111,14 @@ class PushData(object):
 
     """
 
-    def __init__(self):
-        """Constructor.
-
-        """
-        self.local_dir = const.LOCAL_DIR
-        # Check if data can be found locally
-        if not self.local_dir:
-            home_dir = str(Path.home())
-            self.local_dir = os.path.join(home_dir, 'scenario_data', '')
-
-    def upload(self, scenario_id, field_name):
-        """Upload data to server.
+    def upload(self, scenario_id, field_name, from_dir, to_dir):
+        """Uploads data to server.
 
         :param str scenario_id: scenario index.
         :param str field_name: *'demand'*, *'hydro'*, *'solar'*, *'wind'* or \
             *'ct'*.
+        :param str from_dir: local directory.
+        :param str to_dir: remote directory.
         :raises ValueError: if second argument is not one of *'demand'*, \
             *'hydro'*, *'solar'*, *'wind'* or *'ct'*.
         :raises IOError: if file already exists on server.
@@ -142,24 +129,24 @@ class PushData(object):
 
         extension = ".pkl" if field_name == 'ct' else ".csv"
         file_name = scenario_id + "_" + field_name + extension
-        local_file_path = os.path.join(self.local_dir, file_name)
+        from_path = os.path.join(from_dir, file_name)
 
-        if os.path.isfile(local_file_path) is False:
-            print("%s not found." % local_file_path)
-            return
+        if os.path.isfile(from_path) is False:
+            raise FileNotFoundError("%s not found in %s on local machine" %
+                                    (file_name, from_dir))
         else:
             ssh = setup_server_connection()
             sftp = ssh.open_sftp()
             scenario_list = _get_scenario_file_from_server(sftp)
             scenario = scenario_list[scenario_list.id == scenario_id]
-            remote_file_path = os.path.join(const.INPUT_DIR, file_name)
-            stdin, stdout, stderr = ssh.exec_command("ls " + remote_file_path)
+            to_path = os.path.join(to_dir, file_name)
+            stdin, stdout, stderr = ssh.exec_command("ls " + to_path)
             if len(stderr.readlines()) == 0:
                 raise IOError("%s already exists in %s on server" %
-                                (file_name, const.INPUT_DIR))
+                              (file_name, to_dir))
             else:
-                print("Transferring %s to server" % local_file_path)
-                sftp.put(local_file_path, remote_file_path)
+                print("Transferring %s to server" % from_path)
+                sftp.put(from_path, to_path)
                 sftp.close()
 
 def setup_server_connection():
