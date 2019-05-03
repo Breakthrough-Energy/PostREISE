@@ -8,4 +8,4 @@ EXECUTE_DIR = '/home/EGM/v2/tmp'
 BASE_PROFILE_DIR = '/home/EGM/v2/raw'
 INPUT_DIR = '/home/EGM/v2/data/input'
 OUTPUT_DIR = '/home/EGM/v2/data/output'
-LOCAL_DIR = os.path.join(str(Path.home()), 'scenario_data', '')
+LOCAL_DIR = os.path.join(str(Path.home()), 'ScenarioData', '')
