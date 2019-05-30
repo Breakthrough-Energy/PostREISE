@@ -23,7 +23,7 @@ def get_scenario(scenario_id):
 
     return scenario.to_dict('records', into=OrderedDict)[0]
 
-def insert_list(filename, scenario_id, column_number, column_value):
+def insert_in_file(filename, scenario_id, column_number, column_value):
     """Updates status in execute list on server.
 
     :param str filename: path to execute or scenario list.
@@ -103,7 +103,7 @@ def extract_scenario(scenario_id):
     pf.to_csv(os.path.join(const.OUTPUT_DIR, scenario_info['id']+'_PF.csv'))
 
     # Update status in ExecuteList.csv
-    insert_list(const.EXECUTE_LIST, scenario_info['id'], '2', 'extracted')
+    insert_in_file(const.EXECUTE_LIST, scenario_info['id'], '2', 'extracted')
 
 
 if __name__ == "__main__":
