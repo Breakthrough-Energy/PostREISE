@@ -5,6 +5,8 @@ import pandas as pd
 import time
 import os
 
+from collections import OrderedDict 
+
 import matlab.engine
 eng = matlab.engine.start_matlab()
 this_dirname = os.path.dirname(__file__)
@@ -43,6 +45,7 @@ def extract_data(scenario_info):
         functions to extract data.
 
     :param dict scenario_info: scenario information.
+    :return: (*pandas*) -- data frame of PG and PF.
     """
 
     start_index = int(scenario_info['start_index']) + 1
@@ -50,7 +53,7 @@ def extract_data(scenario_info):
 
     start = time.process_time()
     for i in range(start_index, end_index+1):
-        print('Reading'+str(i))
+        print('Reading file #%s' % str(i))
         output_dir = os.path.join(const.EXECUTE_DIR,
                                   'scenario_%s/output' % scenario_info['id'])
         filename = scenario_info['id'] + '_sub_result_' + str(i)
