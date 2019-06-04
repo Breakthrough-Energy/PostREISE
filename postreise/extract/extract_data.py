@@ -1,16 +1,16 @@
 from postreise.extract import const
 
+import matlab.engine
 import numpy as np
 import pandas as pd
 import time
 import os
 
+from tqdm import tqdm
 from collections import OrderedDict 
 
-import matlab.engine
 eng = matlab.engine.start_matlab()
-this_dirname = os.path.dirname(__file__)
-eng.addpath(this_dirname)
+eng.addpath(os.path.dirname(__file__))
 
 
 def get_scenario(scenario_id):
@@ -52,8 +52,7 @@ def extract_data(scenario_info):
     end_index = int(scenario_info['end_index']) + 1
 
     start = time.process_time()
-    for i in range(start_index, end_index+1):
-        print('Reading file #%s' % str(i))
+    for i in tqdm(range(start_index, end_index+1)):
         output_dir = os.path.join(const.EXECUTE_DIR,
                                   'scenario_%s/output' % scenario_info['id'])
         filename = scenario_info['id'] + '_sub_result_' + str(i)
@@ -108,6 +107,8 @@ def extract_scenario(scenario_id):
     # Update status in ExecuteList.csv
     insert_in_file(const.EXECUTE_LIST, scenario_info['id'], '2', 'extracted')
 
+    # Update status in ScenarioList.csv
+    insert_in_file(const.SCENARIO_LIST, scenario_info['id'], '4', 'analyze')
 
 if __name__ == "__main__":
     import sys
