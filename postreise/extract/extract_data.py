@@ -45,8 +45,14 @@ def extract_data(scenario_info):
     :return: (*pandas*) -- data frame of PG and PF.
     """
 
-    start_index = int(scenario_info['start_index']) + 1
-    end_index = int(scenario_info['end_index']) + 1
+    interval = int(scenario_info['interval'].split('H', 1)[0])
+    start_date = scenario_info['start_date']
+    end_date = scenario_info['end_date']
+    diff = pd.Timestamp(end_date) - pd.Timestamp(start_date)
+    hours = diff / np.timedelta64(1, 'h') + 1
+                         
+    start_index = 1
+    end_index = int(hours / interval)
 
     start = time.process_time()
     for i in tqdm(range(start_index, end_index+1)):
@@ -56,8 +62,8 @@ def extract_data(scenario_info):
 
         struct = loadmat(os.path.join(dir, 'output', filename),
                          squeeze_me=True, struct_as_record=False)
-        pg = a['mdo_save'].flow.mpc.gen.PG.T
-        pf = a['mdo_save'].flow.mpc.gen.PF.T
+        pg = struct['mdo_save'].flow.mpc.gen.PG.T
+        pf = struct['mdo_save'].flow.mpc.branch.PF.T
         if i > start_index:
             pg = pg.append(pd.DataFrame(pg))
             pf = pf.append(pd.DataFrame(pf))
@@ -70,9 +76,7 @@ def extract_data(scenario_info):
     print('Reading time ' + str(100 * (end-start)) + 's')
 
     # Set data range
-    date_range = pd.date_range(scenario_info['start_date'],
-                               scenario_info['end_date'],
-                               freq='H')
+    date_range = pd.date_range(start_date, end_date, freq='H')
 
     pf.index = date_range
     pf.index.name = 'UTC'
