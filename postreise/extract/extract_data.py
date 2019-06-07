@@ -101,8 +101,8 @@ def extract_scenario(scenario_id):
 
     (pg, pf) = extract_data(scenario_info)
 
-    pg.to_csv(os.path.join(const.OUTPUT_DIR, scenario_info['id']+'_PG.csv'))
-    pf.to_csv(os.path.join(const.OUTPUT_DIR, scenario_info['id']+'_PF.csv'))
+    pg.to_pickle(os.path.join(const.OUTPUT_DIR, scenario_info['id']+'_PG.pkl'))
+    pf.to_pickle(os.path.join(const.OUTPUT_DIR, scenario_info['id']+'_PF.pkl'))
 
     # Update status in ExecuteList.csv
     insert_in_file(const.EXECUTE_LIST, scenario_info['id'], '2', 'extracted')
