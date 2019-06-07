@@ -1,16 +1,13 @@
 from postreise.extract import const
 
-import matlab.engine
 import numpy as np
 import pandas as pd
 import time
 import os
 
+from scipy.io import loadmat
 from tqdm import tqdm
-from collections import OrderedDict 
-
-eng = matlab.engine.start_matlab()
-eng.addpath(os.path.dirname(__file__))
+from collections import OrderedDict
 
 
 def get_scenario(scenario_id):
@@ -53,25 +50,21 @@ def extract_data(scenario_info):
 
     start = time.process_time()
     for i in tqdm(range(start_index, end_index+1)):
-        output_dir = os.path.join(const.EXECUTE_DIR,
-                                  'scenario_%s/output' % scenario_info['id'])
-        filename = scenario_info['id'] + '_sub_result_' + str(i)
+        dir = os.path.join(const.EXECUTE_DIR,
+                           'scenario_%s' % scenario_info['id'])
+        filename = 'result_' + str(i)
 
-        matlab_pg = eng.get_power_output_from_gen(os.path.join(output_dir,
-                                                               filename))
-        matlab_pf = eng.get_load_on_branch(os.path.join(output_dir,
-                                                        filename))
+        struct = loadmat(os.path.join(dir, 'output', filename),
+                         squeeze_me=True, struct_as_record=False)
+        pg = a['mdo_save'].flow.mpc.gen.PG.T
+        pf = a['mdo_save'].flow.mpc.gen.PF.T
         if i > start_index:
-            pg = pg.append(pd.DataFrame(np.array(matlab_pg._data).reshape(
-                matlab_pg.size[::-1])))
-            pf = pf.append(pd.DataFrame(np.array(matlab_pf._data).reshape(
-                matlab_pf.size[::-1])))
+            pg = pg.append(pd.DataFrame(pg))
+            pf = pf.append(pd.DataFrame(pf))
         else:
-            pg = pd.DataFrame(np.array(matlab_pg._data).reshape(
-                matlab_pg.size[::-1]))
+            pg = pd.DataFrame(pg)
             pg.name = scenario_info['id'] + '_PG'
-            pf = pd.DataFrame(np.array(matlab_pf._data).reshape(
-                matlab_pf.size[::-1]))
+            pf = pd.DataFrame(pf)
             pf.name = scenario_info['id'] + '_PF'
     end = time.process_time()
     print('Reading time ' + str(100 * (end-start)) + 's')
@@ -87,7 +80,10 @@ def extract_data(scenario_info):
     pg.index.name = 'UTC'
 
     # Shift index of PG becasue bus index in matlab
-    pg = pg.rename(columns=lambda x: x+1)
+    case = loadmat(os.path.join(dir, 'case.mat'), squeeze_me=True,
+                   struct_as_record=False)
+    pg.columns = case['mpc'].genid.tolist()
+    pf.columns = case['mpc'].branchid.tolist()
 
     return (pg, pf)
 
