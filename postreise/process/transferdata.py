@@ -3,7 +3,7 @@ from postreise.process import const
 import os
 import pandas as pd
 import paramiko
-
+from tqdm import tqdm
 
 def download(file_name, from_dir, to_dir):
     """Download data from server.
@@ -26,7 +26,9 @@ def download(file_name, from_dir, to_dir):
         print("Transferring %s from server" % file_name)
         sftp = ssh.open_sftp()
         to_path = os.path.join(to_dir, file_name)
-        sftp.get(from_path, to_path)
+        cbk, pbar = progress_bar(ascii=True, unit='b', unit_scale=True)
+        sftp.get(from_path, to_path, callback=cbk)
+        pbar.close()
         sftp.close()
 
 
@@ -109,3 +111,12 @@ def setup_server_connection():
     client.connect(const.SERVER_ADDRESS)
 
     return client
+
+def progress_bar(*args, **kwargs):
+    pbar = tqdm(*args, **kwargs)  # make a progressbar
+    last = [0]  # last known iteration, start at 0
+    def show(a, b):
+        pbar.total = int(b)
+        pbar.update(int(a - last[0]))  # update pbar with increment
+        last[0] = a  # update last known iteration
+    return show, pbar  # return callback, tqdmInstance
