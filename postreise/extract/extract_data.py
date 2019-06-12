@@ -51,26 +51,26 @@ def extract_data(scenario_info):
     diff = pd.Timestamp(end_date) - pd.Timestamp(start_date)
     hours = diff / np.timedelta64(1, 'h') + 1
                          
-    start_index = 1
+    start_index = 0
     end_index = int(hours / interval)
 
     start = time.process_time()
-    for i in tqdm(range(start_index, end_index+1)):
+    for i in tqdm(range(start_index, end_index)):
         dir = os.path.join(const.EXECUTE_DIR,
                            'scenario_%s' % scenario_info['id'])
         filename = 'result_' + str(i)
 
         struct = loadmat(os.path.join(dir, 'output', filename),
                          squeeze_me=True, struct_as_record=False)
-        pg = struct['mdo_save'].flow.mpc.gen.PG.T
-        pf = struct['mdo_save'].flow.mpc.branch.PF.T
+        pg_tmp = struct['mdo_save'].flow.mpc.gen.PG.T
+        pf_tmp = struct['mdo_save'].flow.mpc.branch.PF.T
         if i > start_index:
-            pg = pg.append(pd.DataFrame(pg))
-            pf = pf.append(pd.DataFrame(pf))
+            pg = pg.append(pd.DataFrame(pg_tmp))
+            pf = pf.append(pd.DataFrame(pf_tmp))
         else:
-            pg = pd.DataFrame(pg)
+            pg = pd.DataFrame(pg_tmp)
             pg.name = scenario_info['id'] + '_PG'
-            pf = pd.DataFrame(pf)
+            pf = pd.DataFrame(pf_tmp)
             pf.name = scenario_info['id'] + '_PF'
     end = time.process_time()
     print('Reading time ' + str(100 * (end-start)) + 's')
