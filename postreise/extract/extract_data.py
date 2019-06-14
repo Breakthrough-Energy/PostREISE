@@ -50,9 +50,11 @@ def extract_data(scenario_info):
     end_date = scenario_info['end_date']
     diff = pd.Timestamp(end_date) - pd.Timestamp(start_date)
     hours = diff / np.timedelta64(1, 'h') + 1
-                         
+
     start_index = 0
     end_index = int(hours / interval)
+
+    infeasibilities = []
 
     start = time.process_time()
     for i in tqdm(range(start_index, end_index)):
@@ -62,6 +64,9 @@ def extract_data(scenario_info):
 
         struct = loadmat(os.path.join(dir, 'output', filename),
                          squeeze_me=True, struct_as_record=False)
+
+        infeasibilities_tmp = round(100*(1-struct['mdo_save'].demand_scaling))
+        infeasibilities.append('%s:%s' % (str(i), str(infeasibilities_tmp)))
         pg_tmp = struct['mdo_save'].flow.mpc.gen.PG.T
         pf_tmp = struct['mdo_save'].flow.mpc.branch.PF.T
         if i > start_index:
@@ -74,6 +79,10 @@ def extract_data(scenario_info):
             pf.name = scenario_info['id'] + '_PF'
     end = time.process_time()
     print('Reading time ' + str(100 * (end-start)) + 's')
+
+    # Add infeasibilities in ScenarioList.csv
+    insert_in_file(const.SCENARIO_LIST, scenario_info['id'], '15',
+                   '_'.join(infeasibilities))
 
     # Set data range
     date_range = pd.date_range(start_date, end_date, freq='H')
