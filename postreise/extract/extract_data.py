@@ -65,8 +65,10 @@ def extract_data(scenario_info):
         struct = loadmat(os.path.join(dir, 'output', filename),
                          squeeze_me=True, struct_as_record=False)
 
-        infeasibilities_tmp = round(100*(1-struct['mdo_save'].demand_scaling))
-        infeasibilities.append('%s:%s' % (str(i), str(infeasibilities_tmp)))
+        demand_scaling = struct['mdo_save'].demand_scaling
+        if demand_scaling < 1:
+            demand_change = round(100 * (1 - demand_scaling))
+            infeasibilities.append('%s:%s' % (str(i), str(demand_change)))
         pg_tmp = struct['mdo_save'].flow.mpc.gen.PG.T
         pf_tmp = struct['mdo_save'].flow.mpc.branch.PF.T
         if i > start_index:
