@@ -112,11 +112,18 @@ def setup_server_connection():
 
     return client
 
+
 def progress_bar(*args, **kwargs):
-    pbar = tqdm(*args, **kwargs)  # make a progressbar
-    last = [0]  # last known iteration, start at 0
+    """Creates progress bar
+
+    :param *args: variable length argument list passed to the tqdm constructor.
+    :param **kwargs: arbitrary keyword arguments passed to the tqdm \
+        constructor.
+    """
+    pbar = tqdm(*args, **kwargs)
+    last = [0]
     def show(a, b):
         pbar.total = int(b)
-        pbar.update(int(a - last[0]))  # update pbar with increment
-        last[0] = a  # update last known iteration
-    return show, pbar  # return callback, tqdmInstance
+        pbar.update(int(a - last[0]))
+        last[0] = a
+    return show, pbar
