@@ -5,9 +5,10 @@ import pandas as pd
 import paramiko
 from tqdm import tqdm
 
-def download(file_name, from_dir, to_dir):
+def download(ssh_client, file_name, from_dir, to_dir):
     """Download data from server.
 
+    :param paramiko ssh_client: session with an SSH server.
     :param str file_name: file name.
     :param str from_dir: remote directory.
     :param str to_dir: local directory. Will be created if does not exist.
@@ -17,28 +18,29 @@ def download(file_name, from_dir, to_dir):
         os.makedirs(to_dir)
 
     from_path = os.path.join(from_dir, file_name)
-    ssh = setup_server_connection()
-    stdin, stdout, stderr = ssh.exec_command("ls " + from_path)
+    stdin, stdout, stderr = ssh_client.exec_command("ls " + from_path)
     if len(stderr.readlines()) != 0:
         raise FileNotFoundError("%s not found in %s on server" %
                                 (file_name, from_dir))
     else:
         print("Transferring %s from server" % file_name)
-        sftp = ssh.open_sftp()
+        sftp = ssh_client.open_sftp()
         to_path = os.path.join(to_dir, file_name)
         cbk, pbar = progress_bar(ascii=True, unit='b', unit_scale=True)
         sftp.get(from_path, to_path, callback=cbk)
         pbar.close()
         sftp.close()
 
-
-def upload(file_name, from_dir, to_dir):
+def upload(ssh_client, file_name, from_dir, to_dir, change_name_to=None):
     """Uploads data to server.
 
-    :param str file_name: file name
+    :param paramiko ssh_client: session with an SSH server.
+    :param str file_name: file name on local machine.
     :param str from_dir: local directory.
     :param str to_dir: remote directory.
     :raises IOError: if file already exists on server.
+    :param change_name_to: file name on remote machine.
+    :type change_name_to: None or int
     """
     from_path = os.path.join(from_dir, file_name)
 
@@ -46,45 +48,50 @@ def upload(file_name, from_dir, to_dir):
         raise FileNotFoundError("%s not found in %s on local machine" %
                                 (file_name, from_dir))
     else:
-        ssh = setup_server_connection()
-        to_path = os.path.join(to_dir, file_name)
-        stdin, stdout, stderr = ssh.exec_command("ls " + to_path)
+        if bool(change_name_to):
+            to_path = os.path.join(to_dir, change_name_to)
+        else:
+            to_path = os.path.join(to_dir, file_name)
+        stdin, stdout, stderr = ssh_client.exec_command("ls " + to_path)
         if len(stderr.readlines()) == 0:
             raise IOError("%s already exists in %s on server" %
                           (file_name, to_dir))
         else:
             print("Transferring %s to server" % file_name)
-            sftp = ssh.open_sftp()
+            sftp = ssh_client.open_sftp()
             sftp.put(from_path, to_path)
             sftp.close()
 
-
-def get_scenario_table():
+def get_scenario_table(ssh_client):
     """Returns scenario table from server.
 
+    :param paramiko ssh_client: session with an SSH server.
     :return: (*pandas*) -- data frame.
     """
-    ssh = setup_server_connection()
-    sftp = ssh.open_sftp()
+    sftp = ssh_client.open_sftp()
     file_object = sftp.file(const.SCENARIO_LIST, 'rb')
 
     scenario_list = pd.read_csv(file_object)
     scenario_list.fillna('', inplace=True)
 
+    sftp.close()
+
     return scenario_list.astype(str)
 
 
-def get_execute_table():
+def get_execute_table(ssh_client):
     """Returns execute table from server.
 
+    :param paramiko ssh_client: session with an SSH server.
     :return: (*pandas*) -- data frame.
     """
-    ssh = setup_server_connection()
-    sftp = ssh.open_sftp()
+    sftp = ssh_client.open_sftp()
 
     file_object = sftp.file(const.EXECUTE_LIST, 'rb')
     execute_list = pd.read_csv(file_object)
     execute_list.fillna('', inplace=True)
+
+    sftp.close()
 
     return execute_list.astype(str)
 
@@ -108,7 +115,7 @@ def setup_server_connection():
                 print('Cannot read file, try again')
                 ssh_known_hosts = input('Provide ssh known_hosts key file =')
 
-    client.connect(const.SERVER_ADDRESS)
+    client.connect(const.SERVER_ADDRESS, timeout=60)
 
     return client
 
