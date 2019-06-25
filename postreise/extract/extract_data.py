@@ -13,7 +13,7 @@ from collections import OrderedDict
 def get_scenario(scenario_id):
     """Returns scenario information.
 
-    :param int scenario_id: scenario index.
+    :param str scenario_id: scenario index.
     :return: (*dict*) -- scenario information.
     """
     scenario_list = pd.read_csv(const.SCENARIO_LIST, dtype=str)
@@ -21,6 +21,7 @@ def get_scenario(scenario_id):
     scenario = scenario_list[scenario_list.id == scenario_id]
 
     return scenario.to_dict('records', into=OrderedDict)[0]
+
 
 def insert_in_file(filename, scenario_id, column_number, column_value):
     """Updates status in execute list on server.
@@ -36,8 +37,9 @@ def insert_in_file(filename, scenario_id, column_number, column_value):
     command = "awk %s %s %s" % (options, program, filename)
     os.system(command)
 
+
 def extract_data(scenario_info):
-    """Takes subintervals from simulation in MATLAB binary formats, \
+    """Takes sub-intervals from simulation in MATLAB binary formats, \
         converts and connects it into csv format. It uses the MATLAB \
         functions to extract data.
 
@@ -56,21 +58,21 @@ def extract_data(scenario_info):
 
     infeasibilities = []
 
-    start = time.process_time()
+    tic = time.process_time()
+    folder = os.path.join(const.EXECUTE_DIR,
+                          'scenario_%s' % scenario_info['id'])
     for i in tqdm(range(start_index, end_index)):
-        dir = os.path.join(const.EXECUTE_DIR,
-                           'scenario_%s' % scenario_info['id'])
         filename = 'result_' + str(i)
 
-        struct = loadmat(os.path.join(dir, 'output', filename),
+        output = loadmat(os.path.join(folder, 'output', filename),
                          squeeze_me=True, struct_as_record=False)
 
-        demand_scaling = struct['mdo_save'].demand_scaling
+        demand_scaling = output['mdo_save'].demand_scaling
         if demand_scaling < 1:
             demand_change = round(100 * (1 - demand_scaling))
             infeasibilities.append('%s:%s' % (str(i), str(demand_change)))
-        pg_tmp = struct['mdo_save'].flow.mpc.gen.PG.T
-        pf_tmp = struct['mdo_save'].flow.mpc.branch.PF.T
+        pg_tmp = output['mdo_save'].flow.mpc.gen.PG.T
+        pf_tmp = output['mdo_save'].flow.mpc.branch.PF.T
         if i > start_index:
             pg = pg.append(pd.DataFrame(pg_tmp))
             pf = pf.append(pd.DataFrame(pf_tmp))
@@ -79,8 +81,8 @@ def extract_data(scenario_info):
             pg.name = scenario_info['id'] + '_PG'
             pf = pd.DataFrame(pf_tmp)
             pf.name = scenario_info['id'] + '_PF'
-    end = time.process_time()
-    print('Reading time ' + str(round(end-start)) + 's')
+    toc = time.process_time()
+    print('Reading time ' + str(round(toc-tic)) + 's')
 
     # Add infeasibilities in ScenarioList.csv
     insert_in_file(const.SCENARIO_LIST, scenario_info['id'], '15',
@@ -94,13 +96,13 @@ def extract_data(scenario_info):
     pg.index = date_range
     pg.index.name = 'UTC'
 
-    # Shift index of PG becasue bus index in matlab
-    case = loadmat(os.path.join(dir, 'case.mat'), squeeze_me=True,
+    case = loadmat(os.path.join(folder, 'case.mat'), squeeze_me=True,
                    struct_as_record=False)
     pg.columns = case['mpc'].genid.tolist()
     pf.columns = case['mpc'].branchid.tolist()
 
-    return (pg, pf)
+    return pg, pf
+
 
 def extract_scenario(scenario_id):
     """Extracts data and save data as csv.
@@ -110,7 +112,7 @@ def extract_scenario(scenario_id):
 
     scenario_info = get_scenario(scenario_id)
 
-    (pg, pf) = extract_data(scenario_info)
+    pg, pf = extract_data(scenario_info)
 
     pg.to_pickle(os.path.join(const.OUTPUT_DIR, scenario_info['id']+'_PG.pkl'))
     pf.to_pickle(os.path.join(const.OUTPUT_DIR, scenario_info['id']+'_PF.pkl'))
@@ -120,6 +122,7 @@ def extract_scenario(scenario_id):
 
     # Update status in ScenarioList.csv
     insert_in_file(const.SCENARIO_LIST, scenario_info['id'], '4', 'analyze')
+
 
 if __name__ == "__main__":
     import sys
