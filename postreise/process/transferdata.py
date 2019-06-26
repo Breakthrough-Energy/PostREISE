@@ -9,7 +9,7 @@ from tqdm import tqdm
 def download(ssh_client, file_name, from_dir, to_dir):
     """Download data from server.
 
-    :param Paramiko.client ssh_client: session with an SSH server.
+    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
     :param str file_name: file name.
     :param str from_dir: remote directory.
     :param str to_dir: local directory. Will be created if does not exist.
@@ -27,22 +27,21 @@ def download(ssh_client, file_name, from_dir, to_dir):
         print("Transferring %s from server" % file_name)
         sftp = ssh_client.open_sftp()
         to_path = os.path.join(to_dir, file_name)
-        cbk, pbar = progress_bar(ascii=True, unit='b', unit_scale=True)
+        cbk, bar = progress_bar(ascii=True, unit='b', unit_scale=True)
         sftp.get(from_path, to_path, callback=cbk)
-        pbar.close()
+        bar.close()
         sftp.close()
 
 
 def upload(ssh_client, file_name, from_dir, to_dir, change_name_to=None):
     """Uploads data to server.
 
-    :param Paramiko.client ssh_client: session with an SSH server.
+    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
     :param str file_name: file name on local machine.
     :param str from_dir: local directory.
     :param str to_dir: remote directory.
     :raises IOError: if file already exists on server.
-    :param change_name_to: file name on remote machine.
-    :type change_name_to: str
+    :param str change_name_to: file name on remote machine.
     """
     from_path = os.path.join(from_dir, file_name)
 
@@ -68,7 +67,7 @@ def upload(ssh_client, file_name, from_dir, to_dir, change_name_to=None):
 def get_scenario_table(ssh_client):
     """Returns scenario table from server.
 
-    :param Paramiko.client ssh_client: session with an SSH server.
+    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
     :return: (*pandas*) -- data frame.
     """
     sftp = ssh_client.open_sftp()
@@ -85,7 +84,7 @@ def get_scenario_table(ssh_client):
 def get_execute_table(ssh_client):
     """Returns execute table from server.
 
-    :param Paramiko.client ssh_client: session with an SSH server.
+    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
     :return: (*pandas*) -- data frame.
     """
     sftp = ssh_client.open_sftp()
@@ -102,7 +101,7 @@ def get_execute_table(ssh_client):
 def setup_server_connection():
     """This function setup the connection to the server.
 
-    :return: (*Paramiko.client*) -- SSH client object.
+    :return: (*paramiko.client.SSHClient*) -- session with an SSH server.
     """
     client = paramiko.SSHClient()
     try:
@@ -129,11 +128,11 @@ def progress_bar(*args, **kwargs):
     :param args: variable length argument list passed to the tqdm constructor.
     :param kwargs: arbitrary keyword arguments passed to the tqdm constructor.
     """
-    pbar = tqdm(*args, **kwargs)
+    bar = tqdm(*args, **kwargs)
     last = [0]
 
     def show(a, b):
-        pbar.total = int(b)
-        pbar.update(int(a - last[0]))
+        bar.total = int(b)
+        bar.update(int(a - last[0]))
         last[0] = a
-    return show, pbar
+    return show, bar
