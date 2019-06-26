@@ -10,12 +10,14 @@ This WesternInterconnectNetwork.
 
 ### A. WesternInterconnectNetwork
 In the WesternInterconnect package, locate the ***setup.py*** file and type:
-`pip3 install .` Do not forget to update your PYTHONPATH environment variable.
+`pip3 install .` The other option is to update the PYTHONPATH environment
+variable.
 
 
 ### C. PostREISE
 In the PostREISE package, locate the ***setup.py*** file and type:
-`pip3 install .` Do not forget to update your PYTHONPATH environment variable.
+`pip3 install .` The other option is to update the PYTHONPATH environment
+variable.
 
 
 
