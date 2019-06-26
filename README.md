@@ -39,8 +39,7 @@ simulation inputs an outputs. Using the a *Scenario* object to gat data is the
 way to go. To illustrate, to download the the demand, hydro, solar and wind
 profiles as well as the PG and PF simulation outputs of the base case scenario
 for the Western Interconnection (*id*=0). 
-
-```
+```python
 from powersimdata.scenario.scenario import Scenario
 
 scenario = Scenario('0')
@@ -84,11 +83,11 @@ the same zone and using the same resource.
 * Calculate the capacity factor of one resource in one zone and show result
 using box plots.
 
-Check out the notebooks within the [demo][1] folder.
+Check out the notebooks within the [demo][plot_notebooks] folder.
 
 The `postreise.plot.analyze_set` module accomplishes a similar job for a set of
-scenario. The [october_meeting][2] Jupyter notebook illustrates the plot
-routines that have been implemented implemented.
+scenario. The [october_meeting][october_meeting_notebook] Jupyter notebook
+illustrates the plot routines that have been implemented implemented.
 
-[1]: https://github.com/intvenlab/PostREISE/tree/addAnalyzeAndPlot/postreise/plot/demo/
-[2]: https://github.com/intvenlab/PostREISE/tree/addAnalyzeAndPlot/postreise/plot/demo/october_meeting.ipynb
+[plot_notebooks]: https://github.com/intvenlab/PostREISE/blob/develop/postreise/plot/demo/
+[october_meeting_notebook]: https://github.com/intvenlab/PostREISE/blob/develop/postreise/plot/demo/october_meeting.ipynb
