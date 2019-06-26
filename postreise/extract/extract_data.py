@@ -39,12 +39,11 @@ def insert_in_file(filename, scenario_id, column_number, column_value):
 
 
 def extract_data(scenario_info):
-    """Takes sub-intervals from simulation in MATLAB binary formats, \
-        converts and connects it into csv format. It uses the MATLAB \
-        functions to extract data.
+    """Builds data frame of PG and PF from MATLAB simulation output binary
+        files produced by MATPOWER.
 
     :param dict scenario_info: scenario information.
-    :return: (*pandas*) -- data frame of PG and PF.
+    :return: (*pandas.DataFrame*) -- data frame of PG and PF.
     """
 
     interval = int(scenario_info['interval'].split('H', 1)[0])
