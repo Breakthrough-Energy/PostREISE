@@ -80,7 +80,7 @@ def extract_data(scenario_info):
             pf = pd.DataFrame(pf_tmp)
             pf.name = scenario_info['id'] + '_PF'
     end = time.process_time()
-    print('Reading time ' + str(100 * (end-start)) + 's')
+    print('Reading time ' + str(round(end-start)) + 's')
 
     # Add infeasibilities in ScenarioList.csv
     insert_in_file(const.SCENARIO_LIST, scenario_info['id'], '15',
