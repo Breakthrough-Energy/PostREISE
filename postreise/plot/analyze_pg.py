@@ -9,12 +9,7 @@ plt.ioff()
 class AnalyzePG:
     """Analysis based on PG.
 
-    :param tuple scenario: parameters related to scenario. 1st element is a
-        data frame of the power generated with id of the plants as columns and
-        UTC timestamp as indices. 2nd element is a grid instance. 3rd element
-        is a data frame giving the factor by which renewable energies have been
-        increased for each plant as column and the plant identification number
-        as indices.
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
     :param tuple time: time related parameters. 1st element is the starting
         date. 2nd element is the ending date (left out). 3rd element is the
         timezone, only *'utc'*, *'US/Pacific'* and *'local'* are possible. 4th
@@ -62,10 +57,13 @@ class AnalyzePG:
         """
         plt.close('all')
 
-        self.pg = scenario[0].tz_localize('utc')
-        self.grid = scenario[1]
-        self.multiplier = scenario[2]
-        self._set_capacity()
+        # Note: Data is downloaded in init state even if not needed
+        self.pg = scenario.state.get_pg().tz_localize('utc')
+        self.grid = scenario.state.get_grid()
+        self.demand = scenario.state.get_demand()
+        self.solar = scenario.state.get_solar()
+        self.wind = scenario.state.get_wind()
+        self.hydro = scenario.state.get_hydro()
 
         # Check parameters
         self._check_dates(time[0], time[1])
@@ -181,7 +179,7 @@ class AnalyzePG:
         :param list zones: geographical zones.
         :raise Exception: if zone(s) are invalid.
         """
-        possible = list(self.grid.load_zones.values()) + \
+        possible = list(self.grid.zone.values()) + \
             ['California', 'Western']
         for z in zones:
             if z not in possible:
@@ -272,16 +270,6 @@ class AnalyzePG:
             self.freq = 'D'
         else:
             self.freq = 'W'
-
-    def _set_capacity(self):
-        """Sets capacity of the generators.
-
-        """
-        self.capacity = pd.DataFrame(
-            {'GenMWMax': self.grid.genbus.GenMWMax.values *
-                self.multiplier[self.multiplier.columns[0]].values,
-             'type': self.grid.genbus.type},
-            index=self.grid.genbus.index.values)
 
     def _set_date_range(self, start_date, end_date):
         """Calculates the appropriate date range after resampling in \ 
@@ -382,10 +370,10 @@ class AnalyzePG:
             ax[0].set_title('Generation (MWh)', fontsize=25)
             ax[1].set_title('Resources (MW)', fontsize=25)
 
-            pg_groups = pg.T.groupby(self.grid.genbus['type']).agg(sum).T
+            pg_groups = pg.T.groupby(self.grid.plant['type']).agg(sum).T
             pg_groups.name = "%s (Generation)" % zone
             type2label = self.type2label.copy()
-            for t in self.grid.ID2type.values():
+            for t in self.grid.id2type.values():
                 if t not in pg_groups.columns:
                     del type2label[t]
 
@@ -394,7 +382,7 @@ class AnalyzePG:
                 ax=ax[0], kind='barh', alpha=0.7,
                 color=[self.grid.type2color[r] for r in type2label.keys()])
 
-            capacity = self.capacity.loc[pg.columns].groupby(
+            capacity = self.grid.plant.loc[pg.columns].groupby(
                 'type').agg(sum).GenMWMax
             capacity.name = "%s (Capacity)" % zone
 
@@ -458,10 +446,10 @@ class AnalyzePG:
 
             demand = self._get_demand(zone)
 
-            pg_groups = pg.T.groupby(self.grid.genbus['type'])
+            pg_groups = pg.T.groupby(self.grid.plant['type'])
             pg_stack = pg_groups.agg(sum).T
             type2label = self.type2label.copy()
-            for t in self.grid.ID2type.values():
+            for t in self.grid.id2type.values():
                 if t not in pg_stack.columns:
                     del type2label[t]
 
@@ -709,7 +697,7 @@ class AnalyzePG:
                                             replace=False).tolist()
                 norm = [capacity]
                 for i in [15, 8, 2]:
-                    norm += [sum(self.capacity.loc[
+                    norm += [sum(self.grid.plant.loc[
                         selected[:i]].GenMWMax.values)]
                 total['15 plants (%d MW)' % norm[1]] = pg[selected].T.sum()
                 total['8 plants (%d MW)' % norm[2]] = pg[selected[:8]].T.sum()
@@ -877,7 +865,7 @@ class AnalyzePG:
         else:
             available = self._get_profile(zone, resource)
 
-            capacity = self.capacity.loc[pg.columns].GenMWMax.values
+            capacity = self.grid.plant.loc[pg.columns].GenMWMax.values
 
             uncurtailed = available.sum().divide(len(pg) * capacity,
                                                  axis='index')
@@ -919,7 +907,7 @@ class AnalyzePG:
         plant_id = []
         if zone == 'Western':
             try:
-                plant_id = self.grid.genbus.groupby('type').get_group(
+                plant_id = self.grid.plant.groupby('type').get_group(
                     resource).index.values.tolist()
             except KeyError:
                 pass
@@ -928,15 +916,15 @@ class AnalyzePG:
                   'Southeast California', 'Southwest California']
             for load_zone in ca:
                 try:
-                    plant_id += self.grid.genbus.groupby(
-                        ['ZoneName', 'type']).get_group(
+                    plant_id += self.grid.plant.groupby(
+                        ['zone_name', 'type']).get_group(
                         (load_zone, resource)).index.values.tolist()
                 except KeyError:
                     pass
         else:
             try:
-                plant_id = self.grid.genbus.groupby(
-                    ['ZoneName', 'type']).get_group(
+                plant_id = self.grid.plant.groupby(
+                    ['zone_name', 'type']).get_group(
                     (zone, resource)).index.values.tolist()
             except KeyError:
                 pass
@@ -961,7 +949,7 @@ class AnalyzePG:
             print("No %s plants in %s" % ("/".join(resources), zone))
             return [None] * 2
         else:
-            capacity = sum(self.capacity.loc[plant_id].GenMWMax.values)
+            capacity = sum(self.grid.plant.loc[plant_id].GenMWMax.values)
             pg = self._convert_tz(self.pg[plant_id]).resample(
                 self.freq, label='left').sum()[self.from_index:self.to_index]
 
@@ -974,12 +962,13 @@ class AnalyzePG:
         :return: (*pandas.DataFrame*) -- data frame of demand in zone (in MWh).
         """
 
-        demand = self.grid.demand_data_2016.tz_localize('utc')
+        demand = self.demand.tz_localize('utc')
         if zone == 'Western':
             demand = demand.sum(axis=1).rename('demand').to_frame()
         elif zone == 'California':
-            ca = ['Bay Area', 'Central California', 'Northern California',
-                  'Southeast California', 'Southwest California']
+
+            ca = [204,205,203,207,206]
+
             demand = demand.loc[:, ca].sum(axis=1).rename('demand').to_frame()
         else:
             demand = demand.loc[:, zone].rename('demand').to_frame()
@@ -1004,10 +993,7 @@ class AnalyzePG:
             print("No %s plants in %s" % (resource, zone))
             return None
 
-        profile = eval('self.grid.'+resource+'_data_2016').tz_localize('utc')
-
-        for i in plant_id:
-            profile[i] *= float(self.multiplier.loc[i].values)
+        profile = eval('self.'+resource).tz_localize('utc')
 
         return self._convert_tz(profile[plant_id]).resample(
             self.freq, label='left').sum()[self.from_index:self.to_index]
