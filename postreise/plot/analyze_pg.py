@@ -18,8 +18,7 @@ class AnalyzePG:
     :param tuple time: time related parameters. 1st element is the starting
         date. 2nd element is the ending date (left out). 3rd element is the
         timezone, only *'utc'*, *'US/Pacific'* and *'local'* are possible. 4th
-        element is the frequency for resampling, can be *'H'*, *'D'*, *'W'* or
-        *'auto'*.
+        element is the frequency, which can be *'H'*, *'D'*, *'W'* or *'auto'*.
     :param list zones: geographical zones. Any combinations of *'Arizona'*,
         *'California'*, *'Bay Area'*, *'Central California'*,
         *'Northern California'*, *'Southeast California'*,
@@ -54,7 +53,6 @@ class AnalyzePG:
             the same resource.
         * *'yield'*:
             calculates capacity factor of one resource in one zone.
-
     """
 
     def __init__(self, scenario, time, zones, resources, kind,
@@ -248,7 +246,8 @@ class AnalyzePG:
     def _convert_tz(self, df_utc):
         """Convert data frame from UTC time zone to desired time zone.
 
-        :param pandas df_utc: data frame with UTC timestamp as indices.
+        :param pandas.DataFrame df_utc: data frame with UTC timestamp as
+            indices.
         :param return: (*pandas.DataFrame*) data frame converted to desired time
             zone.
         """
@@ -627,7 +626,7 @@ class AnalyzePG:
             data['curtailment'] = (1 - data['generated'] / data['available'])
             data['curtailment'] *= 100
 
-            # Nnumerical precision
+            # Numerical precision
             data.loc[abs(data['curtailment']) < 1, 'curtailment'] = 0
 
             data['curtailment'].plot(ax=ax, style='b', lw=4, alpha=0.7)
@@ -866,7 +865,7 @@ class AnalyzePG:
 
         :param str zone: zone to consider.
         :param str resource: resource to consider.
-        :return: (*tuple*) -- First element is the average ideal capacity
+        :return: (*tuple*) -- first element is the average ideal capacity
             factor for the selected zone and resource. Second element is the
             average curtailed capacity factor for the selected zone and
             resource.
@@ -913,8 +912,8 @@ class AnalyzePG:
 
         :param str zone: zone to consider.
         :param str resource: type of generator to consider.
-        :return: (*list*) -- plant identification number of all the generators
-            located in zone and using resource.
+        :return: (*list*) -- plant id of all the generators located in zone and
+            using resource.
         """
 
         plant_id = []
@@ -972,8 +971,7 @@ class AnalyzePG:
         """Returns demand profile for load zone, California or total.
 
         :param str zone: one of the zones.
-        :return: (*pandas.DataFrame*) -- data frame of the load in zone (in
-            MWh).
+        :return: (*pandas.DataFrame*) -- data frame of demand in zone (in MWh).
         """
 
         demand = self.grid.demand_data_2016.tz_localize('utc')
