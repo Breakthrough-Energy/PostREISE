@@ -7,16 +7,6 @@ the server from/to the local machine.
 
 
 ## 1. Setup/Install
-This WesternInterconnectNetwork.
-
-
-### A. WesternInterconnectNetwork
-In the WesternInterconnect package, locate the ***setup.py*** file and type:
-`pip3 install .`. The other option is to update the PYTHONPATH environment
-variable.
-
-
-### C. PostREISE
 In the PostREISE package, locate the ***setup.py*** file and type:
 `pip3 install .`. The other option is to update the PYTHONPATH environment
 variable.
@@ -40,7 +30,7 @@ in `powersimdata.output.profiles` make use of these functions to download the
 simulation inputs an outputs. Using the a *Scenario* object to gat data is the
 way to go. To illustrate, to download the the demand, hydro, solar and wind
 profiles as well as the PG and PF simulation outputs of the base case scenario
-for the Western Interconnection (*id*=0). 
+for the Western Interconnection (*id*=0).
 ```python
 from powersimdata.scenario.scenario import Scenario
 
@@ -51,7 +41,7 @@ solar = scenario.state.get_solar()
 wind = scenario.state.get_wind()
 pg = scenario.state.get_pg()
 pf = scenario.state.get_pf()
-``` 
+```
 
 
 
@@ -89,7 +79,7 @@ Check out the notebooks within the [demo][plot_notebooks] folder.
 
 The `postreise.plot.analyze_set` module accomplishes a similar job for a set of
 scenario. The [october_meeting][october_meeting_notebook] Jupyter notebook
-illustrates the plot routines that have been implemented implemented.
+illustrates the plot routines that have been implemented.
 
 [plot_notebooks]: https://github.com/intvenlab/PostREISE/blob/develop/postreise/plot/demo/
 [october_meeting_notebook]: https://github.com/intvenlab/PostREISE/blob/develop/postreise/plot/demo/october_meeting.ipynb
