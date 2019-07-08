@@ -967,7 +967,7 @@ class AnalyzePG:
             demand = demand.sum(axis=1).rename('demand').to_frame()
         elif zone == 'California':
 
-            ca = [204,205,203,207,206]
+            ca = [204, 205, 203, 207, 206]
 
             demand = demand.loc[:, ca].sum(axis=1).rename('demand').to_frame()
         else:
