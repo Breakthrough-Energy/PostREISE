@@ -7,5 +7,5 @@ setup(name='postreise',
       author='Kaspar Mueller',
       author_email='kmueller@intven.com',
       packages=find_packages(),
-      package_data={'postreise':['extract/*.m']},
+      package_data={'postreise': ['extract/*.m']},
       zip_safe=False)
