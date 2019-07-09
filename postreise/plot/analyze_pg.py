@@ -179,7 +179,7 @@ class AnalyzePG:
         :param list zones: geographical zones.
         :raise Exception: if zone(s) are invalid.
         """
-        possible = list(self.grid.zone.values()) + \
+        possible = list(self.grid.id2zone.values()) + \
             ['California', 'Western']
         for z in zones:
             if z not in possible:
@@ -971,7 +971,8 @@ class AnalyzePG:
 
             demand = demand.loc[:, ca].sum(axis=1).rename('demand').to_frame()
         else:
-            demand = demand.loc[:, zone].rename('demand').to_frame()
+            zoneid = self.grid.zone2id[zone]
+            demand = demand.loc[:, zoneid].rename('demand').to_frame()
 
         demand = self._convert_tz(demand).resample(
             self.freq, label='left').sum()[self.from_index:self.to_index]
