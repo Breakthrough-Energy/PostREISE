@@ -1,38 +1,35 @@
-from westernintnet.westernintnet import win_data as grid
-from powersimdata.output.profiles import OutputData
-from postreise.process.transferdata import setup_server_connection
+from powersimdata.scenario.scenario import Scenario
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.ticker import AutoMinorLocator
 
-od = OutputData(setup_server_connection())
 
-
-def get_plant_id(zone):
+def get_plant_id(grid, zone):
     """Lists the id of the plants located in zone.
 
-    :param str zone: one of the zones.
+    :param powersimdata.input.grid.Grid grid: grid instance.
+    :param str zone: load zone or California or Western.
     :return: (*list*) -- id of the plants in the specified zone.
     """
 
-    if zone not in grid.load_zones.values():
+    if zone not in grid.zone2id.keys():
         if zone == 'Western':
-            plant_id = grid.genbus.index
+            plant_id = grid.plant.index
         elif zone == 'California':
             plant_id = []
             ca = ['Northern California', 'Central California', 'Bay Area',
                   'Southeast California', 'Southwest California']
-            for load_zone in ca:
-                plant_id += grid.genbus.groupby('ZoneName').get_group(
-                    load_zone).index.values.tolist()
+            for z in ca:
+                plant_id += grid.plant.groupby('zone_name').get_group(
+                    z).index.values.tolist()
         else:
-            print('Possible zones are:')
-            print(grid.load_zones.values())
+            print('Possible load zones are:')
+            print(grid.zone2id.keys())
             return
     else:
-        plant_id = grid.genbus.groupby('ZoneName').get_group(zone).index
+        plant_id = grid.plant.groupby('zone_name').get_group(zone).index
 
     return plant_id
 
@@ -43,15 +40,8 @@ def fraction_renewable(scenarios, zone):
 
     :param dict scenarios: set of scenario with scenario description as key and
         list of scenario name as values.
-    :param str zone: one of the load zones.
+    :param str zone: load zone.
     """
-
-    plant_id_all = get_plant_id(zone)
-
-    plant_id_renewable = []
-    for r in ['solar', 'wind']:
-        plant_id_renewable += list(set(plant_id_all).intersection(
-            grid.genbus.groupby('type').get_group(r).index))
 
     nb = len(scenarios.keys())
     frac = np.zeros(nb*2).reshape(nb, 2)
@@ -59,10 +49,22 @@ def fraction_renewable(scenarios, zone):
     for i, files in enumerate(scenarios.values()):
         for j, f in enumerate(files):
             if f:
-                pg = od.get_data(f, 'PG')
+                scenario = Scenario(f)
+                grid = scenario.state.get_grid()
+                pg = scenario.state.get_pg()
+
+                plant_id_all = get_plant_id(grid, zone)
+                plant_id_renewable = []
+                for r in ['solar', 'wind']:
+                    plant_id_renewable += list(set(plant_id_all).intersection(
+                        grid.plant.groupby('type').get_group(r).index))
+
                 frac[i, j] = pg[plant_id_renewable].sum(axis=1).sum() / \
                     pg[plant_id_all].sum(axis=1).sum()
                 frac[i, j] *= 100
+                print('\n')
+            else:
+                frac[i, j] = float('nan')
 
     fig = plt.figure(figsize=(12, 12))
     plt.title(zone, fontsize=25)
@@ -90,7 +92,7 @@ def fraction(scenarios, zone):
 
     :param dict scenarios: set of scenario with scenario description as key and
         list of scenario name as values.
-    :param str zone: one of the load zones.
+    :param str zone: load zone.
     :return: (pandas.DataFrame) -- data frame of the power generated with fuel
         type as columns.
     """
@@ -102,7 +104,6 @@ def fraction(scenarios, zone):
            'solar': 'Solar',
            'wind': 'Wind'}
 
-    plant_id = get_plant_id(zone)
     nb = len(scenarios.keys())
 
     frac = pd.DataFrame(columns=r2l.keys(), index=range(nb*2))
@@ -111,10 +112,14 @@ def fraction(scenarios, zone):
     for i, files in enumerate(scenarios.values()):
         for j, f in enumerate(files):
             if f:
-                pg = od.get_data(f, 'PG')[plant_id]
+                scenario = Scenario(f)
+                grid = scenario.state.get_grid()
+                plant_id = get_plant_id(grid, zone)
+                pg = scenario.state.get_pg()[plant_id]
+
                 total = pg.sum(axis=1).sum()
-                pg_stack = pg.T.groupby(grid.genbus['type']).agg(sum).T
-                for r in grid.ID2type.values():
+                pg_stack = pg.T.groupby(grid.plant['type']).agg(sum).T
+                for r in grid.id2type.values():
                     if r not in pg_stack.columns:
                         del r2l[r]
 
@@ -128,6 +133,7 @@ def fraction(scenarios, zone):
                                                   for r in r2l.keys()]
                     y_title[nb+i] = list(scenarios.keys())[i] + ' ' + \
                         '(enhanced grid)'
+                print('\n')
 
     frac_plot = frac.copy()
     for i in frac.index:
@@ -161,12 +167,12 @@ def fraction(scenarios, zone):
     return frac
 
 
-def generation(scenarios, zones, grid_type=0):
+def generation(scenarios, zone, grid_type=0):
     """Plots the stacked power generated in zones for various scenarios.
 
     :param dict scenarios: set of scenario with scenario description as key and
         list of scenario name as values.
-    :param list zones: list of zones.
+    :param list zone: list of zones.
     :param int grid_type: either *'0'* (current grid) or *'1'* (enhanced grid).
     :return: (*list*) -- list of data frame of the power generated in specified
         zones. Each data frame has fuel type as columns and the the scenario
@@ -188,23 +194,25 @@ def generation(scenarios, zones, grid_type=0):
     for key, files in scenarios.items():
         f = files[grid_type]
         if f:
-            pg = od.get_data(f, 'PG')
-            allotment_scenario = pd.DataFrame(
-                columns=['nuclear', 'hydro', 'coal', 'ng', 'solar', 'wind'],
-                index=zones)
-            for z in zones:
+            scenario = Scenario(f)
+            grid = scenario.state.get_grid()
+            pg = scenario.state.get_pg()
+            allotment_scenario = pd.DataFrame(columns=['nuclear', 'hydro',
+                                                       'coal', 'ng', 'solar',
+                                                       'wind'], index=zone)
+            for z in zone:
                 r2l = {'nuclear': 'Nuclear',
                        'hydro': 'Hydro',
                        'coal': 'Coal',
                        'ng': 'Natural Gas',
                        'solar': 'Solar',
                        'wind': 'Wind'}
-                plant_id = get_plant_id(z)
+                plant_id = get_plant_id(grid, z)
                 pg_tmp = pg[plant_id]
 
-                pg_groups = pg_tmp.T.groupby(grid.genbus['type'])
+                pg_groups = pg_tmp.T.groupby(grid.plant['type'])
                 pg_stack = pg_groups.agg(sum).T
-                for r in grid.ID2type.values():
+                for r in grid.id2type.values():
                     if r not in pg_stack.columns:
                         del r2l[r]
 
@@ -212,6 +220,7 @@ def generation(scenarios, zones, grid_type=0):
                                                          for r in r2l.keys()]
             allotment.append(allotment_scenario)
             title.append(key)
+            print('\n')
 
     fig = plt.figure(figsize=(12, 12))
     plt.title(main_title, fontsize=25)
@@ -234,10 +243,10 @@ def generation(scenarios, zones, grid_type=0):
 
     n_col = 6  # number of resources
     n_df = len(allotment)
-    n_ind = len(zones)
-    h, l = ax.get_legend_handles_labels()  # get the handles we want to modify
+    n_ind = len(zone)
+    handle, label = ax.get_legend_handles_labels()  # get the handles to modify
     for i in range(0, n_df * n_col, n_col):  # len(h) = n_col * n_df
-        for j, pa in enumerate(h[i:i+n_col]):
+        for j, pa in enumerate(handle[i:i + n_col]):
             for rect in pa.patches:  # for each index
                 rect.set_x(rect.get_x() + 1 / float(n_df+1) * i / float(n_col))
                 rect.set_hatch('/' * int(i / n_col))  # edited part
@@ -248,7 +257,7 @@ def generation(scenarios, zones, grid_type=0):
 
     # Add invisible data to add another legend
     n = [ax.bar(0, 0, color="gray", hatch='/' * i) for i in range(n_df)]
-    l1 = ax.legend(h[:n_col], l[:n_col], loc=[1.01, 0.5], fontsize=18)
+    l1 = ax.legend(handle[:n_col], label[:n_col], loc=[1.01, 0.5], fontsize=18)
     l2 = ax.legend(n, title, loc=[1.01, 0.1], fontsize=18)
     ax.add_artist(l1)
     ax.add_artist(l2)
