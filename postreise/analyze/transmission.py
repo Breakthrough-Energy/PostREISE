@@ -1,6 +1,5 @@
 import math
 
-import numpy as np
 import pandas as pd
 import scipy.special as scsp
 
@@ -8,16 +7,17 @@ import scipy.special as scsp
 def generate_cong_stats(cong_df, branches_df, name):
     """Generates congestion statistics from the input congestion data.
 
-    :param pandas cong_df: Power flow data frame, values normalized to capacity
-    :param pandas branches_df: network branches in format created by \ 
+    :param pandas.DataFrame cong_df: Power flow data frame, values normalized to
+        capacity
+    :param pandas.DataFrame branches_df: network branches in format created by
         WesternIntnet.
     :param string name: filename of output.
-    :return: (*pandas*) -- data frame with *'hutil1'*, *'hutil0p9-1'*, 
-        *'hutil0p8-0p9'*, *'hutil0p75-0p8'*, *'hutil>=0p9'*, *'hutil>=0p8'*, \ 
+    :return: (*pandas.DataFrame*) -- data frame with *'hutil1'*, *'hutil0p9-1'*,
+        *'hutil0p8-0p9'*, *'hutil0p75-0p8'*, *'hutil>=0p9'*, *'hutil>=0p8'*,
         *'hutil>=0p75'*, *'dist'*, *'zscore'* and *'pvalue'*.
 
     .. todo::
-        Current version assumes normal distibution; calculate real \ 
+        Current version assumes normal distribution; calculate real
         distribution, then do a lookup depending on distribution type.
     """
 
