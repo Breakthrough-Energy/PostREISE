@@ -4,13 +4,12 @@ import pandas as pd
 import scipy.special as scsp
 
 
-def generate_cong_stats(cong_df, branches_df, name):
+def generate_cong_stats(pf, branch, name):
     """Generates congestion statistics from the input congestion data.
 
-    :param pandas.DataFrame cong_df: Power flow data frame, values normalized to
+    :param pandas.DataFrame pf: Power flow data frame with values normalized to
         capacity
-    :param pandas.DataFrame branches_df: network branches in format created by
-        WesternIntnet.
+    :param pandas.DataFrame branch: branches in network.
     :param string name: filename of output.
     :return: (*pandas.DataFrame*) -- data frame with *'hutil1'*, *'hutil0p9-1'*,
         *'hutil0p8-0p9'*, *'hutil0p75-0p8'*, *'hutil>=0p9'*, *'hutil>=0p8'*,
@@ -21,14 +20,14 @@ def generate_cong_stats(cong_df, branches_df, name):
         distribution, then do a lookup depending on distribution type.
     """
 
-    cong_stats = pd.concat([branches_df['Capacity'],
-                            cong_df[(cong_df == 1)].describe().loc['count', :],
-                            cong_df[(cong_df < 1) & (cong_df >= 0.9)
-                                    ].describe().loc['count', :],
-                            cong_df[(cong_df < 0.9) & (cong_df >= 0.8)
-                                    ].describe().loc['count', :],
-                            cong_df[(cong_df < 0.8) & (cong_df >= 0.75)
-                                    ].describe().loc['count', :]
+    cong_stats = pd.concat([branch['Capacity'],
+                            pf[(pf == 1)].describe().loc['count', :],
+                            pf[(pf < 1) & (pf >= 0.9)
+                               ].describe().loc['count', :],
+                            pf[(pf < 0.9) & (pf >= 0.8)
+                               ].describe().loc['count', :],
+                            pf[(pf < 0.8) & (pf >= 0.75)
+                               ].describe().loc['count', :]
                             ], axis=1)
     cong_stats.columns = ['Capacity', 'hutil1', 'hutil0p9-1',
                           'hutil0p8-0p9', 'hutil0p75-0p8']
@@ -54,14 +53,14 @@ def generate_cong_stats(cong_df, branches_df, name):
                                                        1: 'hutil>=0p8',
                                                        2: 'hutil>=0p75'})
 
-    branches_df['dist'] = branches_df.apply(
+    branch['dist'] = branch.apply(
         lambda row: _great_circle_distance(
             math.radians(row['from_lat']), math.radians(row['from_lon']),
             math.radians(row['to_lat']), math.radians(row['to_lon'])), axis=1)
 
-    cong_stats = pd.concat([cong_stats, branches_df['dist']], axis=1)
+    cong_stats = pd.concat([cong_stats, branch['dist']], axis=1)
 
-    total_hours = len(cong_df)
+    total_hours = len(pf)
     p_cong = cong_stats.loc[cong_stats['Capacity'] != 99999].describe().loc[
         'mean']['hutil>=0p75']/total_hours
     mu = total_hours*p_cong
