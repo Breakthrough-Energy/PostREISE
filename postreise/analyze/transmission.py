@@ -20,7 +20,7 @@ def generate_cong_stats(pf, branch, name):
         distribution, then do a lookup depending on distribution type.
     """
 
-    cong_stats = pd.concat([branch['Capacity'],
+    cong_stats = pd.concat([branch['capacity'],
                             pf[(pf == 1)].describe().loc['count', :],
                             pf[(pf < 1) & (pf >= 0.9)
                                ].describe().loc['count', :],
@@ -29,15 +29,15 @@ def generate_cong_stats(pf, branch, name):
                             pf[(pf < 0.8) & (pf >= 0.75)
                                ].describe().loc['count', :]
                             ], axis=1)
-    cong_stats.columns = ['Capacity', 'hutil1', 'hutil0p9-1',
+    cong_stats.columns = ['capacity', 'hutil1', 'hutil0p9-1',
                           'hutil0p8-0p9', 'hutil0p75-0p8']
 
-    cong_stats[['Capacity',
+    cong_stats[['capacity',
                 'hutil1',
                 'hutil0p9-1',
                 'hutil0p8-0p9',
                 'hutil0p75-0p8'
-                ]] = cong_stats[['Capacity', 'hutil1',
+                ]] = cong_stats[['capacity', 'hutil1',
                                  'hutil0p9-1', 'hutil0p8-0p9',
                                  'hutil0p75-0p8']].astype(int)
 
@@ -61,7 +61,7 @@ def generate_cong_stats(pf, branch, name):
     cong_stats = pd.concat([cong_stats, branch['dist']], axis=1)
 
     total_hours = len(pf)
-    p_cong = cong_stats.loc[cong_stats['Capacity'] != 99999].describe().loc[
+    p_cong = cong_stats.loc[cong_stats['capacity'] != 99999].describe().loc[
         'mean']['hutil>=0p75']/total_hours
     mu = total_hours*p_cong
     var = total_hours*p_cong*(1 - p_cong)
