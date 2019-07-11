@@ -17,17 +17,17 @@ def test_transmission():
 
     data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
 
-    branches = pd.read_csv(
+    branch = pd.read_csv(
         os.path.join(data_dir, 'branches_for_testing_100.csv'))
     cong_base = pd.read_csv(os.path.join(
         data_dir, 'congestion_base_for_testing_1000.csv'),
         index_col='Unnamed: 0')
 
     cong_base.index = pd.to_datetime(cong_base.index)
-    branches.index = cong_base.columns
+    branch.index = cong_base.columns
 
     cong_results = transmission.generate_cong_stats(cong_base,
-                                                    branches,
+                                                    branch,
                                                     'congestion_test_results')
 
     # Test that pvalues are between 0 and 1
