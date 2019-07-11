@@ -5,14 +5,14 @@ import os
 
 
 def test_transmission():
-    """Tests transmission.py by checking:
+    """Tests postreise.analyze.transmission module by checking:
 
     1. all p-values are in [0,1].
     2. all line distances are shorter than the longest line in the US.
 
     .. note::
-    To run faster, shortened versions of the branch and normalized power \
-    flow files are used.
+        To run faster, shortened versions of the branch and normalized power \
+        flow files are used.
     """
 
     data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
