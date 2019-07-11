@@ -1,4 +1,4 @@
-from postreise.analyze import transmission
+from postreise.analyze.transmission import generate_cong_stats
 
 import pandas as pd
 import os
@@ -15,7 +15,8 @@ def test_transmission():
         flow files are used.
     """
 
-    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+    file_dir = os.path.dirname(os.path.abspath(__file__))
+    data_dir = os.path.join(file_dir, 'data')
 
     branch = pd.read_csv(
         os.path.join(data_dir, 'branches_for_testing_100.csv'))
@@ -26,9 +27,9 @@ def test_transmission():
     cong_base.index = pd.to_datetime(cong_base.index)
     branch.index = cong_base.columns
 
-    cong_results = transmission.generate_cong_stats(cong_base,
-                                                    branch,
-                                                    'congestion_test_results')
+    cong_results = generate_cong_stats(cong_base, branch,
+                                       os.path.join(file_dir,
+                                                    'congestion_test_results'))
 
     # Test that pvalues are between 0 and 1
     assert all((cong_results['pvalue'] >= 0) & (cong_results['pvalue'] <= 1))
