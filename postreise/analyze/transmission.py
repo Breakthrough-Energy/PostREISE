@@ -55,9 +55,9 @@ def generate_cong_stats(cong_df, branches_df, name):
                                                        2: 'hutil>=0p75'})
 
     branches_df['dist'] = branches_df.apply(
-        lambda row: _greatCircleDistance(
-        math.radians(row['from_lat']), math.radians(row['from_lon']),
-        math.radians(row['to_lat']), math.radians(row['to_lon'])), axis=1)    
+        lambda row: _great_circle_distance(
+            math.radians(row['from_lat']), math.radians(row['from_lon']),
+            math.radians(row['to_lat']), math.radians(row['to_lon'])), axis=1)
 
     cong_stats = pd.concat([cong_stats, branches_df['dist']], axis=1)
 
@@ -75,7 +75,7 @@ def generate_cong_stats(cong_df, branches_df, name):
     return cong_stats
 
 
-def _greatCircleDistance(lat1, lon1, lat2, lon2):
+def _great_circle_distance(lat1, lon1, lat2, lon2):
     """Calculates distance between two sites.
 
     :param float lat1: latitude of first site (in rad.).
@@ -84,10 +84,10 @@ def _greatCircleDistance(lat1, lon1, lat2, lon2):
     :param float lon2: longitude of second site (in rad.).
     :return: (*float*) -- distance between two sites (in km.).
     """
-    R = 6368
+    radius = 6368
 
-    def haversin(x):
+    def haversine(x):
         return math.sin(x/2)**2
-    return R*2 * math.asin(math.sqrt(
-        haversin(lat2-lat1) +
-        math.cos(lat1) * math.cos(lat2) * haversin(lon2-lon1)))
+    return radius * 2 * math.asin(math.sqrt(haversine(lat2 - lat1) +
+                                            math.cos(lat1) * math.cos(lat2) *
+                                            haversine(lon2 - lon1)))
