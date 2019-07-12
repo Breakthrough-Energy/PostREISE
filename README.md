@@ -54,12 +54,12 @@ To carry out transmission congestion analyses per scenario:
 2. calculate congestion statistics;
 3. display the data.
 
-The [transmission_analysis_demo.ipynb][transmission] notebook shows the steps
-for downloading and calculating various statistics. The
-[congestion_interactive_map.ipynb][congestion] notebook shows how the output
-of the [transmission_analysis_demo.ipynb][transmission] notebook is used to
-display the congested transmission lines. Note that since the plot outputs
-are meant to be interactive, they may not render on GitHub.
+The ***[transmission_analysis_demo.ipynb][transmission]*** notebook shows the
+steps for downloading and calculating various statistics. The
+***[congestion_interactive_map.ipynb][congestion]*** notebook shows how the
+output of the ***[transmission_analysis_demo.ipynb][transmission]*** notebook
+is used to display the congested transmission lines. Note that since the plot
+outputs are meant to be interactive, they may not render on GitHub.
 
 
 
