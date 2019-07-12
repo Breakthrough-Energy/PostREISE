@@ -54,7 +54,13 @@ To carry out transmission congestion analyses per scenario:
 2. calculate congestion statistics;
 3. display the data.
 
-The notebook [transmission_analysis_demo.ipynb](https://github.com/intvenlab/PostREISE/tree/develop/postreise/analyze/demo/transmission_analysis_demo.ipynb) notebook shows the steps for downloading and calculation of various statistics. The notebook [congestion_interactive_map.ipynb](https://github.com/intvenlab/PostREISE/tree/develop/postreise/analyze/demo/WECC_Congestion_interactive_map.ipynb) notebook shows how the output of the transmission_analyses notebook is used to display the congested transmission lines. (Note that since the plot outputs are meant to be interactive, they may not render on GitHub. A sample static shot can be found [here](https://github.com/intvenlab/PostREISE/tree/develop/postreise/analyze/demo/sampleTransmissionCongestion.PNG)).
+The [transmission_analysis_demo.ipynb][transmission] notebook shows the steps
+for downloading and calculating various statistics. The
+[congestion_interactive_map.ipynb][congestion] notebook shows how the output
+of the [transmission_analysis_demo.ipynb][transmission] notebook is used to
+display the congested transmission lines. Note that since the plot outputs
+are meant to be interactive, they may not render on GitHub.
+
 
 
 ## 5. Plot
@@ -78,8 +84,9 @@ using box plots.
 Check out the notebooks within the [demo][plot_notebooks] folder.
 
 The `postreise.plot.analyze_set` module accomplishes a similar job for a set of
-scenario. The [october_meeting][october_meeting_notebook] Jupyter notebook
-illustrates the plot routines that have been implemented.
+scenarios. This is illustrated [here][collection].
 
 [plot_notebooks]: https://github.com/intvenlab/PostREISE/blob/develop/postreise/plot/demo/
-[october_meeting_notebook]: https://github.com/intvenlab/PostREISE/blob/develop/postreise/plot/demo/october_meeting.ipynb
+[collection]: https://github.com/intvenlab/PostREISE/blob/develop/postreise/plot/demo/collection.ipynb
+[transmission]: https://github.com/intvenlab/PostREISE/tree/develop/postreise/analyze/demo/transmission_analysis_demo.ipynb
+[congestion]: https://github.com/intvenlab/PostREISE/tree/develop/postreise/analyze/demo/congestion_interactive_map.ipynb
