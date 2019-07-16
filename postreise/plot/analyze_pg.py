@@ -3,6 +3,8 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
+from pandas.plotting import scatter_matrix
+
 plt.ioff()
 
 
@@ -57,7 +59,7 @@ class AnalyzePG:
         """
         plt.close('all')
 
-        # Note: Data is downloaded in init state even if not needed
+        # Note: Data is downloaded even if not needed
         self.pg = scenario.state.get_pg().tz_localize('utc')
         self.grid = scenario.state.get_grid()
         self.demand = scenario.state.get_demand()
@@ -168,7 +170,6 @@ class AnalyzePG:
         :param str end_date: ending date.
         :raise Exception: if dates are invalid.
         """
-
         if pd.Timestamp(start_date) > pd.Timestamp(end_date):
             print("Starting date must be greater than ending date")
             raise Exception("Invalid dates")
@@ -246,10 +247,9 @@ class AnalyzePG:
 
         :param pandas.DataFrame df_utc: data frame with UTC timestamp as
             indices.
-        :param return: (*pandas.DataFrame*) data frame converted to desired time
-            zone.
+        :return: (*pandas.DataFrame*) -- data frame converted to desired
+            time zone.
         """
-
         df_new = df_utc.tz_convert(self.tz)
         df_new.index.name = self.tz
 
@@ -261,7 +261,6 @@ class AnalyzePG:
         :param str start_date: starting timestamp.
         :param str end_date: ending timestamp.
         """
-
         delta = pd.Timestamp(start_date) - pd.Timestamp(end_date)
 
         if delta.days < 7:
@@ -272,13 +271,12 @@ class AnalyzePG:
             self.freq = 'W'
 
     def _set_date_range(self, start_date, end_date):
-        """Calculates the appropriate date range after resampling in \ 
-            order to get an equal number of entries per sample.
+        """Calculates the appropriate date range after resampling in order to
+            get an equal number of entries per sample.
 
         :param str start_date: starting timestamp.
         :param str end_date: ending timestamp.
         """
-
         first_available = self.pg.index[0].tz_convert(self.tz)
         last_available = self.pg.index[-1].tz_convert(self.tz)
 
@@ -343,7 +341,6 @@ class AnalyzePG:
         :param str start_date: starting timestamp.
         :param str end_date: ending timestamp.
         """
-
         print('Set UTC for all zones')
         self.tz = 'utc'
 
@@ -361,7 +358,6 @@ class AnalyzePG:
             generators as columns. Second element is a data frame with type of
             generators as indices and corresponding capacity as column.
         """
-
         pg, _ = self._get_pg(zone, self.resources)
         if pg is not None:
             fig, ax = plt.subplots(1, 2, figsize=(20, 10), sharey='row')
@@ -420,7 +416,6 @@ class AnalyzePG:
         :param str end_date: ending timestamp.
         :param str tz: timezone.
         """
-
         self.data = []
         self.filename = []
         for z in self.zones:
@@ -435,7 +430,6 @@ class AnalyzePG:
         :return: (*pandas.DataFrame*) --  data frame of PG and load for selected
             zone.
         """
-
         pg, capacity = self._get_pg(zone, self.resources)
         if pg is not None:
             fig = plt.figure(figsize=(20, 10))
@@ -458,12 +452,12 @@ class AnalyzePG:
                                            axis='index')
                 demand = demand.divide(capacity * self.timestep, axis='index')
 
-            ax = pg_stack[list(type2label.keys())].rename(
+            ax = pg_stack[list(type2label.keys())].tz_localize(None).rename(
                 columns=type2label).plot.area(
                 color=[self.grid.type2color[r] for r in type2label.keys()], 
                 alpha=0.7, ax=ax)
-            demand.plot(color='red', lw=4, ax=ax)
 
+            demand.tz_localize(None).plot(color='red', lw=4, ax=ax)
             ax.set_ylim([0, max(ax.get_ylim()[1], 1.1*demand.max().values[0])])
 
             ax.set_xlabel('')
@@ -493,7 +487,6 @@ class AnalyzePG:
         :param str end_date: ending timestamp.
         :param str tz: timezone.
         """
-
         if tz == 'local':
             print('Set US/Pacific for all zones')
             self.tz = 'US/Pacific'
@@ -511,7 +504,6 @@ class AnalyzePG:
         :param str resource: resource to consider.
         :return: (*pandas.DataFrame*) -- data frame of PG for selected resource.
         """
-
         fig = plt.figure(figsize=(20, 10))
         plt.title('%s' % resource.capitalize(), fontsize=25)
 
@@ -536,11 +528,12 @@ class AnalyzePG:
                     total = pd.merge(total, total_tmp, left_index=True,
                                      right_index=True)
 
-                total[col_name].plot(color=self.zone2style[z]['color'],
-                                     alpha=self.zone2style[z]['alpha'],
-                                     lw=self.zone2style[z]['lw'],
-                                     ls=self.zone2style[z]['ls'],
-                                     ax=ax)
+                total[col_name].tz_localize(None).plot(
+                    color=self.zone2style[z]['color'],
+                    alpha=self.zone2style[z]['alpha'],
+                    lw=self.zone2style[z]['lw'],
+                    ls=self.zone2style[z]['ls'],
+                    ax=ax)
 
                 ax.grid(color='black', axis='y')
                 ax.tick_params(which='both', labelsize=20)
@@ -570,7 +563,6 @@ class AnalyzePG:
         :param str end_date: ending timestamp.
         :param str tz: timezone.
         """
-
         for r in self.resources:
             if r not in ['solar', 'wind']:
                 print("Curtailment analysis is only for renewable energies")
@@ -595,7 +587,6 @@ class AnalyzePG:
             generators using resource in zone, demand in selected zone (in MWh)
             and curtailment (in %).
         """
-
         pg, capacity = self._get_pg(zone, [resource])
         if pg is None:
             return None
@@ -617,13 +608,15 @@ class AnalyzePG:
             # Numerical precision
             data.loc[abs(data['curtailment']) < 1, 'curtailment'] = 0
 
-            data['curtailment'].plot(ax=ax, style='b', lw=4, alpha=0.7)
-            data['available'].rename("%s energy available" % resource).plot(
-                ax=ax_twin, lw=4, alpha=0.7,
-                style={"%s energy available" %
-                       resource: self.grid.type2color[resource]})
-            data['demand'].plot(ax=ax_twin, lw=4, alpha=0.7,
-                                style={'demand': 'r'})
+            data['curtailment'].tz_localize(None).plot(ax=ax, style='b', lw=4,
+                                                       alpha=0.7)
+            data['available'].tz_localize(
+                None).rename("%s energy available" % resource).plot(
+                ax=ax_twin, lw=4, alpha=0.7, style={
+                    "%s energy available" % resource: self.grid.type2color[
+                        resource]})
+            data['demand'].tz_localize(None).plot(ax=ax_twin, lw=4, alpha=0.7,
+                                                  style={'demand': 'r'})
             ax.tick_params(which='both', labelsize=20)
             ax.grid(color='black', axis='y')
             ax.set_xlabel('')
@@ -649,7 +642,6 @@ class AnalyzePG:
         :param str end_date: ending timestamp.
         :param str tz: timezone.
         """
-
         for r in self.resources:
             if r not in ['solar', 'wind']:
                 print("Curtailment analysis is only for renewable energies")
@@ -664,15 +656,14 @@ class AnalyzePG:
                 self.data.append(self._get_variability(z, r))
 
     def _get_variability(self, zone, resource):
-        """Calculates time series of PG in one zone for one resource. Also \
-            calculates the time series of the PG of 2, 8 and 15 randomly \ 
+        """Calculates time series of PG in one zone for one resource. Also,
+            calculates the time series of the PG of 2, 8 and 15 randomly
             chosen plants in the same zone and using the same resource.
 
         :param str resource: resource to consider.
         :return: (*pandas.DataFrame*) -- data frame of PG for selected zone and
             plants.
         """
-
         pg, capacity = self._get_pg(zone, [resource])
         if pg is None:
             return None
@@ -717,7 +708,8 @@ class AnalyzePG:
                     colors += ['dodgerblue', 'teal', 'turquoise']
 
                 for col, c, lw, ls in zip(total.columns, colors, lws, lss):
-                    total[col].plot(alpha=0.7, lw=lw, ls=ls, color=c, ax=ax)
+                    total[col].tz_localize(None).plot(alpha=0.7, lw=lw, ls=ls,
+                                                      color=c, ax=ax)
 
                 ax.grid(color='black', axis='y')
                 ax.tick_params(which='both', labelsize=20)
@@ -763,7 +755,7 @@ class AnalyzePG:
             self.data.append(self._get_correlation(r))
 
     def _get_correlation(self, resource):
-        """Calculates correlation coefficients of power generated between \ 
+        """Calculates correlation coefficients of power generated between
             multiple zones for one resource.
 
         :param str resource: resource to consider.
@@ -808,10 +800,9 @@ class AnalyzePG:
             ax_matrix.set_yticklabels(pg.columns, rotation=40, ha='right')
             ax_matrix.tick_params(which='both', labelsize=20)
 
-            scatter = pd.plotting.scatter_matrix(pg, alpha=0.2, diagonal='kde',
-                                                 figsize=(12, 12), color=color,
-                                                 density_kwds={'color': color,
-                                                               'lw': 4})
+            scatter = scatter_matrix(pg, alpha=0.2, diagonal='kde',
+                                     figsize=(12, 12), color=color,
+                                     density_kwds={'color': color, 'lw': 4})
             for ax_scatter in scatter.ravel():
                 ax_scatter.tick_params(labelsize=20)
                 ax_scatter.set_xlabel(ax_scatter.get_xlabel(), fontsize=22,
@@ -903,7 +894,6 @@ class AnalyzePG:
         :return: (*list*) -- plant id of all the generators located in zone and
             using resource.
         """
-
         plant_id = []
         if zone == 'Western':
             try:
@@ -940,7 +930,6 @@ class AnalyzePG:
         :return: (*tuple*) -- data frames of PG and associated capacity for all
             generators located in zone and using the specified resources.
         """
-
         plant_id = []
         for r in resources:
             plant_id += self._get_plant_id(zone, r)
@@ -961,18 +950,15 @@ class AnalyzePG:
         :param str zone: one of the zones.
         :return: (*pandas.DataFrame*) -- data frame of demand in zone (in MWh).
         """
-
         demand = self.demand.tz_localize('utc')
         if zone == 'Western':
             demand = demand.sum(axis=1).rename('demand').to_frame()
         elif zone == 'California':
-
             ca = [204, 205, 203, 207, 206]
-
             demand = demand.loc[:, ca].sum(axis=1).rename('demand').to_frame()
         else:
-            zoneid = self.grid.zone2id[zone]
-            demand = demand.loc[:, zoneid].rename('demand').to_frame()
+            demand = demand.loc[:, self.grid.zone2id[zone]].rename(
+                'demand').to_frame()
 
         demand = self._convert_tz(demand).resample(
             self.freq, label='left').sum()[self.from_index:self.to_index]
@@ -987,7 +973,6 @@ class AnalyzePG:
         :return: (*pandas.DataFrame*) -- data frame of the generated energy (in
             MWh) in zone by generators using resource.
         """
-
         plant_id = self._get_plant_id(zone, resource)
 
         if len(plant_id) == 0:
@@ -1004,7 +989,6 @@ class AnalyzePG:
 
         :param bool save: should plot be saved.
         """
-
         if save:
             for i in plt.get_fignums():
                 plt.figure(i)
