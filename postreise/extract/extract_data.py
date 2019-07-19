@@ -39,11 +39,11 @@ def insert_in_file(filename, scenario_id, column_number, column_value):
 
 
 def extract_data(scenario_info):
-    """Builds data frame of PG and PF from MATLAB simulation output binary
-        files produced by MATPOWER.
+    """Builds data frames of {PG, PF, LMP, CONGU, CONGL}
+        from MATLAB simulation output binary files produced by MATPOWER.
 
     :param dict scenario_info: scenario information.
-    :return: (*pandas.DataFrame*) -- data frame of PG and PF.
+    :return: (*pandas.DataFrame*) -- data frames of: PG, PF, LMP, CONGU, CONGL.
     """
 
     interval = int(scenario_info['interval'].split('H', 1)[0])
@@ -72,14 +72,27 @@ def extract_data(scenario_info):
             infeasibilities.append('%s:%s' % (str(i), str(demand_change)))
         pg_tmp = output['mdo_save'].flow.mpc.gen.PG.T
         pf_tmp = output['mdo_save'].flow.mpc.branch.PF.T
+        #dual variables: Locational Marginal Price, CONGestion price (Up/Lo)
+        lmp_tmp = output['mdo_save'].flow.mpc.bus.LAM_P.T
+        congu_tmp = output['mdo_save'].flow.mpc.branch.MU_SF.T
+        congl_tmp = output['mdo_save'].flow.mpc.branch.MU_ST.T
         if i > start_index:
             pg = pg.append(pd.DataFrame(pg_tmp))
             pf = pf.append(pd.DataFrame(pf_tmp))
+            lmp = pf.append(pd.DataFrame(lmp_tmp))
+            congu = pf.append(pd.DataFrame(congu_tmp))
+            congl = pf.append(pd.DataFrame(congl_tmp))
         else:
             pg = pd.DataFrame(pg_tmp)
             pg.name = scenario_info['id'] + '_PG'
             pf = pd.DataFrame(pf_tmp)
             pf.name = scenario_info['id'] + '_PF'
+            lmp = pd.DataFrame(lmp_tmp)
+            lmp.name = scenario_info['id'] + '_LMP'
+            congu = pd.DataFrame(congu_tmp)
+            congu.name = scenario_info['id'] + '_CONGU'
+            congl = pd.DataFrame(congl_tmp)
+            congl.name = scenario_info['id'] + '_CONGL'
     toc = time.process_time()
     print('Reading time ' + str(round(toc-tic)) + 's')
 
@@ -94,13 +107,22 @@ def extract_data(scenario_info):
     pf.index.name = 'UTC'
     pg.index = date_range
     pg.index.name = 'UTC'
+    lmp.index = date_range
+    lmp.index.name = 'UTC'
+    congu.index = date_range
+    congu.index.name = 'UTC'
+    congl.index = date_range
+    congl.index.name = 'UTC'
 
     case = loadmat(os.path.join(folder, 'case.mat'), squeeze_me=True,
                    struct_as_record=False)
     pg.columns = case['mpc'].genid.tolist()
     pf.columns = case['mpc'].branchid.tolist()
+    lmp.columns = case['mpc'].busid.tolist()
+    congu.columns = case['mpc'].branchid.tolist()
+    congl.columns = case['mpc'].branchid.tolist()
 
-    return pg, pf
+    return pg, pf, lmp, congu, congl
 
 
 def extract_scenario(scenario_id):
@@ -111,10 +133,13 @@ def extract_scenario(scenario_id):
 
     scenario_info = get_scenario(scenario_id)
 
-    pg, pf = extract_data(scenario_info)
+    pg, pf, lmp, congu, congl = extract_data(scenario_info)
 
     pg.to_pickle(os.path.join(const.OUTPUT_DIR, scenario_info['id']+'_PG.pkl'))
     pf.to_pickle(os.path.join(const.OUTPUT_DIR, scenario_info['id']+'_PF.pkl'))
+    lmp.to_pickle(os.path.join(const.OUTPUT_DIR, scenario_info['id']+'_LMP.pkl'))
+    congu.to_pickle(os.path.join(const.OUTPUT_DIR, scenario_info['id']+'_CONGU.pkl'))
+    congl.to_pickle(os.path.join(const.OUTPUT_DIR, scenario_info['id']+'_CONGL.pkl'))
 
     # Update status in ExecuteList.csv
     insert_in_file(const.EXECUTE_LIST, scenario_info['id'], '2', 'extracted')
