@@ -2,17 +2,10 @@ from postreise.process import transferdata as td
 
 
 def test_setup_server_connection():
-    transfer = td.TransferData()
-    td._setup_server_connection()
+    td.setup_server_connection()
 
 
 def test_get_scenario_file_from_server():
-    transfer = td.TransferData()
-    sftp = td._setup_server_connection()
-    td._get_scenario_file_from_server(sftp)
+    ssh_client = td.setup_server_connection()
+    td.get_scenario_table(ssh_client)
 
-
-def test_get_data():
-    od = td.OutputData()
-    od.get_data('western_scenarioUnitTest02', 'PG')
-    od.get_data('western_scenarioUnitTest02', 'PF')

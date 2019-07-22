@@ -1,44 +1,43 @@
 import math
 
-import numpy as np
 import pandas as pd
 import scipy.special as scsp
 
 
-def generate_cong_stats(cong_df, branches_df, name):
+def generate_cong_stats(pf, branch, name):
     """Generates congestion statistics from the input congestion data.
 
-    :param pandas cong_df: Power flow data frame, values normalized to capacity
-    :param pandas branches_df: network branches in format created by \ 
-        WesternIntnet.
+    :param pandas.DataFrame pf: Power flow data frame with values normalized to
+        capacity
+    :param pandas.DataFrame branch: branches in network.
     :param string name: filename of output.
-    :return: (*pandas*) -- data frame with *'hutil1'*, *'hutil0p9-1'*, 
-        *'hutil0p8-0p9'*, *'hutil0p75-0p8'*, *'hutil>=0p9'*, *'hutil>=0p8'*, \ 
+    :return: (*pandas.DataFrame*) -- data frame with *'hutil1'*, *'hutil0p9-1'*,
+        *'hutil0p8-0p9'*, *'hutil0p75-0p8'*, *'hutil>=0p9'*, *'hutil>=0p8'*,
         *'hutil>=0p75'*, *'dist'*, *'zscore'* and *'pvalue'*.
 
     .. todo::
-        Current version assumes normal distibution; calculate real \ 
+        Current version assumes normal distribution; calculate real
         distribution, then do a lookup depending on distribution type.
     """
 
-    cong_stats = pd.concat([branches_df['Capacity'],
-                            cong_df[(cong_df == 1)].describe().loc['count', :],
-                            cong_df[(cong_df < 1) & (cong_df >= 0.9)
-                                    ].describe().loc['count', :],
-                            cong_df[(cong_df < 0.9) & (cong_df >= 0.8)
-                                    ].describe().loc['count', :],
-                            cong_df[(cong_df < 0.8) & (cong_df >= 0.75)
-                                    ].describe().loc['count', :]
+    cong_stats = pd.concat([branch['capacity'],
+                            pf[(pf == 1)].describe().loc['count', :],
+                            pf[(pf < 1) & (pf >= 0.9)
+                               ].describe().loc['count', :],
+                            pf[(pf < 0.9) & (pf >= 0.8)
+                               ].describe().loc['count', :],
+                            pf[(pf < 0.8) & (pf >= 0.75)
+                               ].describe().loc['count', :]
                             ], axis=1)
-    cong_stats.columns = ['Capacity', 'hutil1', 'hutil0p9-1',
+    cong_stats.columns = ['capacity', 'hutil1', 'hutil0p9-1',
                           'hutil0p8-0p9', 'hutil0p75-0p8']
 
-    cong_stats[['Capacity',
+    cong_stats[['capacity',
                 'hutil1',
                 'hutil0p9-1',
                 'hutil0p8-0p9',
                 'hutil0p75-0p8'
-                ]] = cong_stats[['Capacity', 'hutil1',
+                ]] = cong_stats[['capacity', 'hutil1',
                                  'hutil0p9-1', 'hutil0p8-0p9',
                                  'hutil0p75-0p8']].astype(int)
 
@@ -54,15 +53,15 @@ def generate_cong_stats(cong_df, branches_df, name):
                                                        1: 'hutil>=0p8',
                                                        2: 'hutil>=0p75'})
 
-    branches_df['dist'] = branches_df.apply(
-        lambda row: _greatCircleDistance(
-        math.radians(row['from_lat']), math.radians(row['from_lon']),
-        math.radians(row['to_lat']), math.radians(row['to_lon'])), axis=1)    
+    branch['dist'] = branch.apply(
+        lambda row: _great_circle_distance(
+            math.radians(row['from_lat']), math.radians(row['from_lon']),
+            math.radians(row['to_lat']), math.radians(row['to_lon'])), axis=1)
 
-    cong_stats = pd.concat([cong_stats, branches_df['dist']], axis=1)
+    cong_stats = pd.concat([cong_stats, branch['dist']], axis=1)
 
-    total_hours = len(cong_df)
-    p_cong = cong_stats.loc[cong_stats['Capacity'] != 99999].describe().loc[
+    total_hours = len(pf)
+    p_cong = cong_stats.loc[cong_stats['capacity'] != 99999].describe().loc[
         'mean']['hutil>=0p75']/total_hours
     mu = total_hours*p_cong
     var = total_hours*p_cong*(1 - p_cong)
@@ -75,7 +74,7 @@ def generate_cong_stats(cong_df, branches_df, name):
     return cong_stats
 
 
-def _greatCircleDistance(lat1, lon1, lat2, lon2):
+def _great_circle_distance(lat1, lon1, lat2, lon2):
     """Calculates distance between two sites.
 
     :param float lat1: latitude of first site (in rad.).
@@ -84,10 +83,10 @@ def _greatCircleDistance(lat1, lon1, lat2, lon2):
     :param float lon2: longitude of second site (in rad.).
     :return: (*float*) -- distance between two sites (in km.).
     """
-    R = 6368
+    radius = 6368
 
-    def haversin(x):
+    def haversine(x):
         return math.sin(x/2)**2
-    return R*2 * math.asin(math.sqrt(
-        haversin(lat2-lat1) +
-        math.cos(lat1) * math.cos(lat2) * haversin(lon2-lon1)))
+    return radius * 2 * math.asin(math.sqrt(haversine(lat2 - lat1) +
+                                            math.cos(lat1) * math.cos(lat2) *
+                                            haversine(lon2 - lon1)))

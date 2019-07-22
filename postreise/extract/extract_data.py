@@ -1,99 +1,126 @@
-import os
-import time
+from postreise.extract import const
 
-import matlab.engine
 import numpy as np
 import pandas as pd
-from pandas.core.indexes.datetimes import date_range
+import time
+import os
 
-def extract_data(scenario_name, data_location, start_index, end_index):
-    """Takes subintervals from simulation in MATLAB binary formats, \ 
-        converts and connects it into csv format. It uses the MATLAB \ 
-        functions to extract data.
+from scipy.io import loadmat
+from tqdm import tqdm
+from collections import OrderedDict
 
-    :param str scenario_name: scenario name.
-    :param str data_location: data location.
-    :param int start_index: starting index.
-    :param int end_index: ending index.
-    :return: (*tuple*) -- data frames of power generated (PG) and \ 
-      power flow (PF).
+
+def get_scenario(scenario_id):
+    """Returns scenario information.
+
+    :param str scenario_id: scenario index.
+    :return: (*dict*) -- scenario information.
+    """
+    scenario_list = pd.read_csv(const.SCENARIO_LIST, dtype=str)
+    scenario_list.fillna('', inplace=True)
+    scenario = scenario_list[scenario_list.id == scenario_id]
+
+    return scenario.to_dict('records', into=OrderedDict)[0]
+
+
+def insert_in_file(filename, scenario_id, column_number, column_value):
+    """Updates status in execute list on server.
+
+    :param str filename: path to execute or scenario list.
+    :param str scenario_id: scenario index.
+    :param str column_number: id of column (indexing starts at 1).
+    :param str column_value: value to insert.
+    """
+    options = "-F, -v OFS=',' -v INPLACE_SUFFIX=.bak -i inplace"
+    program = ("'{for(i=1; i<=NF; i++){if($1==%s) $%s=\"%s\"}};1'" %
+               (scenario_id, column_number, column_value))
+    command = "awk %s %s %s" % (options, program, filename)
+    os.system(command)
+
+
+def extract_data(scenario_info):
+    """Builds data frame of PG and PF from MATLAB simulation output binary
+        files produced by MATPOWER.
+
+    :param dict scenario_info: scenario information.
+    :return: (*pandas.DataFrame*) -- data frame of PG and PF.
     """
 
-    # Start MATLAB engine
-    print("Starting MATLAB")
-    eng = matlab.engine.start_matlab()
-    this_dirname = os.path.dirname(__file__)
-    eng.addpath(this_dirname)
-    print("Starting extracting data")
-    eng.get_all_power_and_load(scenario_name, data_location,
-                               int(start_index), int(end_index))
-    print("Done extracting data")
-    eng.quit()
-    print("MATLAB terminated")
+    interval = int(scenario_info['interval'].split('H', 1)[0])
+    start_date = scenario_info['start_date']
+    end_date = scenario_info['end_date']
+    diff = pd.Timestamp(end_date) - pd.Timestamp(start_date)
+    hours = diff / np.timedelta64(1, 'h') + 1
 
-    pg = pd.read_csv(
-                data_location+scenario_name+'fromMatlabPG.csv',
-                header=None
-            ).T
-    pf = pd.read_csv(
-                data_location+scenario_name+'fromMatlabPF.csv',
-                header=None
-            ).T
+    start_index = 0
+    end_index = int(hours / interval)
 
-    pg.index = date_range
-    pf.index = date_range
+    infeasibilities = []
 
-    return (pg, pf)
+    tic = time.process_time()
+    folder = os.path.join(const.EXECUTE_DIR,
+                          'scenario_%s' % scenario_info['id'])
+    for i in tqdm(range(start_index, end_index)):
+        filename = 'result_' + str(i)
 
+        output = loadmat(os.path.join(folder, 'output', filename),
+                         squeeze_me=True, struct_as_record=False)
 
-def extract_data_and_save(scenario_name, data_location, save_location,
-                          start_index, end_index):
-    """Extract data and save as csv.
-    
-    :param str scenario_name: scenario name.
-    :param str data location: data location.
-    :param str save location: save location.
-    :param int start_index: starting index.
-    :param int end_index: ending index.
-    """
+        demand_scaling = output['mdo_save'].demand_scaling
+        if demand_scaling < 1:
+            demand_change = round(100 * (1 - demand_scaling))
+            infeasibilities.append('%s:%s' % (str(i), str(demand_change)))
+        pg_tmp = output['mdo_save'].flow.mpc.gen.PG.T
+        pf_tmp = output['mdo_save'].flow.mpc.branch.PF.T
+        if i > start_index:
+            pg = pg.append(pd.DataFrame(pg_tmp))
+            pf = pf.append(pd.DataFrame(pf_tmp))
+        else:
+            pg = pd.DataFrame(pg_tmp)
+            pg.name = scenario_info['id'] + '_PG'
+            pf = pd.DataFrame(pf_tmp)
+            pf.name = scenario_info['id'] + '_PF'
+    toc = time.process_time()
+    print('Reading time ' + str(round(toc-tic)) + 's')
 
-    (pg, pf) = extract_data(scenario_name, data_location, start_index,
-                            end_index)
+    # Add infeasibilities in ScenarioList.csv
+    insert_in_file(const.SCENARIO_LIST, scenario_info['id'], '15',
+                   '_'.join(infeasibilities))
 
-    pg.to_csv(save_location+scenario_name+'PG.csv')
-    pf.to_csv(save_location+scenario_name+'PF.csv')
-
-
-def extract_scenario(scenario_name):
-    """Extracts data.
-    
-    :param str scenario_name: scenario name.
-    """
-
-    scenario_dirname = '/home/EGM/'
-    scenario_list = pd.read_csv(scenario_dirname + 'ScenarioList.csv')
-
-    # Get parameters related to scenario
-    scenario = scenario_list[scenario_list.name == scenario_name]
-
-    # Catch if name not found
-    if scenario.shape[0] == 0:
-        print('No scenario with name ' + scenario_name)
-        return
-    if scenario.extract.values[0]:
-        print('Scenario already extracted or does not want to be extracted')
-        return
     # Set data range
-    date_start = pd.Timestamp(scenario.start_date.values[0])
-    date_end = pd.Timestamp(scenario.end_date.values[0])
-    date_range = pd.date_range(date_start, date_end, freq='H')
+    date_range = pd.date_range(start_date, end_date, freq='H')
 
-    extract_data_and_save(scenario_name,
-                          scenario.output_data_location.values[0],
-                          scenario.output_data_location.values[0],
-                          int(scenario.start_index.values[0]),
-                          int(scenario.end_index.values[0]),
-                          date_range)
+    pf.index = date_range
+    pf.index.name = 'UTC'
+    pg.index = date_range
+    pg.index.name = 'UTC'
+
+    case = loadmat(os.path.join(folder, 'case.mat'), squeeze_me=True,
+                   struct_as_record=False)
+    pg.columns = case['mpc'].genid.tolist()
+    pf.columns = case['mpc'].branchid.tolist()
+
+    return pg, pf
+
+
+def extract_scenario(scenario_id):
+    """Extracts data and save data as csv.
+
+    :param str scenario_id: scenario id.
+    """
+
+    scenario_info = get_scenario(scenario_id)
+
+    pg, pf = extract_data(scenario_info)
+
+    pg.to_pickle(os.path.join(const.OUTPUT_DIR, scenario_info['id']+'_PG.pkl'))
+    pf.to_pickle(os.path.join(const.OUTPUT_DIR, scenario_info['id']+'_PF.pkl'))
+
+    # Update status in ExecuteList.csv
+    insert_in_file(const.EXECUTE_LIST, scenario_info['id'], '2', 'extracted')
+
+    # Update status in ScenarioList.csv
+    insert_in_file(const.SCENARIO_LIST, scenario_info['id'], '4', 'analyze')
 
 
 if __name__ == "__main__":

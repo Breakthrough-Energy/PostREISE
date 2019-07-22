@@ -3,58 +3,53 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
+from pandas.plotting import scatter_matrix
+
 plt.ioff()
 
 
 class AnalyzePG:
     """Analysis based on PG.
 
-    :param tuple scenario: parameters related to scenario. 1st element \ 
-        is a data frame of the power generated with id of the plants as \ 
-        columns and UTC timestamp as indices. 2nd element is a grid \ 
-        instance. 3rd element is a data frame giving the factor by which \ 
-        renewable energies have been increased for each plant as column \ 
-        and the plant identification number as indices.
-    :param tuple time: time related parameters. 1st element is the \ 
-        starting date. 2nd element is the ending date (left out). 3rd \ 
-        element is the timezone, only *'utc'*, *'US/Pacific'* and \ 
-        *'local'* are possible. 4th element is the frequency for \ 
-        resampling, can be *'H'*, *'D'*, *'W'* or *'auto'*.
-    :param list zones: geographical zones. Any combinations of \ 
-        *'Arizona'*, *'California'*, *'Bay Area'*, \ 
-        *'Central California'*, *'Northern California'*, \ 
-        *'Southeast California'*, *'Southwest California'*, *'Colorado'*, \ 
-        *'El Paso'*, *'Idaho'*, *'Montana'*, *'Nevada'*, *'New Mexico'*, \ 
-        *'Oregon'*, *'Utah'*, *'Washington'*, *'Western'*, *'Wyoming'*.
-    :param list resources: energy resources. Can be any combinations of \ 
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
+    :param tuple time: time related parameters. 1st element is the starting
+        date. 2nd element is the ending date (left out). 3rd element is the
+        timezone, only *'utc'*, *'US/Pacific'* and *'local'* are possible. 4th
+        element is the frequency, which can be *'H'*, *'D'*, *'W'* or *'auto'*.
+    :param list zones: geographical zones. Any combinations of *'Arizona'*,
+        *'California'*, *'Bay Area'*, *'Central California'*,
+        *'Northern California'*, *'Southeast California'*,
+        *'Southwest California'*, *'Colorado'*, *'El Paso'*, *'Idaho'*,
+        *'Montana'*, *'Nevada'*, *'New Mexico'*, *'Oregon'*, *'Utah'*,
+        *'Washington'*, *'Western'*, *'Wyoming'*.
+    :param list resources: energy resources. Can be any combinations of
         *'coal'*, *'hydro'*, *'ng'*, *'nuclear'*, *'solar'*, *'wind'*.
-    :param str kind: one of: *'stacked'*, *'comp'*, *'curtailment'*, \ 
+    :param str kind: one of: *'stacked'*, *'comp'*, *'curtailment'*,
         *'correlation'*, *'chart'*, *'variability'* or *'yield'*.
     :param bool normalize: should generation be normalized by capacity.
-    :param int seed: seed for random number generator. Only used in the \ 
+    :param int seed: seed for random number generator. Only used in the
         *'variability'* analysis.
-    
-    .. note::    
-        * 'stacked': \ 
-            calculates time series of power generated and demand in one zone.
-        * *'comp'*: \ 
-            calculates time series of power generated for one resource in \ 
-            multiple zones.
-        * *'curtailment'*: \ 
-            calculates time series of curtailment for one resource in one zone.
-        * *'correlation'*: \ 
-            calculates correlation coefficients of power generated between \ 
-            multiple zones for one resource.
-        * *'chart'*: \ 
-            calculates proportion of resources and generation in one zone.
-        * *'variability'*: \ 
-            calculates time series of power generated in one zone for one \ 
-            resource. Also calculates the time series of the power generated \ 
-            of 2, 8 and 15 randomly chosen plants in the same zone and using \ 
-            the same resource.
-        * *'yield'*: \ 
-            calculates capacity factor of one resource in one zone.
 
+    .. note::
+        * *'stacked'*:
+            calculates time series of power generated and demand in one zone.
+        * *'comp'*:
+            calculates time series of power generated for one resource in
+                multiple zones.
+        * *'curtailment'*:
+            calculates time series of curtailment for one resource in one zone.
+        * *'correlation'*:
+            calculates correlation coefficients of power generated between
+                multiple zones for one resource.
+        * *'chart'*:
+            calculates proportion of resources and generation in one zone.
+        * *'variability'*:
+            calculates time series of power generated in one zone for one
+            resource. Also calculates the time series of the power generated
+            of 2, 8 and 15 randomly chosen plants in the same zone and using
+            the same resource.
+        * *'yield'*:
+            calculates capacity factor of one resource in one zone.
     """
 
     def __init__(self, scenario, time, zones, resources, kind,
@@ -64,10 +59,13 @@ class AnalyzePG:
         """
         plt.close('all')
 
-        self.pg = scenario[0].tz_localize('utc')
-        self.grid = scenario[1]
-        self.multiplier = scenario[2]
-        self._set_capacity()
+        # Note: Data is downloaded even if not needed
+        self.pg = scenario.state.get_pg().tz_localize('utc')
+        self.grid = scenario.state.get_grid()
+        self.demand = scenario.state.get_demand()
+        self.solar = scenario.state.get_solar()
+        self.wind = scenario.state.get_wind()
+        self.hydro = scenario.state.get_hydro()
 
         # Check parameters
         self._check_dates(time[0], time[1])
@@ -172,7 +170,6 @@ class AnalyzePG:
         :param str end_date: ending date.
         :raise Exception: if dates are invalid.
         """
-
         if pd.Timestamp(start_date) > pd.Timestamp(end_date):
             print("Starting date must be greater than ending date")
             raise Exception("Invalid dates")
@@ -183,7 +180,7 @@ class AnalyzePG:
         :param list zones: geographical zones.
         :raise Exception: if zone(s) are invalid.
         """
-        possible = list(self.grid.load_zones.values()) + \
+        possible = list(self.grid.id2zone.values()) + \
             ['California', 'Western']
         for z in zones:
             if z not in possible:
@@ -246,12 +243,13 @@ class AnalyzePG:
             raise Exception('Invalid Analysis')
 
     def _convert_tz(self, df_utc):
-        """Convert data frame fron UTC time zone to desired time zone.
+        """Convert data frame from UTC time zone to desired time zone.
 
-        :param pandas df_utc: data frame with UTC timestamp as indices.
-        :param return: (*pandas*) data frame converted to desired time zone.
+        :param pandas.DataFrame df_utc: data frame with UTC timestamp as
+            indices.
+        :return: (*pandas.DataFrame*) -- data frame converted to desired
+            time zone.
         """
-
         df_new = df_utc.tz_convert(self.tz)
         df_new.index.name = self.tz
 
@@ -263,7 +261,6 @@ class AnalyzePG:
         :param str start_date: starting timestamp.
         :param str end_date: ending timestamp.
         """
-
         delta = pd.Timestamp(start_date) - pd.Timestamp(end_date)
 
         if delta.days < 7:
@@ -273,24 +270,13 @@ class AnalyzePG:
         else:
             self.freq = 'W'
 
-    def _set_capacity(self):
-        """Sets capacity of the generators.
-
-        """
-        self.capacity = pd.DataFrame(
-            {'GenMWMax': self.grid.genbus.GenMWMax.values *
-                self.multiplier[self.multiplier.columns[0]].values,
-             'type': self.grid.genbus.type},
-            index=self.grid.genbus.index.values)
-
     def _set_date_range(self, start_date, end_date):
-        """Calculates the appropriate date range after resampling in \ 
-            order to get an equal number of entries per sample.
+        """Calculates the appropriate date range after resampling in order to
+            get an equal number of entries per sample.
 
         :param str start_date: starting timestamp.
         :param str end_date: ending timestamp.
         """
-
         first_available = self.pg.index[0].tz_convert(self.tz)
         last_available = self.pg.index[-1].tz_convert(self.tz)
 
@@ -355,7 +341,6 @@ class AnalyzePG:
         :param str start_date: starting timestamp.
         :param str end_date: ending timestamp.
         """
-
         print('Set UTC for all zones')
         self.tz = 'utc'
 
@@ -369,11 +354,10 @@ class AnalyzePG:
         """Calculates proportion of resources and generation in one zone.
 
         :param str zone: zone to consider.
-        :return: (*tuple*) -- First element is a time series of PG with type \ 
-            of generators as columns. Second element is a data frame with \ 
-            type of generators as indices and corresponding capacity as column.
+        :return: (*tuple*) -- First element is a time series of PG with type of
+            generators as columns. Second element is a data frame with type of
+            generators as indices and corresponding capacity as column.
         """
-
         pg, _ = self._get_pg(zone, self.resources)
         if pg is not None:
             fig, ax = plt.subplots(1, 2, figsize=(20, 10), sharey='row')
@@ -382,10 +366,10 @@ class AnalyzePG:
             ax[0].set_title('Generation (MWh)', fontsize=25)
             ax[1].set_title('Resources (MW)', fontsize=25)
 
-            pg_groups = pg.T.groupby(self.grid.genbus['type']).agg(sum).T
+            pg_groups = pg.T.groupby(self.grid.plant['type']).agg(sum).T
             pg_groups.name = "%s (Generation)" % zone
             type2label = self.type2label.copy()
-            for t in self.grid.ID2type.values():
+            for t in self.grid.id2type.values():
                 if t not in pg_groups.columns:
                     del type2label[t]
 
@@ -394,7 +378,7 @@ class AnalyzePG:
                 ax=ax[0], kind='barh', alpha=0.7,
                 color=[self.grid.type2color[r] for r in type2label.keys()])
 
-            capacity = self.capacity.loc[pg.columns].groupby(
+            capacity = self.grid.plant.loc[pg.columns].groupby(
                 'type').agg(sum).GenMWMax
             capacity.name = "%s (Capacity)" % zone
 
@@ -432,7 +416,6 @@ class AnalyzePG:
         :param str end_date: ending timestamp.
         :param str tz: timezone.
         """
-
         self.data = []
         self.filename = []
         for z in self.zones:
@@ -444,10 +427,9 @@ class AnalyzePG:
         """Calculates time series of PG and demand in one zone. 
 
         :param str zone: zone to consider.
-        :return: (*pandas*) -- time series of PG and load for selected zone. \ 
-            Columns are type of generators and demand.
+        :return: (*pandas.DataFrame*) --  data frame of PG and load for selected
+            zone.
         """
-
         pg, capacity = self._get_pg(zone, self.resources)
         if pg is not None:
             fig = plt.figure(figsize=(20, 10))
@@ -458,10 +440,10 @@ class AnalyzePG:
 
             demand = self._get_demand(zone)
 
-            pg_groups = pg.T.groupby(self.grid.genbus['type'])
+            pg_groups = pg.T.groupby(self.grid.plant['type'])
             pg_stack = pg_groups.agg(sum).T
             type2label = self.type2label.copy()
-            for t in self.grid.ID2type.values():
+            for t in self.grid.id2type.values():
                 if t not in pg_stack.columns:
                     del type2label[t]
 
@@ -470,12 +452,12 @@ class AnalyzePG:
                                            axis='index')
                 demand = demand.divide(capacity * self.timestep, axis='index')
 
-            ax = pg_stack[list(type2label.keys())].rename(
+            ax = pg_stack[list(type2label.keys())].tz_localize(None).rename(
                 columns=type2label).plot.area(
                 color=[self.grid.type2color[r] for r in type2label.keys()], 
                 alpha=0.7, ax=ax)
-            demand.plot(color='red', lw=4, ax=ax)
 
+            demand.tz_localize(None).plot(color='red', lw=4, ax=ax)
             ax.set_ylim([0, max(ax.get_ylim()[1], 1.1*demand.max().values[0])])
 
             ax.set_xlabel('')
@@ -505,7 +487,6 @@ class AnalyzePG:
         :param str end_date: ending timestamp.
         :param str tz: timezone.
         """
-
         if tz == 'local':
             print('Set US/Pacific for all zones')
             self.tz = 'US/Pacific'
@@ -521,10 +502,8 @@ class AnalyzePG:
         """Calculates time series of PG for one resource.
 
         :param str resource: resource to consider.
-        :return: (*pandas*) -- time series of PG for selected resource. \ 
-            Columns are zones.
+        :return: (*pandas.DataFrame*) -- data frame of PG for selected resource.
         """
-
         fig = plt.figure(figsize=(20, 10))
         plt.title('%s' % resource.capitalize(), fontsize=25)
 
@@ -549,11 +528,12 @@ class AnalyzePG:
                     total = pd.merge(total, total_tmp, left_index=True,
                                      right_index=True)
 
-                total[col_name].plot(color=self.zone2style[z]['color'],
-                                     alpha=self.zone2style[z]['alpha'],
-                                     lw=self.zone2style[z]['lw'],
-                                     ls=self.zone2style[z]['ls'],
-                                     ax=ax)
+                total[col_name].tz_localize(None).plot(
+                    color=self.zone2style[z]['color'],
+                    alpha=self.zone2style[z]['alpha'],
+                    lw=self.zone2style[z]['lw'],
+                    ls=self.zone2style[z]['ls'],
+                    ax=ax)
 
                 ax.grid(color='black', axis='y')
                 ax.tick_params(which='both', labelsize=20)
@@ -583,7 +563,6 @@ class AnalyzePG:
         :param str end_date: ending timestamp.
         :param str tz: timezone.
         """
-
         for r in self.resources:
             if r not in ['solar', 'wind']:
                 print("Curtailment analysis is only for renewable energies")
@@ -602,13 +581,12 @@ class AnalyzePG:
 
         :param str zone: zone to consider.
         :param str resource: resource to consider.
-        :return: (*pandas*) -- time series of curtailment for selected zone \ 
-            and resource. Columns are energy available (in MWh) from \ 
-            generators using resource in zone, energy generated (in MWh) \ 
-            from generators using resource in zone, demand in selected zone \ 
-            (in MWh) and curtailment (in %).
+        :return: (*pandas.DataFrame*) -- data frame of curtailment for selected
+            zone and resource. Columns are energy available (in MWh) from
+            generators using resource in zone, energy generated (in MWh) from
+            generators using resource in zone, demand in selected zone (in MWh)
+            and curtailment (in %).
         """
-
         pg, capacity = self._get_pg(zone, [resource])
         if pg is None:
             return None
@@ -627,16 +605,18 @@ class AnalyzePG:
             data['curtailment'] = (1 - data['generated'] / data['available'])
             data['curtailment'] *= 100
 
-            # Nnumerical precision
+            # Numerical precision
             data.loc[abs(data['curtailment']) < 1, 'curtailment'] = 0
 
-            data['curtailment'].plot(ax=ax, style='b', lw=4, alpha=0.7)
-            data['available'].rename("%s energy available" % resource).plot(
-                ax=ax_twin, lw=4, alpha=0.7,
-                style={"%s energy available" %
-                       resource: self.grid.type2color[resource]})
-            data['demand'].plot(ax=ax_twin, lw=4, alpha=0.7,
-                                style={'demand': 'r'})
+            data['curtailment'].tz_localize(None).plot(ax=ax, style='b', lw=4,
+                                                       alpha=0.7)
+            data['available'].tz_localize(
+                None).rename("%s energy available" % resource).plot(
+                ax=ax_twin, lw=4, alpha=0.7, style={
+                    "%s energy available" % resource: self.grid.type2color[
+                        resource]})
+            data['demand'].tz_localize(None).plot(ax=ax_twin, lw=4, alpha=0.7,
+                                                  style={'demand': 'r'})
             ax.tick_params(which='both', labelsize=20)
             ax.grid(color='black', axis='y')
             ax.set_xlabel('')
@@ -662,7 +642,6 @@ class AnalyzePG:
         :param str end_date: ending timestamp.
         :param str tz: timezone.
         """
-
         for r in self.resources:
             if r not in ['solar', 'wind']:
                 print("Curtailment analysis is only for renewable energies")
@@ -677,14 +656,14 @@ class AnalyzePG:
                 self.data.append(self._get_variability(z, r))
 
     def _get_variability(self, zone, resource):
-        """Calculates time series of PG in one zone for one resource. Also \
-            calculates the time series of the PG of 2, 8 and 15 randomly \ 
+        """Calculates time series of PG in one zone for one resource. Also,
+            calculates the time series of the PG of 2, 8 and 15 randomly
             chosen plants in the same zone and using the same resource.
 
         :param str resource: resource to consider.
-        :return: (*pandas*) -- time series of PG for selected zone and plants.
+        :return: (*pandas.DataFrame*) -- data frame of PG for selected zone and
+            plants.
         """
-
         pg, capacity = self._get_pg(zone, [resource])
         if pg is None:
             return None
@@ -709,7 +688,7 @@ class AnalyzePG:
                                             replace=False).tolist()
                 norm = [capacity]
                 for i in [15, 8, 2]:
-                    norm += [sum(self.capacity.loc[
+                    norm += [sum(self.grid.plant.loc[
                         selected[:i]].GenMWMax.values)]
                 total['15 plants (%d MW)' % norm[1]] = pg[selected].T.sum()
                 total['8 plants (%d MW)' % norm[2]] = pg[selected[:8]].T.sum()
@@ -729,7 +708,8 @@ class AnalyzePG:
                     colors += ['dodgerblue', 'teal', 'turquoise']
 
                 for col, c, lw, ls in zip(total.columns, colors, lws, lss):
-                    total[col].plot(alpha=0.7, lw=lw, ls=ls, color=c, ax=ax)
+                    total[col].tz_localize(None).plot(alpha=0.7, lw=lw, ls=ls,
+                                                      color=c, ax=ax)
 
                 ax.grid(color='black', axis='y')
                 ax.tick_params(which='both', labelsize=20)
@@ -775,12 +755,12 @@ class AnalyzePG:
             self.data.append(self._get_correlation(r))
 
     def _get_correlation(self, resource):
-        """Calculates correlation coefficients of power generated between \ 
+        """Calculates correlation coefficients of power generated between
             multiple zones for one resource.
 
         :param str resource: resource to consider.
-        :return: (*pandas*) -- data frame of PG for selected resource. \ 
-            Columns are zones.
+        :return: (*pandas.DataFrame*) -- data frame of PG for selected resource.
+            Columns are zones for selected resource.
         """
 
         fig = plt.figure(figsize=(12, 12))
@@ -820,10 +800,9 @@ class AnalyzePG:
             ax_matrix.set_yticklabels(pg.columns, rotation=40, ha='right')
             ax_matrix.tick_params(which='both', labelsize=20)
 
-            scatter = pd.plotting.scatter_matrix(pg, alpha=0.2, diagonal='kde',
-                                                 figsize=(12, 12), color=color,
-                                                 density_kwds={'color': color,
-                                                               'lw': 4})
+            scatter = scatter_matrix(pg, alpha=0.2, diagonal='kde',
+                                     figsize=(12, 12), color=color,
+                                     density_kwds={'color': color, 'lw': 4})
             for ax_scatter in scatter.ravel():
                 ax_scatter.tick_params(labelsize=20)
                 ax_scatter.set_xlabel(ax_scatter.get_xlabel(), fontsize=22,
@@ -865,9 +844,9 @@ class AnalyzePG:
 
         :param str zone: zone to consider.
         :param str resource: resource to consider.
-        :return: (*tuple*) -- First element is the average ideal capacity \ 
-            factor for the selected zone and resource. Second element is the \ 
-            average curtailed capacity factor for the selected zone and \ 
+        :return: (*tuple*) -- first element is the average ideal capacity
+            factor for the selected zone and resource. Second element is the
+            average curtailed capacity factor for the selected zone and
             resource.
         """
 
@@ -877,7 +856,7 @@ class AnalyzePG:
         else:
             available = self._get_profile(zone, resource)
 
-            capacity = self.capacity.loc[pg.columns].GenMWMax.values
+            capacity = self.grid.plant.loc[pg.columns].GenMWMax.values
 
             uncurtailed = available.sum().divide(len(pg) * capacity,
                                                  axis='index')
@@ -907,19 +886,18 @@ class AnalyzePG:
             return mean_uncurtailed, mean_curtailed
 
     def _get_plant_id(self, zone, resource):
-        """Extracts the plant identification number of all the generators \ 
+        """Extracts the plant identification number of all the generators
             located in one zone and using one specific resource.
 
         :param str zone: zone to consider.
         :param str resource: type of generator to consider.
-        :return: (*list*) -- plant identification number of all the \ 
-            generators located in zone and using resource.
+        :return: (*list*) -- plant id of all the generators located in zone and
+            using resource.
         """
-
         plant_id = []
         if zone == 'Western':
             try:
-                plant_id = self.grid.genbus.groupby('type').get_group(
+                plant_id = self.grid.plant.groupby('type').get_group(
                     resource).index.values.tolist()
             except KeyError:
                 pass
@@ -928,15 +906,15 @@ class AnalyzePG:
                   'Southeast California', 'Southwest California']
             for load_zone in ca:
                 try:
-                    plant_id += self.grid.genbus.groupby(
-                        ['ZoneName', 'type']).get_group(
+                    plant_id += self.grid.plant.groupby(
+                        ['zone_name', 'type']).get_group(
                         (load_zone, resource)).index.values.tolist()
                 except KeyError:
                     pass
         else:
             try:
-                plant_id = self.grid.genbus.groupby(
-                    ['ZoneName', 'type']).get_group(
+                plant_id = self.grid.plant.groupby(
+                    ['zone_name', 'type']).get_group(
                     (zone, resource)).index.values.tolist()
             except KeyError:
                 pass
@@ -944,16 +922,14 @@ class AnalyzePG:
         return plant_id
 
     def _get_pg(self, zone, resources):
-        """Returns PG of all the generators located in one zone and powered \ 
-            by resources.
+        """Returns PG of all the generators located in one zone and powered by
+            resources.
 
         :param str zone: one of the zones.
         :param list resources: type of generators to consider.
-        :return: (*tuple*) -- time series of PG and data frame of the \ 
-            associated capacity for all generators located in zone and using \ 
-            the resources.
+        :return: (*tuple*) -- data frames of PG and associated capacity for all
+            generators located in zone and using the specified resources.
         """
-
         plant_id = []
         for r in resources:
             plant_id += self._get_plant_id(zone, r)
@@ -962,7 +938,7 @@ class AnalyzePG:
             print("No %s plants in %s" % ("/".join(resources), zone))
             return [None] * 2
         else:
-            capacity = sum(self.capacity.loc[plant_id].GenMWMax.values)
+            capacity = sum(self.grid.plant.loc[plant_id].GenMWMax.values)
             pg = self._convert_tz(self.pg[plant_id]).resample(
                 self.freq, label='left').sum()[self.from_index:self.to_index]
 
@@ -972,18 +948,17 @@ class AnalyzePG:
         """Returns demand profile for load zone, California or total.
 
         :param str zone: one of the zones.
-        :return: (*pandas*) -- time series of the load in zone (in MWh).
+        :return: (*pandas.DataFrame*) -- data frame of demand in zone (in MWh).
         """
-
-        demand = self.grid.demand_data_2016.tz_localize('utc')
+        demand = self.demand.tz_localize('utc')
         if zone == 'Western':
             demand = demand.sum(axis=1).rename('demand').to_frame()
         elif zone == 'California':
-            ca = ['Bay Area', 'Central California', 'Northern California',
-                  'Southeast California', 'Southwest California']
+            ca = [204, 205, 203, 207, 206]
             demand = demand.loc[:, ca].sum(axis=1).rename('demand').to_frame()
         else:
-            demand = demand.loc[:, zone].rename('demand').to_frame()
+            demand = demand.loc[:, self.grid.zone2id[zone]].rename(
+                'demand').to_frame()
 
         demand = self._convert_tz(demand).resample(
             self.freq, label='left').sum()[self.from_index:self.to_index]
@@ -995,20 +970,16 @@ class AnalyzePG:
 
         :param str zone: zone to consider.
         :param str resource: type of generators to consider.
-        :return: (*pandas*) -- time series of the generated energy (in MWh) \ 
-            in zone by generators using resource.
+        :return: (*pandas.DataFrame*) -- data frame of the generated energy (in
+            MWh) in zone by generators using resource.
         """
-
         plant_id = self._get_plant_id(zone, resource)
 
         if len(plant_id) == 0:
             print("No %s plants in %s" % (resource, zone))
             return None
 
-        profile = eval('self.grid.'+resource+'_data_2016').tz_localize('utc')
-
-        for i in plant_id:
-            profile[i] *= float(self.multiplier.loc[i].values)
+        profile = eval('self.'+resource).tz_localize('utc')
 
         return self._convert_tz(profile[plant_id]).resample(
             self.freq, label='left').sum()[self.from_index:self.to_index]
@@ -1018,7 +989,6 @@ class AnalyzePG:
 
         :param bool save: should plot be saved.
         """
-
         if save:
             for i in plt.get_fignums():
                 plt.figure(i)
@@ -1029,23 +999,23 @@ class AnalyzePG:
     def get_data(self):
         """Get data.
 
-        :return: (*dict*) -- the formatting of the data depends on the \ 
-            selected analysis.
+        :return: (*dict*) -- the formatting of the data depends on the selected
+            analysis.
             
         .. note::
-            * *'stacked'*: \ 
-                1D dictionary. Keys are zones and associated value is a data \ 
+            * *'stacked'*:
+                1D dictionary. Keys are zones and associated value is a data
                 frame.
-            * *'chart'*: \ 
-                2D dictionary. First key is zone and associated value is a \ 
-                dictionary, which has *'Generation'* and *'Capacity'* as \ 
-                keys and a data frame for value.
-            *  *'comp'* and *'correlation'*:  \ 
-                1D dictionary. Keys are resources and associated value is a \ 
+            * *'chart'*:
+                2D dictionary. First key is zone and associated value is a
+                dictionary, which has *'Generation'* and *'Capacity'* as keys
+                and a data frame for value.
+            *  *'comp'* and *'correlation'*:
+                1D dictionary. Keys are resources and associated value is a
                 data frame.
-            *  *'variability'*, *'curtailment'* and *'yield'*: \ 
-                2D dictionary. First key is zone and associated value is a \ 
-                dictionary, which has resources as keys and a data frame for \ 
+            *  *'variability'*, *'curtailment'* and *'yield'*:
+                2D dictionary. First key is zone and associated value is a
+                dictionary, which has resources as keys and a data frame for
                 value.
  
         """

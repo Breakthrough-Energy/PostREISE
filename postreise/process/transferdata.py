@@ -1,163 +1,138 @@
-import os
-import sys
-from pathlib import Path
-
-import pandas as pd
-import paramiko
-
 from postreise.process import const
 
+import os
+import pandas as pd
+import paramiko
+from tqdm import tqdm
 
-class OutputData(object):
-    """Output Data class.
-        This class enables you to download data from the server as well as \ 
-        from a local folder. The :meth:`~get_data` function will first look \ 
-        locally if it can find the data requested. If it can't find locally \ 
-        it will download it from the server if it can find it there.
 
-    :param str data_dir: define local folder location to read or save data.
+def download(ssh_client, file_name, from_dir, to_dir):
+    """Download data from server.
 
+    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
+    :param str file_name: file name.
+    :param str from_dir: remote directory.
+    :param str to_dir: local directory. Will be created if does not exist.
+    :raises FileNotFoundError: if file not found on server.
     """
+    if not os.path.exists(to_dir):
+        os.makedirs(to_dir)
 
-    def __init__(self, data_dir=None):
-
-        self.data_dir = data_dir
-        self.TD = TransferData()
-        # Check if data can be found localy
-        if not data_dir:
-            home_dir = str(Path.home())
-            self.data_dir = os.path.join(home_dir, 'scenario_data', '')
-
-            print('Use ', self.data_dir, ' to save/load local scenario data.')
-
-    def get_data(self, run_name, field_name):
-        """Get data either from server or from local directory.
-
-        :param str run_name: name of run to get data from.
-        :param str field_name: PG or PF data.
-        :return: (*pandas*) --  data frame of PG or PF.
-        :raises FileNotFoundError: run_name file neither localy or on the \ 
-            server.
-        :raises NameError: If type not PG or PF.
-        """
-        if field_name not in ['PG', 'PF']:
-            raise NameError('Can only get PG or PF data.')
-        try:
-            p_out = pd.read_pickle(
-                self.data_dir + run_name + field_name + '.pkl'
-            )
-        except FileNotFoundError:
-            print('Local file not found will',
-                  'download data from server and save locally.')
-            try:
-                p_out = self.TD.get_data(run_name, field_name)
-            except FileNotFoundError as e:
-                raise FileNotFoundError(
-                    'File found neither localy nor on server.'
-                ) from e
-            if not os.path.exists(self.data_dir):
-                os.makedirs(self.data_dir)
-            print('Saving file localy.')
-            p_out.to_pickle(self.data_dir + run_name + field_name + '.pkl')
-        return p_out
+    from_path = os.path.join(from_dir, file_name)
+    stdin, stdout, stderr = ssh_client.exec_command("ls " + from_path)
+    if len(stderr.readlines()) != 0:
+        raise FileNotFoundError("%s not found in %s on server" %
+                                (file_name, from_dir))
+    else:
+        print("Transferring %s from server" % file_name)
+        sftp = ssh_client.open_sftp()
+        to_path = os.path.join(to_dir, file_name)
+        cbk, bar = progress_bar(ascii=True, unit='b', unit_scale=True)
+        sftp.get(from_path, to_path, callback=cbk)
+        bar.close()
+        sftp.close()
 
 
-class TransferData(object):
-    """This class setup the connection to the server and gets the data from
-        the server.
+def upload(ssh_client, file_name, from_dir, to_dir, change_name_to=None):
+    """Uploads data to server.
+
+    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
+    :param str file_name: file name on local machine.
+    :param str from_dir: local directory.
+    :param str to_dir: remote directory.
+    :raises IOError: if file already exists on server.
+    :param str change_name_to: file name on remote machine.
     """
+    from_path = os.path.join(from_dir, file_name)
 
-    def __init__(self):
-        self.sftp = None
-
-    def _late_init(self):
-        """This init is called when data is requested.
-
-        """
-        self.sftp = _setup_server_connection()
-        self.scenario_list = _get_scenario_file_from_server(self.sftp)
-
-    def get_data(self, run_name, field_name):
-        """Get data either from server.
-
-        :param str run_name: name of run to get data from.
-        :param str field_name: PG or PF data.
-        :return: (*pandas*) -- data frame.
-        :raises NameError: If type not PG or PF.
-        :raises FileNotFoundError: run name file not on server.
-        :raises LookupError: If run_name can not be found in scenario_list \ 
-            or more than one entry found.
-        """
-        if field_name not in ['PG', 'PF']:
-            raise NameError('Can only get PG or PF data.')
-        if not self.sftp:
-            self._late_init()
-        run = self.scenario_list[self.scenario_list['name'] == run_name]
-        if run.shape[0] == 0:
-            raise LookupError('Run name not found in scenario list.')
-        elif run.shape[0] > 1:
-            print('More than one run found with same name.')
-            raise LookupError('More than one run found with same name.')
-        output_file = run.output_data_location.values[0] + run_name
-        output_file = output_file + field_name + '.csv'
-        try:
-            output_object = self.sftp.file(output_file, 'rb')
-        except FileNotFoundError:
-            print('File not found on server in location:')
-            print(output_file)
-            print('File may not be converted from .mat format.')
-            raise
-        print('Reading ' + field_name + ' file from server.')
-        p_out = pd.read_csv(output_object, index_col=0, parse_dates=True)
-        p_out.columns = p_out.columns.astype(int)
-        return p_out
-
-    def show_scenario_list(self):
-        """Show scenario list.
-
-        """
-        if not self.sftp:
-            self._late_init()
-        print(self.scenario_list['name'])
+    if os.path.isfile(from_path) is False:
+        raise FileNotFoundError("%s not found in %s on local machine" %
+                                (file_name, from_dir))
+    else:
+        if bool(change_name_to):
+            to_path = os.path.join(to_dir, change_name_to)
+        else:
+            to_path = os.path.join(to_dir, file_name)
+        stdin, stdout, stderr = ssh_client.exec_command("ls " + to_path)
+        if len(stderr.readlines()) == 0:
+            raise IOError("%s already exists in %s on server" %
+                          (file_name, to_dir))
+        else:
+            print("Transferring %s to server" % file_name)
+            sftp = ssh_client.open_sftp()
+            sftp.put(from_path, to_path)
+            sftp.close()
 
 
-def _setup_server_connection():
+def get_scenario_table(ssh_client):
+    """Returns scenario table from server.
+
+    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
+    :return: (*pandas*) -- data frame.
+    """
+    sftp = ssh_client.open_sftp()
+    file_object = sftp.file(const.SCENARIO_LIST, 'rb')
+
+    scenario_list = pd.read_csv(file_object)
+    scenario_list.fillna('', inplace=True)
+
+    sftp.close()
+
+    return scenario_list.astype(str)
+
+
+def get_execute_table(ssh_client):
+    """Returns execute table from server.
+
+    :param paramiko.client.SSHClient ssh_client: session with an SSH server.
+    :return: (*pandas*) -- data frame.
+    """
+    sftp = ssh_client.open_sftp()
+
+    file_object = sftp.file(const.EXECUTE_LIST, 'rb')
+    execute_list = pd.read_csv(file_object)
+    execute_list.fillna('', inplace=True)
+
+    sftp.close()
+
+    return execute_list.astype(str)
+
+
+def setup_server_connection():
     """This function setup the connection to the server.
 
-        :return sftp: (*paramiko*) -- SFTP client object.
+    :return: (*paramiko.client.SSHClient*) -- session with an SSH server.
     """
-
     client = paramiko.SSHClient()
     try:
         client.load_system_host_keys()
     except IOError:
         print('Could not find ssh host keys.')
-        ssh_known_hosts = input(
-            'Please provide ssh known_hosts key file ='
-        )
+        ssh_known_hosts = input('Provide ssh known_hosts key file =')
         while True:
             try:
                 client.load_system_host_keys(str(ssh_known_hosts))
                 break
             except IOError:
-                print('Can not read file, try again')
-                ssh_known_hosts = input(
-                    'Please provide ssh known_hosts key file ='
-                )
+                print('Cannot read file, try again')
+                ssh_known_hosts = input('Provide ssh known_hosts key file =')
 
-    client.connect(const.SERVER_ADDRESS)
-    sftp = client.open_sftp()
-    return sftp
+    client.connect(const.SERVER_ADDRESS, timeout=60)
+
+    return client
 
 
-def _get_scenario_file_from_server(sftp):
-    """Get scenario list from server.
+def progress_bar(*args, **kwargs):
+    """Creates progress bar
 
-        :param paramiko sftp: Takes an SFTP client object.
-        :return scenario_list: (*pandas*) -- data frame.
+    :param args: variable length argument list passed to the tqdm constructor.
+    :param kwargs: arbitrary keyword arguments passed to the tqdm constructor.
     """
+    bar = tqdm(*args, **kwargs)
+    last = [0]
 
-    full_file_path = const.SCENARIO_LIST_LOCATION
-    file_object = sftp.file(full_file_path, 'rb')
-    scenario_list = pd.read_csv(file_object)
-    return scenario_list
+    def show(a, b):
+        bar.total = int(b)
+        bar.update(int(a - last[0]))
+        last[0] = a
+    return show, bar
