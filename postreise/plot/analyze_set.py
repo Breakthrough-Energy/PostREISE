@@ -102,7 +102,11 @@ def fraction(scenarios, zone):
            'coal': 'Coal',
            'ng': 'Natural Gas',
            'solar': 'Solar',
-           'wind': 'Wind'}
+           'wind': 'Wind',
+           'dfo': 'Fuel Oil',
+           'geothermal': 'Geothermal'}
+
+    thermal_gen_types = ['dfo', 'geothermal', 'nuclear', 'hydro', 'coal', 'ng']
 
     nb = len(scenarios.keys())
 
@@ -138,7 +142,7 @@ def fraction(scenarios, zone):
     frac_plot = frac.copy()
     for i in frac.index:
         if frac_plot.loc[i, 'nuclear'] != np.nan:
-            frac_plot.loc[i, ['nuclear', 'hydro', 'coal', 'ng']] *= -1
+            frac_plot.loc[i, thermal_gen_types] *= -1
 
     fig = plt.figure(figsize=(12, 12))
     plt.title(zone, fontsize=25)

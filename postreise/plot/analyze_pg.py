@@ -23,7 +23,8 @@ class AnalyzePG:
         *'Montana'*, *'Nevada'*, *'New Mexico'*, *'Oregon'*, *'Utah'*,
         *'Washington'*, *'Western'*, *'Wyoming'*.
     :param list resources: energy resources. Can be any combinations of
-        *'coal'*, *'hydro'*, *'ng'*, *'nuclear'*, *'solar'*, *'wind'*.
+        *'coal'*, *'dfo'*, *'geothermal'*, *'hydro'*, *'ng'*, *'nuclear'*,
+        *'solar'*, *'wind'*.
     :param str kind: one of: *'stacked'*, *'comp'*, *'curtailment'*,
         *'correlation'*, *'chart'*, *'variability'* or *'yield'*.
     :param bool normalize: should generation be normalized by capacity.
@@ -142,7 +143,9 @@ class AnalyzePG:
                            'coal': 'Coal',
                            'ng': 'Natural Gas',
                            'solar': 'Solar',
-                           'wind': 'Wind'}
+                           'wind': 'Wind',
+                           'dfo': 'Fuel Oil',
+                           'geothermal': 'Geothermal'}
 
         if self.freq == 'auto':
             self._set_frequency(time[0], time[1])
