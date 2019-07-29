@@ -103,7 +103,7 @@ def extract_data(scenario_info):
                    struct_as_record=False)
     outputs['pg'].columns = case['mpc'].genid.tolist()
     outputs['pf'].columns = case['mpc'].branchid.tolist()
-    outputs['lmp'].columns = case['mpc'].bus[:,0].tolist()
+    outputs['lmp'].columns = case['mpc'].bus[:,0].astype(np.int64).tolist()
     outputs['congu'].columns = case['mpc'].branchid.tolist()
     outputs['congl'].columns = case['mpc'].branchid.tolist()
 
