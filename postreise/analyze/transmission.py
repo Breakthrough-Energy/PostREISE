@@ -1,92 +1,103 @@
-import math
-
+import numpy as np
 import pandas as pd
-import scipy.special as scsp
+
+from postreise.analyze import distance
+from postreise.analyze import mapping
 
 
-def generate_cong_stats(pf, branch, name):
-    """Generates congestion statistics from the input congestion data.
+def generate_cong_df(branches_df, pf):
+    """Generates utilization table to be used as input for congestion analyses.
 
-    :param pandas.DataFrame pf: Power flow data frame with values normalized to
-        capacity
-    :param pandas.DataFrame branch: branches in network.
-    :param string name: filename of output.
-    :return: (*pandas.DataFrame*) -- data frame with *'hutil1'*, *'hutil0p9-1'*,
-        *'hutil0p8-0p9'*, *'hutil0p75-0p8'*, *'hutil>=0p9'*, *'hutil>=0p8'*,
-        *'hutil>=0p75'*, *'dist'*, *'zscore'* and *'pvalue'*.
-
-    .. todo::
-        Current version assumes normal distribution; calculate real
-        distribution, then do a lookup depending on distribution type.
+    :param pandas branches_df: grid input
+    :param pandas pf: powerflow data, simulation output
+        normalized utilization, powerflow divided by capacity
     """
 
-    cong_stats = pd.concat([branch['capacity'],
-                            pf[(pf == 1)].describe().loc['count', :],
-                            pf[(pf < 1) & (pf >= 0.9)
-                               ].describe().loc['count', :],
-                            pf[(pf < 0.9) & (pf >= 0.8)
-                               ].describe().loc['count', :],
-                            pf[(pf < 0.8) & (pf >= 0.75)
-                               ].describe().loc['count', :]
-                            ], axis=1)
-    cong_stats.columns = ['capacity', 'hutil1', 'hutil0p9-1',
-                          'hutil0p8-0p9', 'hutil0p75-0p8']
+    branches_df.loc[branches_df.rateA != 0, 'capacity'] = branches_df['rateA']
+    branches_df.loc[branches_df.rateA == 0, 'capacity'] = 99999.
+    cong_df = pf.divide(branches_df.capacity).apply(np.abs)
+    return cong_df
 
-    cong_stats[['capacity',
-                'hutil1',
-                'hutil0p9-1',
-                'hutil0p8-0p9',
-                'hutil0p75-0p8'
-                ]] = cong_stats[['capacity', 'hutil1',
-                                 'hutil0p9-1', 'hutil0p8-0p9',
-                                 'hutil0p75-0p8']].astype(int)
 
-    cong_stats.index.name = 'line'
-    cong_stats = pd.concat([cong_stats,
-                            cong_stats[['hutil1', 'hutil0p9-1']].sum(axis=1),
-                            cong_stats[['hutil1', 'hutil0p9-1',
-                                        'hutil0p8-0p9']].sum(axis=1),
-                            cong_stats[['hutil1', 'hutil0p9-1',
-                                        'hutil0p8-0p9',
-                                        'hutil0p75-0p8']].sum(axis=1)
-                            ], axis=1).rename(columns={0: 'hutil>=0p9',
-                                                       1: 'hutil>=0p8',
-                                                       2: 'hutil>=0p75'})
+def get_hutil(cong_df, utilization):
+    """calculate number of hours above a given utilization threshold.
 
-    branch['dist'] = branch.apply(
-        lambda row: _great_circle_distance(
-            math.radians(row['from_lat']), math.radians(row['from_lon']),
-            math.radians(row['to_lat']), math.radians(row['to_lon'])), axis=1)
+    :param pandas DataFrame cong_df: Power flow data frame with values normalized to capacity
+    :param float utilization: utiization threshold.
+    :return: hutil """
 
-    cong_stats = pd.concat([cong_stats, branch['dist']], axis=1)
+    hutil = (cong_df > utilization).sum()
+    return hutil
 
-    total_hours = len(pf)
-    p_cong = cong_stats.loc[cong_stats['capacity'] != 99999].describe().loc[
-        'mean']['hutil>=0p75']/total_hours
-    mu = total_hours*p_cong
-    var = total_hours*p_cong*(1 - p_cong)
 
-    cong_stats['zscore'] = (cong_stats['hutil>=0p75'] - mu)/math.sqrt(var)
-    cong_stats['pvalue'] = cong_stats['zscore'].apply(lambda x: 1-scsp.ndtr(x))
+def flag(cong_stats, utilname, thresh, uflagname):
+    """Flags branches that meet screening criteria for WECC
+    :param cong_stats:
+    :param string utilname: field with percent of time above threshold
+    :param float thresh: threshold for percent time for flag level
+    :param string uflagname: name of flag
+    :return: (*pandas*) -- data frame with *'uflagname'*."""
 
-    cong_stats.to_csv(name + '.csv')
+    cong_stats.loc[cong_stats[utilname] >= thresh, uflagname] = 1
 
     return cong_stats
 
 
-def _great_circle_distance(lat1, lon1, lat2, lon2):
-    """Calculates distance between two sites.
+def generate_cong_stats(scenario,
+                        util1=0.75, thresh1=0.5, util2=0.9, thresh2=0.2, util3=0.99, thresh3=0.05):
+    """Generates WECC congestion statistics from the input congestion data (WECC params are defaults)
 
-    :param float lat1: latitude of first site (in rad.).
-    :param float lon1: longitude of first site (in rad.).
-    :param float lat2: latitude of second site (in rad.).
-    :param float lon2: longitude of second site (in rad.).
-    :return: (*float*) -- distance between two sites (in km.).
+    :param scenario: scenario object
+    :param float util1: utilization flag level 1.
+        0.75 in WECC (flag if line congested >0.75 more than >0.50 of the time).
+    :param float thresh1: threshold for percent time for flag level 1, which is 0.5 in WECC
+        (if line is congested >0.75 more than >0.50 of the time, it is flagged).
+    :param float util2: utilization congestion for flag level 2, which is 0.90 in WECC
+        (if line is congested >0.90 more than >0.2 of the time, it is flagged).
+    :param float thresh2: threshold for percent time for flag level 2, which is 0.2 in WECC
+        (if line is congested >0.90 more than >0.2 of the time, it is flagged).
+    :param float util3: utilization congestion to flag level 3, which is 0.99 in WECC
+        (if line is congested >0.99 more than >0.05 of the time, it is flagged).
+    :param float thresh3: threshold for percent time for flag level 3, which is 0.05 in WECC
+        (if line is congested >0.99 more than >0.05 of the time, it is flagged).
+    :return: (*pandas*) -- data frame with *'per_util1'*, *'per_util2'*, 
+        *'per_util3'*,*'u1flag'*,*'u2flag'*, *'u3flag'*, *'sumflag'*, *'risk'*.
+        
     """
-    radius = 6368
+    pf = scenario.state.get_pf()
+    branch = scenario.state.get_grid().branch.copy()
+    print("Calculating utilization")
+    cong_df = generate_cong_df(branch, pf)
+    length = len(cong_df)
 
-    def haversine(x):
-        return math.sin(x/2)**2
-    return radius * 2 * math.asin(math.sqrt(haversine(lat2 - lat1) +
-                                            math.cos(lat1) * math.cos(lat2) *
-                                            haversine(lon2 - lon1)))
+    cong_stats = pd.concat([branch['capacity'], branch['branch_device_type'],
+                            (cong_df > util1).sum() / length,
+                            (cong_df > util2).sum() / length,
+                            (cong_df > util3).sum() / length,
+                            (cong_df == 1).sum(),
+                            (cong_df > util2).sum() * cong_df[(cong_df > util2)].mean() * branch['capacity']], axis=1)
+
+    cong_stats.columns = ['capacity', 'branch_device_type', 'per_util1', 'per_util2', 'per_util3', 'bind', 'risk']
+    vals = [['per_util1', thresh1, 'uflag1'], ['per_util2', thresh2, 'uflag2'], ['per_util3', thresh3, 'uflag3']]
+
+    print("Flaging congested branches")
+    for x in vals:
+        flag(cong_stats, x[0], x[1], x[2])
+
+    col_list = ['uflag1', 'uflag2', 'uflag3']
+    cong_stats['sumflag'] = cong_stats[col_list].sum(axis=1)
+    cong_stats = cong_stats.fillna(0)
+
+    print("Calculating branch distance")
+    branch['dist'] = branch.apply(distance.great_circle_distance, axis=1)
+
+    cong_stats = pd.concat([cong_stats, branch['dist']], axis=1)
+    print("make branch_map")
+    branch_map = mapping.projection_fields(branch)
+    print("flagging")
+    congested = cong_stats[cong_stats.sumflag > 0]
+    print("start first maps")
+    mapping.makemap(congested, branch_map)
+    mapping.makemap_all(cong_df, branch_map)
+    mapping.makemap_binding(cong_df, branch_map)
+    return cong_stats, binding_df
