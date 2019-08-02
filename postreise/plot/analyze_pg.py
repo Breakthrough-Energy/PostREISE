@@ -198,9 +198,8 @@ class AnalyzePG:
         :param list resources: type of generators.
         :raise Exception: if resource(s) are invalid.
         """
-        possible = ['nuclear', 'hydro', 'coal', 'ng', 'solar', 'wind']
         for r in resources:
-            if r not in possible:
+            if r not in self.type2label.keys():
                 print("%s is incorrect. Possible resources are: %s" %
                       (r, possible))
                 raise Exception('Invalid resource(s)')
