@@ -23,7 +23,8 @@ class AnalyzePG:
         *'Montana'*, *'Nevada'*, *'New Mexico'*, *'Oregon'*, *'Utah'*,
         *'Washington'*, *'Western'*, *'Wyoming'*.
     :param list resources: energy resources. Can be any combinations of
-        *'coal'*, *'hydro'*, *'ng'*, *'nuclear'*, *'solar'*, *'wind'*.
+        *'coal'*, *'dfo'*, *'geothermal'*, *'hydro'*, *'ng'*, *'nuclear'*,
+        *'solar'*, *'wind'*.
     :param str kind: one of: *'stacked'*, *'comp'*, *'curtailment'*,
         *'correlation'*, *'chart'*, *'variability'* or *'yield'*.
     :param bool normalize: should generation be normalized by capacity.
@@ -67,21 +68,7 @@ class AnalyzePG:
         self.wind = scenario.state.get_wind()
         self.hydro = scenario.state.get_hydro()
 
-        # Check parameters
-        self._check_dates(time[0], time[1])
-        self._check_zones(zones)
-        self._check_resources(resources)
-        self._check_tz(time[2])
-        self._check_freq(time[3])
-        self._check_kind(kind)
-
-        # Set attributes
-        self.freq = time[3]
-        self.zones = zones
-        self.resources = resources
-        self.kind = kind
-        self.normalize = normalize
-        self.seed = seed
+        # Set zone names, colors and fuel types
         self.zone2time = {'Arizona': 'US/Mountain',
                           'Bay Area': 'US/Pacific',
                           'California': 'US/Pacific',
@@ -142,7 +129,25 @@ class AnalyzePG:
                            'coal': 'Coal',
                            'ng': 'Natural Gas',
                            'solar': 'Solar',
-                           'wind': 'Wind'}
+                           'wind': 'Wind',
+                           'dfo': 'Fuel Oil',
+                           'geothermal': 'Geothermal'}
+
+        # Check parameters
+        self._check_dates(time[0], time[1])
+        self._check_zones(zones)
+        self._check_resources(resources)
+        self._check_tz(time[2])
+        self._check_freq(time[3])
+        self._check_kind(kind)
+
+        # Set attributes
+        self.freq = time[3]
+        self.zones = zones
+        self.resources = resources
+        self.kind = kind
+        self.normalize = normalize
+        self.seed = seed
 
         if self.freq == 'auto':
             self._set_frequency(time[0], time[1])
@@ -188,16 +193,14 @@ class AnalyzePG:
                       (z, possible))
                 raise Exception('Invalid zone(s)')
 
-    @staticmethod
-    def _check_resources(resources):
+    def _check_resources(self, resources):
         """Test resources.
 
         :param list resources: type of generators.
         :raise Exception: if resource(s) are invalid.
         """
-        possible = ['nuclear', 'hydro', 'coal', 'ng', 'solar', 'wind']
         for r in resources:
-            if r not in possible:
+            if r not in self.type2label.keys():
                 print("%s is incorrect. Possible resources are: %s" %
                       (r, possible))
                 raise Exception('Invalid resource(s)')
