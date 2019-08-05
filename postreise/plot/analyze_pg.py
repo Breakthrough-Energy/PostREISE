@@ -68,21 +68,7 @@ class AnalyzePG:
         self.wind = scenario.state.get_wind()
         self.hydro = scenario.state.get_hydro()
 
-        # Check parameters
-        self._check_dates(time[0], time[1])
-        self._check_zones(zones)
-        self._check_resources(resources)
-        self._check_tz(time[2])
-        self._check_freq(time[3])
-        self._check_kind(kind)
-
-        # Set attributes
-        self.freq = time[3]
-        self.zones = zones
-        self.resources = resources
-        self.kind = kind
-        self.normalize = normalize
-        self.seed = seed
+        # Set zone names, colors and fuel types
         self.zone2time = {'Arizona': 'US/Mountain',
                           'Bay Area': 'US/Pacific',
                           'California': 'US/Pacific',
@@ -147,6 +133,22 @@ class AnalyzePG:
                            'dfo': 'Fuel Oil',
                            'geothermal': 'Geothermal'}
 
+        # Check parameters
+        self._check_dates(time[0], time[1])
+        self._check_zones(zones)
+        self._check_resources(resources)
+        self._check_tz(time[2])
+        self._check_freq(time[3])
+        self._check_kind(kind)
+
+        # Set attributes
+        self.freq = time[3]
+        self.zones = zones
+        self.resources = resources
+        self.kind = kind
+        self.normalize = normalize
+        self.seed = seed
+
         if self.freq == 'auto':
             self._set_frequency(time[0], time[1])
 
@@ -191,8 +193,7 @@ class AnalyzePG:
                       (z, possible))
                 raise Exception('Invalid zone(s)')
 
-    @staticmethod
-    def _check_resources(resources):
+    def _check_resources(self, resources):
         """Test resources.
 
         :param list resources: type of generators.
