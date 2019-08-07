@@ -1,6 +1,7 @@
 from postreise.process import const
 
 import os
+import posixpath
 import pandas as pd
 import paramiko
 from tqdm import tqdm
@@ -18,7 +19,7 @@ def download(ssh_client, file_name, from_dir, to_dir):
     if not os.path.exists(to_dir):
         os.makedirs(to_dir)
 
-    from_path = os.path.join(from_dir, file_name)
+    from_path = posixpath.join(from_dir, file_name)
     stdin, stdout, stderr = ssh_client.exec_command("ls " + from_path)
     if len(stderr.readlines()) != 0:
         raise FileNotFoundError("%s not found in %s on server" %
@@ -50,9 +51,9 @@ def upload(ssh_client, file_name, from_dir, to_dir, change_name_to=None):
                                 (file_name, from_dir))
     else:
         if bool(change_name_to):
-            to_path = os.path.join(to_dir, change_name_to)
+            to_path = posixpath.join(to_dir, change_name_to)
         else:
-            to_path = os.path.join(to_dir, file_name)
+            to_path = posixpath.join(to_dir, file_name)
         stdin, stdout, stderr = ssh_client.exec_command("ls " + to_path)
         if len(stderr.readlines()) == 0:
             raise IOError("%s already exists in %s on server" %
