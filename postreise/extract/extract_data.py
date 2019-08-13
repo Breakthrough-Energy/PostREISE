@@ -78,7 +78,7 @@ def extract_data(scenario_info):
         temps['pf'] = output['mdo_save'].flow.mpc.branch.PF.T
         temps['lmp'] = output['mdo_save'].flow.mpc.bus.LAM_P.T
         temps['congu'] = output['mdo_save'].flow.mpc.branch.MU_SF.T
-        temps['congl'] = output['mdo_save'].flow.mpc.branch.MU_SF.T
+        temps['congl'] = output['mdo_save'].flow.mpc.branch.MU_ST.T
         for v in extraction_vars:
             if i > start_index:
                 outputs[v] = outputs[v].append(pd.DataFrame(temps[v]))
