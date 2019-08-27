@@ -63,10 +63,11 @@ class AnalyzePG:
         # Note: Data is downloaded even if not needed
         self.pg = scenario.state.get_pg().tz_localize('utc')
         self.grid = scenario.state.get_grid()
-        self.demand = scenario.state.get_demand()
+        self.demand = scenario.state.get_demand(original=True)
         self.solar = scenario.state.get_solar()
         self.wind = scenario.state.get_wind()
         self.hydro = scenario.state.get_hydro()
+        self.interconnect = self.grid.interconnect
 
         # Set zone names, colors and fuel types
         self.zone2time = {'Arizona': 'US/Mountain',
@@ -83,55 +84,20 @@ class AnalyzePG:
                           'Oregon': 'US/Pacific',
                           'Southeast California': 'US/Pacific',
                           'Southwest California': 'US/Pacific',
+                          'Texas': 'US/Central',
                           'Utah': 'US/Mountain',
                           'Washington': 'US/Pacific',
                           'Western': 'US/Pacific',
                           'Wyoming': 'US/Mountain'}
-        self.zone2style = {
-            'Arizona':
-                {'color': 'maroon', 'alpha': 1, 'lw': 4, 'ls': '-'},
-            'Bay Area':
-                {'color': 'blue', 'alpha': 0.6, 'lw': 4, 'ls': ':'},
-            'California':
-                {'color': 'blue', 'alpha': 1, 'lw': 4, 'ls': '-'},
-            'Central California':
-                {'color': 'blue', 'alpha': 0.6, 'lw': 4, 'ls': '-.'},
-            'Colorado':
-                {'color': 'darkorchid', 'alpha': 1, 'lw': 4, 'ls': '-'},
-            'El Paso':
-                {'color': 'dodgerblue', 'alpha': 1, 'lw': 4, 'ls': '-'},
-            'Idaho':
-                {'color': 'magenta', 'alpha': 1, 'lw': 4, 'ls': '-'},
-            'Montana':
-                {'color': 'indigo', 'alpha': 1, 'lw': 4, 'ls': '-'},
-            'Nevada':
-                {'color': 'orange', 'alpha': 1, 'lw': 4, 'ls': '-'},
-            'New Mexico':
-                {'color': 'teal', 'alpha': 1, 'lw': 4, 'ls': '-'},
-            'Northern California':
-                {'color': 'blue', 'alpha': 0.6, 'lw': 4, 'ls': '--'},
-            'Oregon':
-                {'color': 'red', 'alpha': 1, 'lw': 4, 'ls': '-'},
-            'Southwest California':
-                {'color': 'blue', 'alpha': 0.6, 'lw': 4, 'ls': '-+'},
-            'Southeast California':
-                {'color': 'blue', 'alpha': 0.6, 'lw': 4, 'ls': '-o'},
-            'Utah':
-                {'color': 'tomato', 'alpha': 1, 'lw': 4, 'ls': '-'},
-            'Washington':
-                {'color': 'green', 'alpha': 1, 'lw': 4, 'ls': '-'},
-            'Western':
-                {'color': 'black', 'alpha': 1, 'lw': 4, 'ls': '-'},
-            'Wyoming':
-                {'color': 'goldenrod', 'alpha': 1, 'lw': 4, 'ls': '-'}}
+
         self.type2label = {'nuclear': 'Nuclear',
-                           'hydro': 'Hydro',
+                           'geothermal': 'Geothermal',
                            'coal': 'Coal',
+                           'hydro': 'Hydro',
                            'ng': 'Natural Gas',
                            'solar': 'Solar',
                            'wind': 'Wind',
-                           'dfo': 'Fuel Oil',
-                           'geothermal': 'Geothermal'}
+                           'dfo': 'Fuel Oil'}
 
         # Check parameters
         self._check_dates(time[0], time[1])
@@ -185,8 +151,11 @@ class AnalyzePG:
         :param list zones: geographical zones.
         :raise Exception: if zone(s) are invalid.
         """
-        possible = list(self.grid.id2zone.values()) + \
-            ['California', 'Western']
+        possible = list(self.grid.id2zone.values())
+        if 'Western' in self.interconnect:
+            possible += ['California', 'Western']
+        if 'Texas' in self.interconnect:
+            possible += ['Texas']
         for z in zones:
             if z not in possible:
                 print("%s is incorrect. Possible zones are: %s" %
@@ -202,7 +171,7 @@ class AnalyzePG:
         for r in resources:
             if r not in self.type2label.keys():
                 print("%s is incorrect. Possible resources are: %s" %
-                      (r, possible))
+                      (r, self.type2label.keys()))
                 raise Exception('Invalid resource(s)')
 
     @staticmethod
@@ -382,7 +351,7 @@ class AnalyzePG:
                 color=[self.grid.type2color[r] for r in type2label.keys()])
 
             capacity = self.grid.plant.loc[pg.columns].groupby(
-                'type').agg(sum).GenMWMax
+               'type').agg(sum).GenMWMax
             capacity.name = "%s (Capacity)" % zone
 
             ax[1] = capacity[list(type2label.keys())].rename(
@@ -531,12 +500,7 @@ class AnalyzePG:
                     total = pd.merge(total, total_tmp, left_index=True,
                                      right_index=True)
 
-                total[col_name].tz_localize(None).plot(
-                    color=self.zone2style[z]['color'],
-                    alpha=self.zone2style[z]['alpha'],
-                    lw=self.zone2style[z]['lw'],
-                    ls=self.zone2style[z]['ls'],
-                    ax=ax)
+                total[col_name].tz_localize(None).plot(lw=4, alpha=0.8, ax=ax)
 
                 ax.grid(color='black', axis='y')
                 ax.tick_params(which='both', labelsize=20)
@@ -888,6 +852,24 @@ class AnalyzePG:
 
             return mean_uncurtailed, mean_curtailed
 
+    def _get_zone_id(self, zone):
+        """Returns the load zone identification numbers for specified zone.
+
+        :param zone: zone to consider. A specific load zone, *Western*,
+            *California* or *Texas*.
+        :return (*list*): Corresponding load zones identification number.
+        """
+        if zone == 'Western':
+            load_zone_id = list(range(201, 217))
+        elif zone == 'Texas':
+            load_zone_id = list(range(301, 309))
+        elif zone == 'California':
+            load_zone_id = list(range(203, 208))
+        else:
+            load_zone_id = [self.grid.zone2id[zone]]
+
+        return load_zone_id
+
     def _get_plant_id(self, zone, resource):
         """Extracts the plant identification number of all the generators
             located in one zone and using one specific resource.
@@ -898,27 +880,11 @@ class AnalyzePG:
             using resource.
         """
         plant_id = []
-        if zone == 'Western':
+        for z in self._get_zone_id(zone):
             try:
-                plant_id = self.grid.plant.groupby('type').get_group(
-                    resource).index.values.tolist()
-            except KeyError:
-                pass
-        elif zone == 'California':
-            ca = ['Bay Area', 'Central California', 'Northern California',
-                  'Southeast California', 'Southwest California']
-            for load_zone in ca:
-                try:
-                    plant_id += self.grid.plant.groupby(
-                        ['zone_name', 'type']).get_group(
-                        (load_zone, resource)).index.values.tolist()
-                except KeyError:
-                    pass
-        else:
-            try:
-                plant_id = self.grid.plant.groupby(
-                    ['zone_name', 'type']).get_group(
-                    (zone, resource)).index.values.tolist()
+                plant_id += self.grid.plant.groupby(
+                    ['zone_id', 'type']).get_group(
+                    (z, resource)).index.values.tolist()
             except KeyError:
                 pass
 
@@ -954,15 +920,8 @@ class AnalyzePG:
         :return: (*pandas.DataFrame*) -- data frame of demand in zone (in MWh).
         """
         demand = self.demand.tz_localize('utc')
-        if zone == 'Western':
-            demand = demand.sum(axis=1).rename('demand').to_frame()
-        elif zone == 'California':
-            ca = [204, 205, 203, 207, 206]
-            demand = demand.loc[:, ca].sum(axis=1).rename('demand').to_frame()
-        else:
-            demand = demand.loc[:, self.grid.zone2id[zone]].rename(
-                'demand').to_frame()
-
+        demand = demand[self._get_zone_id(zone)].sum(axis=1).rename(
+            'demand').to_frame()
         demand = self._convert_tz(demand).resample(
             self.freq, label='left').sum()[self.from_index:self.to_index]
 
