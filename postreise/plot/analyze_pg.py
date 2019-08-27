@@ -84,11 +84,19 @@ class AnalyzePG:
                           'Oregon': 'US/Pacific',
                           'Southeast California': 'US/Pacific',
                           'Southwest California': 'US/Pacific',
-                          'Texas': 'US/Central',
                           'Utah': 'US/Mountain',
                           'Washington': 'US/Pacific',
                           'Western': 'US/Pacific',
-                          'Wyoming': 'US/Mountain'}
+                          'Wyoming': 'US/Mountain',
+                          'Coast': 'US/Central',
+                          'East': 'US/Central',
+                          'Far West': 'US/Central',
+                          'North': 'US/Central',
+                          'North Central': 'US/Central',
+                          'South': 'US/Central',
+                          'South Central': 'US/Central',
+                          'Texas': 'US/Central',
+                          'West': 'US/Central'}
 
         self.type2label = {'nuclear': 'Nuclear',
                            'geothermal': 'Geothermal',
