@@ -81,7 +81,8 @@ def extract_data(scenario_info):
         temps['congl'] = output['mdo_save'].flow.mpc.branch.MU_ST.T
         try:
             temps['pf_dcline'] = output['mdo_save'].flow.mpc.dcline.PF_dcline.T
-            extraction_vars.append('pf_dcline')
+            if i == start_index:
+                extraction_vars.append('pf_dcline')
         except AttributeError:
             pass
         for v in extraction_vars:
