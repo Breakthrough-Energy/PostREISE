@@ -57,7 +57,7 @@ def extract_data(scenario_info):
 
     infeasibilities = []
     
-    extraction_vars = ('pf', 'pg', 'lmp', 'congu', 'congl')
+    extraction_vars = ['pf', 'pg', 'lmp', 'congu', 'congl']
     temps = {}
     outputs = {}
 
@@ -79,6 +79,11 @@ def extract_data(scenario_info):
         temps['lmp'] = output['mdo_save'].flow.mpc.bus.LAM_P.T
         temps['congu'] = output['mdo_save'].flow.mpc.branch.MU_SF.T
         temps['congl'] = output['mdo_save'].flow.mpc.branch.MU_ST.T
+        try:
+            temps['pf_dcline'] = output['mdo_save'].flow.mpc.dcline.PF_dcline.T
+            extraction_vars.append('pf_dcline')
+        except AttributeError:
+            pass
         for v in extraction_vars:
             if i > start_index:
                 outputs[v] = outputs[v].append(pd.DataFrame(temps[v]))
@@ -106,6 +111,10 @@ def extract_data(scenario_info):
     outputs['lmp'].columns = case['mpc'].bus[:,0].astype(np.int64).tolist()
     outputs['congu'].columns = case['mpc'].branchid.tolist()
     outputs['congl'].columns = case['mpc'].branchid.tolist()
+    try:
+        outputs['pf_dcline'].columns = case['mpc'].dclineid.tolist()
+    except AttributeError:
+        pass
 
     return outputs
 
