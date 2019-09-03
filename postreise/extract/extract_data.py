@@ -47,7 +47,11 @@ def extract_data(scenario_info):
     :return: (*pandas.DataFrame*) -- data frames of: PG, PF, LMP, CONGU, CONGL.
     """
     infeasibilities = []
-    
+    cost = []
+    setup_time = []
+    solve_time = []
+    optimize_time = []
+
     extraction_vars = ['pf', 'pg', 'lmp', 'congu', 'congl']
     temps = {}
     outputs = {}
@@ -62,6 +66,13 @@ def extract_data(scenario_info):
 
         output = loadmat(os.path.join(folder, 'output', filename),
                          squeeze_me=True, struct_as_record=False)
+        try:
+            cost.append(output['mdo_save'].results.f)
+            setup_time.append(output['mdo_save'].results.SetupTime)
+            solve_time.append(output['mdo_save'].results.SolveTime)
+            optimize_time.append(output['mdo_save'].results.OptimizerTime)
+        except AttributeError:
+            pass
 
         demand_scaling = output['mdo_save'].demand_scaling
         if demand_scaling < 1:
@@ -90,6 +101,13 @@ def extract_data(scenario_info):
     # Write infeasibilities
     insert_in_file(const.SCENARIO_LIST, scenario_info['id'], '15',
                    '_'.join(infeasibilities))
+
+    # Write log
+    log = pd.DataFrame(data={'cost': cost, 'setup': setup_time,
+                             'solve': solve_time,
+                             'optimize': optimize_time})
+    log.to_csv(os.path.join(const.OUTPUT_DIR, scenario_info['id']+'_log.csv'),
+               header=True)
 
     # Set data range
     date_range = pd.date_range(scenario_info['start_date'],
