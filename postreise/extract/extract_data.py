@@ -104,7 +104,7 @@ def extract_data(scenario_info):
 
     # Write log
     log = pd.DataFrame(data={'cost': cost, 'setup': setup_time,
-                             'solve': solve_time
+                             'solve': solve_time,
                              'optimize': optimize_time})
     log.to_csv(const.OUTPUT_DIR, scenario_info['id']+'_log.csv')
 
