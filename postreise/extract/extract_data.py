@@ -106,7 +106,8 @@ def extract_data(scenario_info):
     log = pd.DataFrame(data={'cost': cost, 'setup': setup_time,
                              'solve': solve_time,
                              'optimize': optimize_time})
-    log.to_csv(os.path.join(const.OUTPUT_DIR, scenario_info['id']+'_log.csv'))
+    log.to_csv(os.path.join(const.OUTPUT_DIR, scenario_info['id']+'_log.csv'),
+               header=True)
 
     # Set data range
     date_range = pd.date_range(scenario_info['start_date'],
