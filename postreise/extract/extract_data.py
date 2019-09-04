@@ -1,5 +1,6 @@
 from postreise.extract import const
 
+import glob
 import numpy as np
 import pandas as pd
 import time
@@ -45,30 +46,33 @@ def extract_data(scenario_info):
     :param dict scenario_info: scenario information.
     :return: (*pandas.DataFrame*) -- data frames of: PG, PF, LMP, CONGU, CONGL.
     """
-
-    interval = int(scenario_info['interval'].split('H', 1)[0])
-    start_date = scenario_info['start_date']
-    end_date = scenario_info['end_date']
-    diff = pd.Timestamp(end_date) - pd.Timestamp(start_date)
-    hours = diff / np.timedelta64(1, 'h') + 1
-
-    start_index = 0
-    end_index = int(hours / interval)
-
     infeasibilities = []
-    
+    cost = []
+    setup_time = []
+    solve_time = []
+    optimize_time = []
+
     extraction_vars = ['pf', 'pg', 'lmp', 'congu', 'congl']
     temps = {}
     outputs = {}
 
-    tic = time.process_time()
     folder = os.path.join(const.EXECUTE_DIR,
                           'scenario_%s' % scenario_info['id'])
-    for i in tqdm(range(start_index, end_index)):
+    end_index = len(glob.glob(os.path.join(folder, 'output', 'result_*.mat')))
+
+    tic = time.process_time()
+    for i in tqdm(range(end_index)):
         filename = 'result_' + str(i)
 
         output = loadmat(os.path.join(folder, 'output', filename),
                          squeeze_me=True, struct_as_record=False)
+        try:
+            cost.append(output['mdo_save'].results.f)
+            setup_time.append(output['mdo_save'].results.SetupTime)
+            solve_time.append(output['mdo_save'].results.SolveTime)
+            optimize_time.append(output['mdo_save'].results.OptimizerTime)
+        except AttributeError:
+            pass
 
         demand_scaling = output['mdo_save'].demand_scaling
         if demand_scaling < 1:
@@ -81,12 +85,12 @@ def extract_data(scenario_info):
         temps['congl'] = output['mdo_save'].flow.mpc.branch.MU_ST.T
         try:
             temps['pf_dcline'] = output['mdo_save'].flow.mpc.dcline.PF_dcline.T
-            if i == start_index:
+            if i == 0:
                 extraction_vars.append('pf_dcline')
         except AttributeError:
             pass
         for v in extraction_vars:
-            if i > start_index:
+            if i > 0:
                 outputs[v] = outputs[v].append(pd.DataFrame(temps[v]))
             else:
                 outputs[v] = pd.DataFrame(temps[v])
@@ -94,12 +98,21 @@ def extract_data(scenario_info):
     toc = time.process_time()
     print('Reading time ' + str(round(toc-tic)) + 's')
 
-    # Add infeasibilities in ScenarioList.csv
+    # Write infeasibilities
     insert_in_file(const.SCENARIO_LIST, scenario_info['id'], '15',
                    '_'.join(infeasibilities))
 
+    # Write log
+    log = pd.DataFrame(data={'cost': cost, 'setup': setup_time,
+                             'solve': solve_time,
+                             'optimize': optimize_time})
+    log.to_csv(os.path.join(const.OUTPUT_DIR, scenario_info['id']+'_log.csv'),
+               header=True)
+
     # Set data range
-    date_range = pd.date_range(start_date, end_date, freq='H')
+    date_range = pd.date_range(scenario_info['start_date'],
+                               scenario_info['end_date'],
+                               freq='H')
     
     for v in extraction_vars:
         outputs[v].index = date_range
@@ -109,7 +122,7 @@ def extract_data(scenario_info):
                    struct_as_record=False)
     outputs['pg'].columns = case['mpc'].genid.tolist()
     outputs['pf'].columns = case['mpc'].branchid.tolist()
-    outputs['lmp'].columns = case['mpc'].bus[:,0].astype(np.int64).tolist()
+    outputs['lmp'].columns = case['mpc'].bus[:, 0].astype(np.int64).tolist()
     outputs['congu'].columns = case['mpc'].branchid.tolist()
     outputs['congl'].columns = case['mpc'].branchid.tolist()
     try:
@@ -134,10 +147,8 @@ def extract_scenario(scenario_id):
         v.to_pickle(os.path.join(
             const.OUTPUT_DIR, scenario_info['id']+'_'+k.upper()+'.pkl'))
 
-    # Update status in ExecuteList.csv
+    # Update status
     insert_in_file(const.EXECUTE_LIST, scenario_info['id'], '2', 'extracted')
-
-    # Update status in ScenarioList.csv
     insert_in_file(const.SCENARIO_LIST, scenario_info['id'], '4', 'analyze')
 
 
