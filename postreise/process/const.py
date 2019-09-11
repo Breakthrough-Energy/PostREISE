@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 SERVER_ADDRESS = 'zeus.intvenlab.com'
+HOME_DIR = '/home/EGM/v2'
 SCENARIO_LIST = '/home/EGM/v2/ScenarioList.csv'
 EXECUTE_LIST = '/home/EGM/v2/ExecuteList.csv'
 EXECUTE_DIR = '/home/EGM/v2/tmp'
