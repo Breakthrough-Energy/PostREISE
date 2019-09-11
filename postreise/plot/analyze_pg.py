@@ -15,13 +15,11 @@ class AnalyzePG:
     :param tuple time: time related parameters. 1st element is the starting
         date. 2nd element is the ending date (left out). 3rd element is the
         timezone, only *'utc'*, *'US/Pacific'* and *'local'* are possible. 4th
-        element is the frequency, which can be *'H'*, *'D'*, *'W'* or *'auto'*.
-    :param list zones: geographical zones. Any combinations of *'Arizona'*,
-        *'California'*, *'Bay Area'*, *'Central California'*,
-        *'Northern California'*, *'Southeast California'*,
-        *'Southwest California'*, *'Colorado'*, *'El Paso'*, *'Idaho'*,
-        *'Montana'*, *'Nevada'*, *'New Mexico'*, *'Oregon'*, *'Utah'*,
-        *'Washington'*, *'Western'*, *'Wyoming'*.
+        element is the frequency, which can be *'H'* (hour), *'D'* (day), *'W'*
+         (week) or *'auto'*.
+    :param list zones: geographical zones. Any combinations of load zones in the
+        Western interconnection or ERCOT plus *'California'*, *'Western'* or
+        *'Texas'*.
     :param list resources: energy resources. Can be any combinations of
         *'coal'*, *'dfo'*, *'geothermal'*, *'hydro'*, *'ng'*, *'nuclear'*,
         *'solar'*, *'wind'*.
@@ -69,7 +67,7 @@ class AnalyzePG:
         self.hydro = scenario.state.get_hydro()
         self.interconnect = self.grid.interconnect
 
-        # Set zone names, colors and fuel types
+        # Zone to time zone
         self.zone2time = {'Arizona': 'US/Mountain',
                           'Bay Area': 'US/Pacific',
                           'California': 'US/Pacific',
@@ -98,6 +96,7 @@ class AnalyzePG:
                           'Texas': 'US/Central',
                           'West': 'US/Central'}
 
+        # Fuel type to label for used in plots
         self.type2label = {'nuclear': 'Nuclear',
                            'geothermal': 'Geothermal',
                            'coal': 'Coal',
