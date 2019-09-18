@@ -109,7 +109,7 @@ def extract_data(scenario_info):
     log.to_csv(os.path.join(const.OUTPUT_DIR, scenario_info['id']+'_log.csv'),
                header=True)
 
-    # Set data range
+    # Set index of data frame
     date_range = pd.date_range(scenario_info['start_date'],
                                scenario_info['end_date'],
                                freq='H')
@@ -118,17 +118,25 @@ def extract_data(scenario_info):
         outputs[v].index = date_range
         outputs[v].index.name = 'UTC'
 
+    # Set index column name of data frame
     case = loadmat(os.path.join(folder, 'case.mat'), squeeze_me=True,
                    struct_as_record=False)
-    outputs['pg'].columns = case['mpc'].genid.tolist()
-    outputs['pf'].columns = case['mpc'].branchid.tolist()
-    outputs['lmp'].columns = case['mpc'].bus[:, 0].astype(np.int64).tolist()
-    outputs['congu'].columns = case['mpc'].branchid.tolist()
-    outputs['congl'].columns = case['mpc'].branchid.tolist()
+
+    outputs_id = {'pg': case['mpc'].genid,
+                  'pf': case['mpc'].branchid,
+                  'lmp': case['mpc'].bus[:, 0].astype(np.int64),
+                  'congu': case['mpc'].branchid,
+                  'congl': case['mpc'].branchid}
     try:
-        outputs['pf_dcline'].columns = case['mpc'].dclineid.tolist()
+        outputs_id['pf_dcline'] = case['mpc'].dclineid
     except AttributeError:
         pass
+
+    for k, v in outputs_id.items():
+        if isinstance(v, int):
+            outputs[k].columns = [v]
+        else:
+            outputs[k].columns = v.tolist()
 
     return outputs
 
