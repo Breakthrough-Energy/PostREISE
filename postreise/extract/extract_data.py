@@ -89,12 +89,23 @@ def extract_data(scenario_info):
                 extraction_vars.append('pf_dcline')
         except AttributeError:
             pass
+        try:
+            temps['storage_pg'] = output['mdo_save'].flow.mpc.storage.PG.T
+            temps['storage_e'] = output['mdo_save'].flow.mpc.storage.Energy.T
+            if i == 0:
+                extraction_vars.append('storage_pg')
+                extraction_vars.append('storage_e')
+        except AttributeError:
+            pass
         for v in extraction_vars:
             if i > 0:
                 outputs[v] = outputs[v].append(pd.DataFrame(temps[v]))
             else:
                 outputs[v] = pd.DataFrame(temps[v])
                 outputs[v].name = scenario_info['id'] + '_' + v.upper()
+    
+    print(extraction_vars)
+
     toc = time.process_time()
     print('Reading time ' + str(round(toc-tic)) + 's')
 
@@ -130,6 +141,15 @@ def extract_data(scenario_info):
     try:
         outputs_id['pf_dcline'] = case['mpc'].dclineid
     except AttributeError:
+        pass
+    try:
+        case_storage = loadmat(
+            os.path.join(folder, 'case_storage'), squeeze_me=True,
+            struct_as_record=False)
+        num_storage = len(case_storage['storage'].gen)
+        outputs_id['storage_pg'] = np.arange(num_storage)
+        outputs_id['storage_e'] = np.arange(num_storage)
+    except FileNotFoundError:
         pass
 
     for k, v in outputs_id.items():
