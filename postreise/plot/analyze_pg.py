@@ -94,17 +94,18 @@ class AnalyzePG:
                           'South': 'US/Central',
                           'South Central': 'US/Central',
                           'Texas': 'US/Central',
-                          'West': 'US/Central'}
+                          'West': 'US/Central',
+                          'Eastern': 'US/Eastern'}
 
         # Fuel type to label for used in plots
         self.type2label = {'nuclear': 'Nuclear',
                            'geothermal': 'Geothermal',
                            'coal': 'Coal',
+                           'dfo': 'Fuel Oil',
                            'hydro': 'Hydro',
-                           'ng': 'Natural Gas',
                            'solar': 'Solar',
                            'wind': 'Wind',
-                           'dfo': 'Fuel Oil'}
+                           'ng': 'Natural Gas'}
 
         # Check parameters
         self._check_dates(time[0], time[1])
@@ -163,6 +164,8 @@ class AnalyzePG:
             possible += ['California', 'Western']
         if 'Texas' in self.interconnect:
             possible += ['Texas']
+        if 'Eastern' in self.interconnect:
+            possible += ['Eastern']
         for z in zones:
             if z not in possible:
                 print("%s is incorrect. Possible zones are: %s" %
@@ -873,8 +876,8 @@ class AnalyzePG:
     def _get_zone_id(self, zone):
         """Returns the load zone identification numbers for specified zone.
 
-        :param zone: zone to consider. A specific load zone, *Western*,
-            *California* or *Texas*.
+        :param zone: zone to consider. A specific load zone, *Eastern*,
+            *Western*, *California* or *Texas*.
         :return (*list*): Corresponding load zones identification number.
         """
         if zone == 'Western':
@@ -883,6 +886,8 @@ class AnalyzePG:
             load_zone_id = list(range(301, 309))
         elif zone == 'California':
             load_zone_id = list(range(203, 208))
+        elif zone == 'Eastern':
+            load_zone_id = list(range(1, 53))
         else:
             load_zone_id = [self.grid.zone2id[zone]]
 
@@ -932,7 +937,8 @@ class AnalyzePG:
             return pg, capacity
 
     def _get_demand(self, zone):
-        """Returns demand profile for load zone, California or total.
+        """Returns demand profile for a specific load zone, *Eastern*,
+            *Western*, *California* or *Texas*.
 
         :param str zone: one of the zones.
         :return: (*pandas.DataFrame*) -- data frame of demand in zone (in MWh).
