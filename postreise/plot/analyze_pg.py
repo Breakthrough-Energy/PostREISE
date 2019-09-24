@@ -418,16 +418,6 @@ class AnalyzePG:
             ax.tick_params(which='both', labelsize=20)
 
             demand = self._get_demand(zone)
-            renewable = pd.DataFrame({
-                'wind': self._get_profile(zone, 'wind').sum(axis=1).tolist(),
-                'solar': self._get_profile(zone, 'solar').sum(axis=1).tolist()},
-                index=demand.index)
-
-            net_demand = demand.copy()
-            net_demand['net demand'] = net_demand.demand - \
-                                       renewable.wind - \
-                                       renewable.solar
-            net_demand.drop(columns=['demand'], inplace=True)
 
             pg_groups = pg.T.groupby(self.grid.plant['type'])
             pg_stack = pg_groups.agg(sum).T
@@ -447,8 +437,18 @@ class AnalyzePG:
                 alpha=0.7, ax=ax)
 
             demand.tz_localize(None).plot(color='red', lw=4, ax=ax)
+
+            net_demand = pd.DataFrame({'net_demand': demand['demand']},
+                                      index=demand.index)
+            for t in type2label.keys():
+                if t == 'solar' or t == 'wind':
+                    net_demand['net_demand'] = net_demand['net_demand'] - \
+                                               self._get_pg(zone,
+                                                            [t])[0].sum(axis=1)
+
             net_demand.tz_localize(None).plot(color='red', ls='--', lw=2, ax=ax)
-            ax.set_ylim([0, max(ax.get_ylim()[1], 1.1*demand.max().values[0])])
+            ax.set_ylim([min(0,net_demand['net_demand'].min()),
+                         max(ax.get_ylim()[1], 1.1*demand.max().values[0])])
 
             ax.set_xlabel('')
             handles, labels = ax.get_legend_handles_labels()
