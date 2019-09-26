@@ -67,6 +67,11 @@ class AnalyzePG:
         self.hydro = scenario.state.get_hydro()
         self.interconnect = self.grid.interconnect
 
+        if self.grid.storage and 'storage' in resources:
+            self.storage_pg = scenario.state.get_storage_pg().tz_localize('utc')
+        else:
+            self.storage_pg = None
+
         # Zone to time zone
         self.zone2time = {'Arizona': 'US/Mountain',
                           'Bay Area': 'US/Pacific',
@@ -105,7 +110,8 @@ class AnalyzePG:
                            'hydro': 'Hydro',
                            'solar': 'Solar',
                            'wind': 'Wind',
-                           'ng': 'Natural Gas'}
+                           'ng': 'Natural Gas',
+                           'storage': 'Storage'}
 
         # Check parameters
         self._check_dates(time[0], time[1])
@@ -424,15 +430,25 @@ class AnalyzePG:
 
             pg_groups = pg.T.groupby(self.grid.plant['type'])
             pg_stack = pg_groups.agg(sum).T
-            type2label = self.type2label.copy()
-            for t in self.grid.id2type.values():
-                if t not in pg_stack.columns:
-                    del type2label[t]
+
+            if self.storage_pg is not None:
+                pg_storage, capacity_storage = self._get_storage_pg(zone)
+                capacity += capacity_storage
+                pg_stack = pd.merge(
+                    pg_stack,
+                    pg_storage.clip(lower=0).sum(axis=1).rename('storage'),
+                    left_index=True,
+                    right_index=True)
 
             if self.normalize:
                 pg_stack = pg_stack.divide(capacity * self.timestep,
                                            axis='index')
                 demand = demand.divide(capacity * self.timestep, axis='index')
+
+            type2label = self.type2label.copy()
+            for t in self.grid.id2type.values():
+                if t not in pg_stack.columns:
+                    del type2label[t]
 
             ax = pg_stack[list(type2label.keys())].tz_localize(None).rename(
                 columns=type2label).plot.area(
@@ -932,6 +948,28 @@ class AnalyzePG:
         else:
             capacity = sum(self.grid.plant.loc[plant_id].GenMWMax.values)
             pg = self._convert_tz(self.pg[plant_id]).resample(
+                self.freq, label='left').sum()[self.from_index:self.to_index]
+
+            return pg, capacity
+
+    def _get_storage_pg(self, zone):
+        """Returns PG of all storage units located in zone
+
+        :param str zone: one of the zones
+        :return: (*tuple*) -- date frame of PG and associated capacity for all
+            storage units located in zone.
+        """
+        storage_id = []
+        for c, bus in enumerate(self.grid.storage['gen'].bus_id.values):
+            if self.grid.bus.loc[bus].zone_id in self._get_zone_id(zone):
+                storage_id.append(c)
+
+        if len(storage_id) == 0:
+            print("No storage units in %s" % zone)
+            return [None] * 2
+        else:
+            capacity = sum(self.grid.storage['gen'].loc[storage_id].Pmax.values)
+            pg = self._convert_tz(self.storage_pg[storage_id]).resample(
                 self.freq, label='left').sum()[self.from_index:self.to_index]
 
             return pg, capacity
