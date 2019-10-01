@@ -14,20 +14,20 @@ def generate_carbon_stats(pg, grid, name=None):
     costs = calc_costs(pg, grid.gencost)
     heat = np.zeros_like(costs)
     carbon = pd.DataFrame(np.zeros_like(pg), index=pg.index, columns=pg.columns)
-    
-    coal_indices = (grid.plant['type'] == 'coal')
-    ng_indices = (grid.plant['type'] == 'ng')
-    # Can't do dfo yet because input data says zero fuel cost
-
-    heat[:, coal_indices] = (
-        costs[:, coal_indices] / grid.plant['GenFuelCost'].values[coal_indices])
-    heat[:, ng_indices] = (
-        costs[:, ng_indices] / grid.plant['GenFuelCost'].values[ng_indices])
 
     # MMBTu of fuel to metric tons of CO2
     # Source: https://www.epa.gov/energy/greenhouse-gases-equivalencies-calculator-calculations-and-references
-    carbon.loc[:, coal_indices] = heat[:, coal_indices] * 26.05 * 44/12 / 1000
-    carbon.loc[:, ng_indices] = heat[:, ng_indices] * 14.46 * 44/12 / 1000
+    # = (Heat rate) * (kg C/mmbtu) * (mass ratio CO2/C) / (kg to metric tons)
+    carbon_intensities = {
+        'coal': 26.05,
+        'dfo': 20.31,
+        'ng': 14.46,
+        }
+    for fuel, val in carbon_intensities.items():
+        indices = (grid.plant['type'] == fuel)
+        heat[:, indices] = (
+            costs[:, indices] / grid.plant['GenFuelCost'].values[indices])
+        carbon.loc[:, indices] = heat[:, indices] * val * 44/12 / 1000
     
     return carbon
     
