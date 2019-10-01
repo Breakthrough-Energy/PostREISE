@@ -111,7 +111,7 @@ class AnalyzePG:
                            'solar': 'Solar',
                            'wind': 'Wind',
                            'ng': 'Natural Gas',
-                           'storage': 'Storage'}
+                           'storage': 'Storage Discharging'}
 
         # Check parameters
         self._check_dates(time[0], time[1])
@@ -420,11 +420,6 @@ class AnalyzePG:
         """
         pg, capacity = self._get_pg(zone, self.resources)
         if pg is not None:
-            fig = plt.figure(figsize=(20, 10))
-            plt.title('%s' % zone, fontsize=25)
-            ax = fig.gca()
-            ax.grid(color='black', axis='y')
-            ax.tick_params(which='both', labelsize=20)
 
             demand = self._get_demand(zone)
 
@@ -433,29 +428,40 @@ class AnalyzePG:
 
             if self.storage_pg is not None:
                 pg_storage, capacity_storage = self._get_storage_pg(zone)
-                capacity += capacity_storage
-                pg_stack = pd.merge(
-                    pg_stack,
-                    pg_storage.clip(lower=0).sum(axis=1).rename('storage'),
-                    left_index=True,
-                    right_index=True)
+                if capacity_storage is not None:
+                    capacity += capacity_storage
+                    pg_stack = pd.merge(
+                        pg_stack,
+                        pg_storage.clip(lower=0).sum(axis=1).rename('storage'),
+                        left_index=True,
+                        right_index=True)
+                    fig, (ax, ax_storage) = plt.subplots(
+                        2, 1, figsize=(20, 15), sharex='row',
+                        gridspec_kw={'height_ratios': [3, 1], 'hspace': 0})
+                    plt.subplots_adjust(wspace=0)
+                    ax_storage = pg_storage.tz_localize(None).sum(
+                        axis=1).rename('batteries').plot(
+                        color=self.grid.type2color['storage'], lw=4,
+                        ax=ax_storage)
+                    ax_storage.fill_between(
+                        pg_storage.index.values, 0,
+                        pg_storage.sum(axis=1).values,
+                        color=self.grid.type2color['storage'], alpha=0.5)
 
-            if self.normalize:
-                pg_stack = pg_stack.divide(capacity * self.timestep,
-                                           axis='index')
-                demand = demand.divide(capacity * self.timestep, axis='index')
+                    ax_storage.tick_params(axis='both', which='both',
+                                           labelsize=20)
+                    ax_storage.set_xlabel('')
+                    ax_storage.set_ylabel('Power Storage (MW)', fontsize=22)
+                    for a in fig.get_axes():
+                        a.label_outer()
+                else:
+                    fig = plt.figure(figsize=(20, 10))
+                    ax = fig.gca()
 
             type2label = self.type2label.copy()
             for t in self.grid.id2type.values():
                 if t not in pg_stack.columns:
                     del type2label[t]
-
-            ax = pg_stack[list(type2label.keys())].tz_localize(None).rename(
-                columns=type2label).plot.area(
-                color=[self.grid.type2color[r] for r in type2label.keys()], 
-                alpha=0.7, ax=ax)
-
-            demand.tz_localize(None).plot(color='red', lw=4, ax=ax)
 
             net_demand = pd.DataFrame({'net_demand': demand['demand']},
                                       index=demand.index)
@@ -465,18 +471,35 @@ class AnalyzePG:
                                                self._get_pg(zone,
                                                             [t])[0].sum(axis=1)
 
+            if self.normalize:
+                pg_stack = pg_stack.divide(capacity * self.timestep,
+                                           axis='index')
+                demand = demand.divide(capacity * self.timestep, axis='index')
+                net_demand = net_demand.divide(capacity * self.timestep,
+                                               axis='index')
+                ax.set_ylabel('Normalized Generation', fontsize=22)
+            else:
+                pg_stack = pg_stack.divide(1000, axis='index')
+                demand = demand.divide(1000, axis='index')
+                net_demand = net_demand.divide(1000, axis='index')
+                ax.set_ylabel('Generation (GW)', fontsize=22)
+
+            ax = pg_stack[list(type2label.keys())].tz_localize(None).rename(
+                columns=type2label).plot.area(
+                color=[self.grid.type2color[r] for r in type2label.keys()], 
+                alpha=0.7, ax=ax)
+            demand.tz_localize(None).plot(color='red', lw=4, ax=ax)
             net_demand.tz_localize(None).plot(color='red', ls='--', lw=2, ax=ax)
-            ax.set_ylim([min(0,net_demand['net_demand'].min()),
+            ax.set_ylim([min(0, net_demand['net_demand'].min()),
                          max(ax.get_ylim()[1], 1.1*demand.max().values[0])])
 
+            ax.set_title('%s' % zone, fontsize=25)
+            ax.grid(color='black', axis='y')
+            ax.tick_params(which='both', labelsize=20)
             ax.set_xlabel('')
             handles, labels = ax.get_legend_handles_labels()
             ax.legend(handles[::-1], labels[::-1], frameon=2,
                       prop={'size': 18}, loc='lower right')
-            if self.normalize:
-                ax.set_ylabel('Normalized Generation', fontsize=22)
-            else:
-                ax.set_ylabel('Generation (MWh)', fontsize=22)
 
             pg_stack['demand'] = demand
             pg_stack.name = zone
