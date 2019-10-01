@@ -457,6 +457,9 @@ class AnalyzePG:
                 else:
                     fig = plt.figure(figsize=(20, 10))
                     ax = fig.gca()
+            else:
+                fig = plt.figure(figsize=(20, 10))
+                ax = fig.gca()
 
             type2label = self.type2label.copy()
             for t in self.grid.id2type.values():
