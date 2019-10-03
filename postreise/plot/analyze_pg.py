@@ -444,8 +444,8 @@ class AnalyzePG:
                         color=self.grid.type2color['storage'], lw=4,
                         ax=ax_storage)
                     ax_storage.fill_between(
-                        pg_storage.index.values, 0,
-                        pg_storage.sum(axis=1).values,
+                        pg_storage.tz_localize(None).index.values, 0,
+                        pg_storage.tz_localize(None).sum(axis=1).values,
                         color=self.grid.type2color['storage'], alpha=0.5)
 
                     ax_storage.tick_params(axis='both', which='both',
