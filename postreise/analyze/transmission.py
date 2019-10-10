@@ -31,7 +31,7 @@ def get_hutil(cong_df, utilization):
         threshold.
     """
 
-    hutil = (cong_df > utilization).sum()
+    hutil = (cong_df > utilization).sum().to_frame()
     return hutil
 
 
