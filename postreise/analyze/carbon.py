@@ -2,14 +2,15 @@ import numpy as np
 from numpy.polynomial.polynomial import polyval
 import pandas as pd
 
-def generate_carbon_stats(pg, grid, name=None):
+
+def generate_carbon_stats(scenario):
     """Generates carbon statistics from the input generation data.
 
-    :param pandas.DataFrame pg: Generation solution data frame.
-    :param PowerSimData.Grid grid: Grid object containing gen costs & types.
-    :param string name: filename of output. If None, no file is written.
-    :return: (*pandas.DataFrame*) -- data frame with ?
+    :param powersimdata.scenario.analyze.Analyze scenario: scenario instance.
+    :return: (*pandas.DataFrame*) -- carbon data frame.
     """
+    pg = scenario.get_pg()
+    grid = scenario.get_grid()
 
     costs = calc_costs(pg, grid.gencost)
     heat = np.zeros_like(costs)
@@ -31,12 +32,13 @@ def generate_carbon_stats(pg, grid, name=None):
 
     return carbon
 
+
 def calc_costs(pg, gencost):
     """Calculates individual generator costs at given powers.
 
     :param pandas.DataFrame pg: Generation solution data frame.
     :param pandas.DataFrame gencost: cost curve polynomials.
-    :return: (*pandas.DataFrame*) -- data frame of costs
+    :return: (*pandas.DataFrame*) -- data frame of costs.
     """
 
     if not isinstance(gencost, pd.DataFrame):
@@ -47,8 +49,7 @@ def calc_costs(pg, gencost):
     if not cost_type.where(cost_type == 2).equals(cost_type):
         raise ValueError('Not all polynomials!')
     # get ordered polynomial coefficients in columns, discarding non-coeff data
-    #coefs = gencost.values.T[-2:3:-1,:]
-    coefs = gencost[['c0', 'c1', 'c2']].values.T
+    coefs = gencost.values.T[-2:3:-1,:]
     # elementwise, evaluate polynomial where x = value
     costs = polyval(pg.values, coefs, tensor=False)
 
