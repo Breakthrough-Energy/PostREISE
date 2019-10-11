@@ -1,7 +1,8 @@
 import pandas as pd
 
+from powersimdata.input.grid import Grid
 
-class MockGrid:
+class MockGrid(Grid):
     def __init__(self, field_name):
         """ Constructor.
 
@@ -49,11 +50,13 @@ class MockGrid:
 
 
 class MockOutput:
-    def __init__(self, period_num):
+    def __init__(self, plant, period_num):
         """ Constructor.
 
+        :param plant pandas.DataFrame: plant attributes
         :param int period_num: number of hours
         """
+        self.num_gens = plant.shape[0]
         self.period_num = period_num
 
     def get_pg(self):
@@ -61,8 +64,9 @@ class MockOutput:
 
         :return: (*pandas.DataFrame*) -- power generated
         """
-        pg = pd.DataFrame(
-            {(i + 100): [i] * self.period_num for i in range(1, 6)})
+        pg = pd.DataFrame({
+            (i + 101): [(i+1)*(p+1) for p in range(self.period_num)]
+            for i in range(self.num_gens)})
         pg.set_index(pd.date_range(
             start='2016-01-01', periods=self.period_num, freq='H'),
             inplace=True)
@@ -84,7 +88,8 @@ class MockScenario:
         return MockGrid(self.grid_field_name)
 
     def get_pg(self):
-        return MockOutput(self.period_num).get_pg()
+        self.plant = self.get_grid().plant
+        return MockOutput(self.plant, self.period_num).get_pg()
 
 #def MockPG(periodNum):
 #    pg = pd.DataFrame({(i+100):[i]*periodNum for i in range(1,6)})
