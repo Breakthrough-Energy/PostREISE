@@ -35,6 +35,36 @@ def generate_carbon_stats(scenario):
 
     return carbon
 
+def summarize_carbon_by_bus(carbon, plant):
+    """Summarize time series carbon dataframe by type and bus.
+
+    :param pandas.DataFrame carbon: Hourly carbon by generator.
+    :param pandas.DataFrame plant: Generator specification table.
+    :return: (*dict*) -- Annual carbon emissions by fuel and bus.
+    """
+
+    _check_time_series(carbon, 'carbon')
+
+    # sum by generator
+    plant_totals = carbon.sum()
+    # set up output data structure
+    fossil_fuels = {'coal', 'dfo', 'ng'}
+    plant_buses = plant['bus_id'].unique()
+    bus_totals_by_type = {f: {b: 0 for b in plant_buses} for f in fossil_fuels}
+    # sum by fuel by bus
+    for p in plant_totals.index:
+        plant_type = plant.loc[p,'type']
+        if plant_type not in fossil_fuels:
+            continue
+        plant_bus = plant.loc[p,'bus_id']
+        bus_totals_by_type[plant_type][plant_bus] += plant_totals.loc[p]
+    # filter out buses whose carbon is zero
+    bus_totals_by_type = {
+        f: {b: v for b, v in bus_totals_by_type[f].items() if v > 0}
+        for f in fossil_fuels}
+
+    return bus_totals_by_type
+
 def calc_costs(pg, gencost):
     """Calculates individual generator costs at given powers.
 
@@ -44,7 +74,7 @@ def calc_costs(pg, gencost):
     """
 
     _check_gencost(gencost)
-    _check_pg(pg)
+    _check_time_series(pg, 'pg')
 
     # get ordered polynomial coefficients in columns, discarding non-coeff data
     #coefs = gencost.values.T[-2:3:-1,:]
@@ -98,17 +128,19 @@ def _check_gencost(gencost):
             err_msg = 'gencost of order {0} must have column {1}'.format(n, c)
             raise ValueError(err_msg)
 
-def _check_pg(pg):
-    """Checks that pg is specified properly
+def _check_time_series(df, label):
+    """Checks that a time series dataframe is specified properly
     """
+    if not isinstance(label, str):
+        raise TypeError('label must be a str')
 
     # check for nonempty dataframe
-    if not isinstance(pg, pd.DataFrame):
-        raise TypeError('pg must be a pandas.DataFrame')
-    if not pg.shape[0] > 0:
-        raise ValueError('pg must have at least one row')
-    if not pg.shape[1] > 0:
-        raise ValueError('pg must have at least one column')
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError(label + ' must be a pandas.DataFrame')
+    if not df.shape[0] > 0:
+        raise ValueError(label + ' must have at least one row')
+    if not df.shape[1] > 0:
+        raise ValueError(label + ' must have at least one column')
     # check to ensure that all values are non-negative
-    if np.sum((pg < 0).to_numpy().ravel()) > 0:
-        raise ValueError('pg must be non-negative')
+    if np.sum((df < 0).to_numpy().ravel()) > 0:
+        raise ValueError(label + ' must be non-negative')
