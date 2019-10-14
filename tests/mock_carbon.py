@@ -1,8 +1,7 @@
 import pandas as pd
 
-from powersimdata.input.grid import Grid
 
-class MockGrid(Grid):
+class MockGrid:
     def __init__(self, field_name):
         """ Constructor.
 
@@ -11,6 +10,7 @@ class MockGrid(Grid):
         if 'plant' in field_name:
             self.plant = pd.DataFrame(
                 {'plant_id': [101, 102, 103, 104, 105],
+                 'bus_id': [1001, 1002, 1003, 1004, 1005],
                  'type': ['solar', 'wind', 'ng', 'coal', 'dfo'],
                  'zone_id': [1, 2, 3, 1, 3],
                  'GenMWMax':[200, 150, 100, 300, 120],
@@ -50,23 +50,22 @@ class MockGrid(Grid):
 
 
 class MockOutput:
-    def __init__(self, plant, period_num):
+    def __init__(self, period_num):
         """ Constructor.
 
-        :param plant pandas.DataFrame: plant attributes
-        :param int period_num: number of hours
+        :param int period_num: number of hours.
         """
-        self.num_gens = plant.shape[0]
+        self.gen_num = len(MockGrid(['plant']).plant)
         self.period_num = period_num
 
     def get_pg(self):
         """ Return power generated.
 
-        :return: (*pandas.DataFrame*) -- power generated
+        :return: (*pandas.DataFrame*) -- power generated.
         """
         pg = pd.DataFrame({
             (i + 101): [(i+1)*(p+1) for p in range(self.period_num)]
-            for i in range(self.num_gens)})
+            for i in range(self.gen_num)})
         pg.set_index(pd.date_range(
             start='2016-01-01', periods=self.period_num, freq='H'),
             inplace=True)
@@ -76,24 +75,21 @@ class MockOutput:
 
 class MockScenario:
     def __init__(self, grid_field_name, period_num):
+        """ Constructor.
+
+        :param list grid_field_name: field to be added to grid.
+        :param int n_period: number of hours
+        """
         self.grid_field_name = grid_field_name
         self.period_num = period_num
 
     def get_grid(self):
         """Get grid
 
-        :param list field_name: field to be added
         :return: (GridMock) -- mock grid
         """
         return MockGrid(self.grid_field_name)
 
     def get_pg(self):
-        self.plant = self.get_grid().plant
-        return MockOutput(self.plant, self.period_num).get_pg()
+        return MockOutput(self.period_num).get_pg()
 
-#def MockPG(periodNum):
-#    pg = pd.DataFrame({(i+100):[i]*periodNum for i in range(1,6)})
-#    pg.set_index(pd.date_range(start='2016-01-01', periods=periodNum, freq='H'),
-#                 inplace=True)
-#    pg.index.name = 'UTC'
-#    return pg

@@ -8,6 +8,7 @@ import pandas as pd
 from context import postreise
 from mock_carbon import MockGrid, MockScenario
 from postreise.analyze.carbon import generate_carbon_stats
+from postreise.analyze.carbon import summarize_carbon_by_bus
 
 class TestMocks(unittest.TestCase):
 
@@ -61,16 +62,53 @@ class TestCarbonCalculation(unittest.TestCase):
         self.assertEqual(negative_carbon_count, 0, err_msg)
 
         #check specific values
-        expected_values = [
+        expected_values = np.array([
             [0, 0, 6.6998, 13.546000, 11.8475],
             [0, 0, 9.4472, 21.1873333, 20.3100],
-            [0, 0, 13.0622, 31.6073333, 32.1575]
+            [0, 0, 13.0622, 31.6073333, 32.1575],
+            ])
+        assert_array_almost_equal(expected_values, carbon.to_numpy(),
+                                  err_msg='Values do not match expected')
+
+class TestCarbonSummarization(unittest.TestCase):
+
+    def test_carbon_summarization(self):
+        # setup
+        period_num = 3
+        fossil_fuels = {'coal', 'dfo', 'ng'}
+        scenario = MockScenario(['plant'], period_num)
+        grid = scenario.get_grid()
+        pg = scenario.get_pg()
+        plant = grid.plant
+        input_carbon_values = [
+            [0, 0, 6.6998, 13.546000, 11.8475],
+            [0, 0, 9.4472, 21.1873333, 20.3100],
+            [0, 0, 13.0622, 31.6073333, 32.1575],
             ]
-        err_msg = 'Values do not match expected'
-        for i, t in enumerate(pg.index):
-            for j, p in enumerate(pg.columns):
-                self.assertAlmostEqual(
-                    carbon.iloc[i,j], expected_values[i][j], msg=err_msg)
+        input_carbon = pd.DataFrame(
+            input_carbon_values, index=pg.index, columns=pg.columns)
+        expected_sum = {
+            'coal': {1004: 66.3406666},
+            'ng': {1003: 29.2092},
+            'dfo': {1005: 64.315},
+            }
+
+        # calculation
+        summation = summarize_carbon_by_bus(input_carbon, plant)
+
+        # checks
+        err_msg = 'summarize_carbon_by_bus didn\'t return a dict'
+        self.assertTrue(isinstance(summation, dict), err_msg)
+        err_msg = 'summarize_carbon_by_bus didn\'t return the right dict keys'
+        self.assertEqual(set(summation.keys()), fossil_fuels, err_msg)
+        for k in expected_sum.keys():
+            err_msg = 'summation not correct for fuel ' + k
+            self.assertEqual(expected_sum[k].keys(),
+                summation[k].keys(), err_msg)
+            for bus in expected_sum[k]:
+                err_msg = 'summation not correct for bus ' + str(bus)
+                self.assertAlmostEqual(expected_sum[k][bus],
+                    summation[k][bus], msg=err_msg)
 
 if __name__ == '__main__':
     unittest.main()
