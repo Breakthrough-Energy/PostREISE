@@ -10,6 +10,8 @@ from mock_carbon import MockGrid, MockScenario
 from postreise.analyze.carbon import generate_carbon_stats
 from postreise.analyze.carbon import summarize_carbon_by_bus
 
+
+
 class TestMocks(unittest.TestCase):
 
     # check that gridmock is working correctly
@@ -32,40 +34,79 @@ class TestMocks(unittest.TestCase):
 
 class TestCarbonCalculation(unittest.TestCase):
 
-    def test_carbon_calculation(self):
-        period_num = 3
-        scenario = MockScenario(['plant', 'gencost'], period_num)
-        grid = scenario.get_grid()
-        pg = scenario.get_pg()
+    def setUp(self):
+        def _test_carbon_structure(carbon):
+            pg = self.pg
+            plant = self.grid.plant
 
-        carbon = generate_carbon_stats(scenario)
+            # check data frame structure
+            err_msg = 'generate_carbon_stats should return a data frame'
+            self.assertTrue(isinstance(carbon, pd.DataFrame), err_msg)
+            err_msg = 'carbon and pg should have same index'
+            for a, b in zip(pg.index.to_numpy(), carbon.index.to_numpy()):
+                self.assertEqual(a, b, err_msg)
+            err_msg = 'carbon and pg should have same columns'
+            for a, b in zip(pg.columns.to_numpy(), carbon.columns.to_numpy()):
+                self.assertEqual(a, b, err_msg)
 
-        # check data frame structure
-        err_msg = 'generate_carbon_stats should return a data frame'
-        self.assertTrue(isinstance(carbon, pd.DataFrame), err_msg)
-        err_msg = 'carbon and pg should have same index'
-        for a, b in (zip(pg.index.to_numpy(), carbon.index.to_numpy())):
-            self.assertEqual(a, b, err_msg)
-        err_msg = 'carbon and pg should have same columns'
-        for a, b in (zip(pg.columns.to_numpy(), carbon.columns.to_numpy())):
-            self.assertEqual(a, b, err_msg)
+            # sanity check values
+            carbon_from_wind = plant[plant.type == 'wind'].index.values
+            err_msg = 'Wind farm does not emit carbon'
+            self.assertEqual(carbon[carbon_from_wind[0]].sum(), 0, err_msg)
+            carbon_from_solar = plant[plant.type == 'solar'].index.values
+            err_msg = 'Solar plant does not emit carbon'
+            self.assertEqual(carbon[carbon_from_solar[0]].sum(), 0, err_msg)
+            negative_carbon_count = np.sum((carbon < 0).to_numpy().ravel())
+            err_msg = 'No plant should emit negative carbon'
+            self.assertEqual(negative_carbon_count, 0, err_msg)
 
-        # sanity check values
-        carbon_from_wind = grid.plant[grid.plant.type == 'wind'].index.values
-        err_msg = 'Wind farm does not emit carbon'
-        self.assertEqual(carbon[carbon_from_wind[0]].sum(), 0, err_msg)
-        carbon_from_solar = grid.plant[grid.plant.type == 'solar'].index.values
-        err_msg = 'Solar plant does not emit carbon'
-        self.assertEqual(carbon[carbon_from_solar[0]].sum(), 0, err_msg)
-        negative_carbon_count = np.sum((carbon < 0).to_numpy().ravel())
-        err_msg = 'No plant should emit negative carbon'
-        self.assertEqual(negative_carbon_count, 0, err_msg)
+        self._test_carbon_structure = _test_carbon_structure
+        period_num = 4
+        self.scenario = MockScenario(['plant', 'gencost'], period_num)
+        self.grid = self.scenario.get_grid()
+        self.pg = self.scenario.get_pg()
+
+    def test_carbon_calc_always_on(self):
+
+        carbon = generate_carbon_stats(self.scenario, method='always-on')
+        self._test_carbon_structure(carbon)
 
         #check specific values
         expected_values = np.array([
+            [0, 0, 4.82, 8.683333, 6.77],
             [0, 0, 6.6998, 13.546000, 11.8475],
             [0, 0, 9.4472, 21.1873333, 20.3100],
             [0, 0, 13.0622, 31.6073333, 32.1575],
+            ])
+        assert_array_almost_equal(expected_values, carbon.to_numpy(),
+                                  err_msg='Values do not match expected')
+
+    def test_carbon_calc_decommit(self):
+
+        carbon = generate_carbon_stats(self.scenario, method='decommit')
+        self._test_carbon_structure(carbon)
+
+        #check specific values
+        expected_values = np.array([
+            [0, 0, 0, 0, 0],
+            [0, 0, 6.6998, 13.546000, 11.8475],
+            [0, 0, 9.4472, 21.1873333, 20.3100],
+            [0, 0, 13.0622, 31.6073333, 32.1575],
+            ])
+        assert_array_almost_equal(expected_values, carbon.to_numpy(),
+                                  err_msg='Values do not match expected')
+
+    def test_carbon_calc_simple(self):
+
+        carbon = generate_carbon_stats(self.scenario, method='simple')
+        self._test_carbon_structure(carbon)
+
+        #check specific values
+        expected_values = np.array([
+            [0, 0, 0, 0, 0],
+            [0, 0, 1.407, 4.004, 4.2],
+            [0, 0, 2.814, 8.008, 8.4],
+            [0, 0, 4.221, 12.012, 12.6],
             ])
         assert_array_almost_equal(expected_values, carbon.to_numpy(),
                                   err_msg='Values do not match expected')

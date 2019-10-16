@@ -2,36 +2,68 @@ import numpy as np
 from numpy.polynomial.polynomial import polyval
 import pandas as pd
 
-from powersimdata.input.grid import Grid
+# For simple methods:
+# MWh to metric tons of CO2
+# Source: IPCC Special Report on Renewable Energy Sources and Climate Change Mitigation
+#   (2011), Annex II: Methodology, Table A.II.4, 50th percentile
+#   http://www.ipcc-wg3.de/report/IPCC_SRREN_Annex_II.pdf
+carbon_per_mwh = {
+    'coal': 1001,
+    'dfo': 840,
+    'ng': 469,
+    }
 
+# For curve methods:
 # MMBTu of fuel per hour to metric tons of CO2 per hour
 # Source: https://www.epa.gov/energy/greenhouse-gases-equivalencies-calculator-calculations-and-references
 # = (Heat rate MMBTu/h) * (kg C/mmbtu) * (mass ratio CO2/C) / (kg to tonnes)
-carbon_intensities = {
+carbon_per_mmbtu = {
     'coal': 26.05,
     'dfo': 20.31,
     'ng': 14.46,
     }
 
-def generate_carbon_stats(scenario):
+def generate_carbon_stats(scenario, method='simple'):
     """Generates carbon statistics from the input generation data.
 
-    :param powersimdata.scenario.analyze.Analyze scenario: scenario instance.
+    :param powersimdata.scenario[.analyze.Analyze] scenario: scenario instance.
     :return: (*pandas.DataFrame*) -- carbon data frame.
     """
 
-    pg = scenario.get_pg()
-    grid = scenario.get_grid()
+    allowed_methods = ('simple', 'always-on', 'decommit')
+    if not isinstance(method, str):
+        raise TypeError('method must be a str')
+    if method not in allowed_methods:
+        raise ValueError('Unknown method for generate_carbon_stats()')
 
-    costs = calc_costs(pg, grid.gencost)
-    heat = np.zeros_like(costs)
-    carbon = pd.DataFrame(np.zeros_like(pg), index=pg.index, columns=pg.columns)
+    # Todo: better type-checking for scenario
+    try:
+        pg = scenario.get_pg()
+        grid = scenario.get_grid()
+    except AttributeError:
+        pg = scenario.state.get_pg()
+        grid = scenario.state.get_grid()
 
-    for fuel, val in carbon_intensities.items():
-        indices = (grid.plant['type'] == fuel).to_numpy()
-        heat[:, indices] = (
-            costs[:, indices] / grid.plant['GenFuelCost'].values[indices])
-        carbon.loc[:, indices] = heat[:, indices] * val * 44/12 / 1000
+    carbon = pd.DataFrame(
+        np.zeros_like(pg), index=pg.index, columns=pg.columns)
+
+    if method == 'simple':
+        for fuel, val in carbon_per_mwh.items():
+            indices = (grid.plant['type'] == fuel).to_numpy()
+            carbon.loc[:, indices] = pg.loc[:, indices] * val / 1000
+    elif method in ('decommit', 'always-on'):
+        decommit = True if method == 'decommit' else False
+
+        costs = calc_costs(pg, grid.gencost, decommit=decommit)
+        heat = np.zeros_like(costs)
+
+        for fuel, val in carbon_per_mmbtu.items():
+            indices = (grid.plant['type'] == fuel).to_numpy()
+            heat[:, indices] = (
+                costs[:, indices] / grid.plant['GenFuelCost'].values[indices])
+            carbon.loc[:, indices] = heat[:, indices] * val * 44/12 / 1000
+    else:
+        raise Exception('I should not be able to get here')
 
     return carbon
 
@@ -65,7 +97,7 @@ def summarize_carbon_by_bus(carbon, plant):
 
     return bus_totals_by_type
 
-def calc_costs(pg, gencost):
+def calc_costs(pg, gencost, decommit=False):
     """Calculates individual generator costs at given powers.
 
     :param pandas.DataFrame pg: Generation solution data frame.
@@ -85,6 +117,10 @@ def calc_costs(pg, gencost):
 
     # elementwise, evaluate polynomial where x = value
     costs = polyval(pg.to_numpy(), coefs, tensor=False)
+
+    if decommit:
+        # mask values where pg is 0 to 0 cost (assume uncommitted, no cost)
+        costs = np.where(pg.to_numpy() < 1, 0, costs)
 
     return costs
 
