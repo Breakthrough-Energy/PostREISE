@@ -64,7 +64,7 @@ class MockOutput:
         :return: (*pandas.DataFrame*) -- power generated.
         """
         pg = pd.DataFrame({
-            (i + 101): [(i+1)*(p+1) for p in range(self.period_num)]
+            (i + 101): [(i+1)*p for p in range(self.period_num)]
             for i in range(self.gen_num)})
         pg.set_index(pd.date_range(
             start='2016-01-01', periods=self.period_num, freq='H'),
