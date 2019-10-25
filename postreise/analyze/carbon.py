@@ -4,9 +4,9 @@ import pandas as pd
 
 # For simple methods:
 # MWh to metric tons of CO2
-# Source: IPCC Special Report on Renewable Energy Sources and Climate Change Mitigation
-#   (2011), Annex II: Methodology, Table A.II.4, 50th percentile
-#   http://www.ipcc-wg3.de/report/IPCC_SRREN_Annex_II.pdf
+# Source: IPCC Special Report on Renewable Energy Sources and Climate Change
+# Mitigation (2011), Annex II: Methodology, Table A.II.4, 50th percentile
+# http://www.ipcc-wg3.de/report/IPCC_SRREN_Annex_II.pdf
 carbon_per_mwh = {
     'coal': 1001,
     'dfo': 840,
@@ -23,10 +23,12 @@ carbon_per_mmbtu = {
     'ng': 14.46,
     }
 
+
 def generate_carbon_stats(scenario, method='simple'):
     """Generates carbon statistics from the input generation data.
 
     :param powersimdata.scenario[.analyze.Analyze] scenario: scenario instance.
+    :param str method: selected method to handle no-load fuel consumption.
     :return: (*pandas.DataFrame*) -- carbon data frame.
     """
 
@@ -67,6 +69,7 @@ def generate_carbon_stats(scenario, method='simple'):
 
     return carbon
 
+
 def summarize_carbon_by_bus(carbon, plant):
     """Summarize time series carbon dataframe by type and bus.
 
@@ -85,10 +88,10 @@ def summarize_carbon_by_bus(carbon, plant):
     bus_totals_by_type = {f: {b: 0 for b in plant_buses} for f in fossil_fuels}
     # sum by fuel by bus
     for p in plant_totals.index:
-        plant_type = plant.loc[p,'type']
+        plant_type = plant.loc[p, 'type']
         if plant_type not in fossil_fuels:
             continue
-        plant_bus = plant.loc[p,'bus_id']
+        plant_bus = plant.loc[p, 'bus_id']
         bus_totals_by_type[plant_type][plant_bus] += plant_totals.loc[p]
     # filter out buses whose carbon is zero
     bus_totals_by_type = {
@@ -97,11 +100,13 @@ def summarize_carbon_by_bus(carbon, plant):
 
     return bus_totals_by_type
 
+
 def calc_costs(pg, gencost, decommit=False):
     """Calculates individual generator costs at given powers.
 
     :param pandas.DataFrame pg: Generation solution data frame.
     :param pandas.DataFrame gencost: cost curve polynomials.
+    :param boolean decommit: Whether to decommit generator at very low power.
     :return: (*pandas.DataFrame*) -- data frame of costs.
     """
 
@@ -109,8 +114,8 @@ def calc_costs(pg, gencost, decommit=False):
     _check_time_series(pg, 'pg')
 
     # get ordered polynomial coefficients in columns, discarding non-coeff data
-    #coefs = gencost.values.T[-2:3:-1,:]
-    #coefs = gencost[['c0', 'c1', 'c2']].values.T
+    # coefs = gencost.values.T[-2:3:-1,:]
+    # coefs = gencost[['c0', 'c1', 'c2']].values.T
     num_coefs = gencost['n'].iloc[0]
     coef_columns = ['c' + str(i) for i in range(num_coefs)]
     coefs = gencost[coef_columns].to_numpy().T
@@ -124,8 +129,11 @@ def calc_costs(pg, gencost, decommit=False):
 
     return costs
 
+
 def _check_gencost(gencost):
-    """Checks that gencost is specified properly
+    """Checks that gencost is specified properly.
+
+    :param pandas.DataFrame gencost: cost curve polynomials.
     """
 
     # check for nonempty dataframe
@@ -137,7 +145,7 @@ def _check_gencost(gencost):
     # check for proper columns
     required_columns = ('type', 'n')
     for r in required_columns:
-        if not r in gencost.columns:
+        if r not in gencost.columns:
             raise ValueError('gencost must have column ' + r)
 
     # check that gencosts are all specified as type 2 (polynomial)
@@ -160,12 +168,15 @@ def _check_gencost(gencost):
     # check that the right columns are here for this dataframe
     coef_columns = ['c' + str(i) for i in range(n)]
     for c in coef_columns:
-        if not c in gencost.columns:
+        if c not in gencost.columns:
             err_msg = 'gencost of order {0} must have column {1}'.format(n, c)
             raise ValueError(err_msg)
 
+
 def _check_time_series(df, label):
-    """Checks that a time series dataframe is specified properly
+    """Checks that a time series dataframe is specified properly.
+
+    :param str label: Name of dataframe.
     """
     if not isinstance(label, str):
         raise TypeError('label must be a str')
