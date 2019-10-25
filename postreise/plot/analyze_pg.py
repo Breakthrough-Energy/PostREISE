@@ -451,7 +451,7 @@ class AnalyzePG:
                     ax_storage.tick_params(axis='both', which='both',
                                            labelsize=20)
                     ax_storage.set_xlabel('')
-                    ax_storage.set_ylabel('Power Storage (MW)', fontsize=22)
+                    ax_storage.set_ylabel('Energy Storage (MW)', fontsize=22)
                     for a in fig.get_axes():
                         a.label_outer()
                 else:
