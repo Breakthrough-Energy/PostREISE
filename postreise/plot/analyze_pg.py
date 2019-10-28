@@ -356,6 +356,22 @@ class AnalyzePG:
 
             pg_groups = pg.T.groupby(self.grid.plant['type']).agg(sum).T
             pg_groups.name = "%s (Generation)" % zone
+
+            capacity = self.grid.plant.loc[pg.columns].groupby('type').agg(
+                sum).GenMWMax
+            capacity.name = "%s (Capacity)" % zone
+
+            if self.storage_pg is not None:
+                pg_storage, capacity_storage = self._get_storage_pg(zone)
+                if capacity_storage is not None:
+                    capacity = capacity.append(pd.Series([capacity_storage],
+                                                         index=['storage']))
+                    pg_groups = pd.merge(
+                        pg_groups,
+                        pg_storage.clip(lower=0).sum(axis=1).rename('storage'),
+                        left_index=True,
+                        right_index=True)
+
             type2label = self.type2label.copy()
             for t in self.grid.id2type.values():
                 if t not in pg_groups.columns:
@@ -365,10 +381,6 @@ class AnalyzePG:
                 index=type2label).sum().plot(
                 ax=ax[0], kind='barh', alpha=0.7,
                 color=[self.grid.type2color[r] for r in type2label.keys()])
-
-            capacity = self.grid.plant.loc[pg.columns].groupby(
-               'type').agg(sum).GenMWMax
-            capacity.name = "%s (Capacity)" % zone
 
             ax[1] = capacity[list(type2label.keys())].rename(
                 index=type2label).plot(
