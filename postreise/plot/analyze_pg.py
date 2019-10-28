@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
+import matplotlib.dates as mdates
 from pandas.plotting import scatter_matrix
 
 plt.ioff()
@@ -108,9 +109,9 @@ class AnalyzePG:
                            'coal': 'Coal',
                            'dfo': 'Fuel Oil',
                            'hydro': 'Hydro',
+                           'ng': 'Natural Gas',
                            'solar': 'Solar',
                            'wind': 'Wind',
-                           'ng': 'Natural Gas',
                            'storage': 'Storage Discharging'}
 
         # Check parameters
@@ -433,8 +434,6 @@ class AnalyzePG:
         pg, capacity = self._get_pg(zone, self.resources)
         if pg is not None:
 
-            demand = self._get_demand(zone)
-
             pg_groups = pg.T.groupby(self.grid.plant['type'])
             pg_stack = pg_groups.agg(sum).T
 
@@ -478,13 +477,25 @@ class AnalyzePG:
                 if t not in pg_stack.columns:
                     del type2label[t]
 
+            demand = self._get_demand(zone)
             net_demand = pd.DataFrame({'net_demand': demand['demand']},
                                       index=demand.index)
+
             for t in type2label.keys():
-                if t == 'solar' or t == 'wind':
+                if t == 'solar':
+                    pg_solar = self._get_pg(zone, ['solar'])[0].sum(axis=1)
                     net_demand['net_demand'] = net_demand['net_demand'] - \
-                                               self._get_pg(zone,
-                                                            [t])[0].sum(axis=1)
+                        pg_solar
+                    curtailment_solar = self._get_profile(zone, 'solar').sum(
+                        axis=1).tolist() - pg_solar
+                    pg_stack['sc'] = curtailment_solar
+                elif t == 'wind':
+                    pg_wind = self._get_pg(zone, ['wind'])[0].sum(axis=1)
+                    net_demand['net_demand'] = net_demand['net_demand'] - \
+                        pg_wind
+                    curtailment_wind = self._get_profile(zone, 'wind').sum(
+                        axis=1).tolist() - pg_wind
+                    pg_stack['wc'] = curtailment_wind
 
             if self.normalize:
                 pg_stack = pg_stack.divide(capacity * self.timestep,
@@ -499,13 +510,21 @@ class AnalyzePG:
                 net_demand = net_demand.divide(1000, axis='index')
                 ax.set_ylabel('Generation (GW)', fontsize=22)
 
+            type2color = [self.grid.type2color[r] for r in type2label.keys()]
+            if 'solar' in type2label.keys():
+                type2label['sc'] = 'Solar Curtailment'
+                type2color.append('#e8eb34')
+            if 'wind' in type2label.keys():
+                type2label['wc'] = 'Wind Curtailment'
+                type2color.append('#b6fc03')
+
             ax = pg_stack[list(type2label.keys())].tz_localize(None).rename(
                 columns=type2label).plot.area(
-                color=[self.grid.type2color[r] for r in type2label.keys()], 
-                alpha=0.7, ax=ax)
+                color=type2color, alpha=0.7, ax=ax)
+
             demand.tz_localize(None).plot(color='red', lw=4, ax=ax)
             net_demand.tz_localize(None).plot(color='red', ls='--', lw=2, ax=ax)
-            ax.set_ylim([min(0, net_demand['net_demand'].min()),
+            ax.set_ylim([min(0, 1.1*net_demand.min().values[0]),
                          max(ax.get_ylim()[1], 1.1*demand.max().values[0])])
 
             ax.set_title('%s' % zone, fontsize=25)
@@ -652,13 +671,23 @@ class AnalyzePG:
 
             data['curtailment'].tz_localize(None).plot(ax=ax, style='b', lw=4,
                                                        alpha=0.7)
+
+            data['curtailment mean'] = data['curtailment'].mean()
+            data['curtailment mean'].tz_localize(None).plot(ax=ax, style='b',
+                                                            ls='--', lw=4,
+                                                            alpha=0.7)
+
             data['available'].tz_localize(
                 None).rename("%s energy available" % resource).plot(
                 ax=ax_twin, lw=4, alpha=0.7, style={
                     "%s energy available" % resource: self.grid.type2color[
                         resource]})
+
             data['demand'].tz_localize(None).plot(ax=ax_twin, lw=4, alpha=0.7,
                                                   style={'demand': 'r'})
+
+            ax.xaxis.set_major_locator(mdates.MonthLocator())
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%b'))
             ax.tick_params(which='both', labelsize=20)
             ax.grid(color='black', axis='y')
             ax.set_xlabel('')
