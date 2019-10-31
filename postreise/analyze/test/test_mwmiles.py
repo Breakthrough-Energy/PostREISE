@@ -1,8 +1,6 @@
 import unittest
 
-# context.py ensures that we always import from current powersimdata folder.
-from context import postreise
-from mocks import MockGrid
+from tests.mocks import MockGrid
 from postreise.analyze.mwmiles import _calculate_mw_miles
 
 # branch 11 from Seattle to San Francisco (~679 miles)
