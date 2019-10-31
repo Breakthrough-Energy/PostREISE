@@ -1,1 +1,1 @@
-__all__ = ['carbon', 'mwmiles', 'transmission']
+__all__ = ['carbon', 'distance', 'mwmiles', 'transmission']

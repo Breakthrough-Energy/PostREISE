@@ -6,11 +6,9 @@ from powersimdata.input.grid import Grid
 def haversine(point1, point2):
     """Given two lat/long pairs, return distance in miles.
 
-    :param tuple (number, number) point1: first point, (lat, long) in degrees.
-    :param tuple (number, number) point2: second point, (lat, long) in degrees.
-
-    :return: distance in miles, float
-
+    :param tuple point1: first point, (lat, long) in degrees.
+    :param tuple point2: second point, (lat, long) in degrees.
+    :return: (*float*) -- distance in miles.
     """
 
     _AVG_EARTH_RADIUS_MILES = 3958.7613
@@ -33,15 +31,17 @@ def haversine(point1, point2):
 
 def calculate_mw_miles(scenario):
     """Given a Scenario object, calculate the number of upgraded lines and
-    transformers, and the total upgrade quantity (in MW and MW-miles).
-    Currently only supports change_tables that specify branches, not zone_name.
-    Currently lumps Transformer and TransformerWinding upgrades together.
+        transformers, and the total upgrade quantity (in MW and MW-miles).
+        Currently only supports change tables that specify branches' id, not
+        zone name. Currently lumps Transformer and TransformerWinding upgrades
+        together.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
+    :return: (*dict*) -- Upgrades to the branches.
     """
 
     original_grid = Grid(scenario.info['interconnect'].split('_'))
-    ct = scenario.change_table.ct
+    ct = scenario.state.get_ct()
     upgrades = _calculate_mw_miles(original_grid, ct)
     return upgrades
 
@@ -53,10 +53,9 @@ def _calculate_mw_miles(original_grid, ct):
     Currently only supports change_tables that specify branches, not zone_name.
     Currently lumps Transformer and TransformerWinding upgrades together.
 
-    :param powersimdata.input.grid original_grid: grid instance.
-    :param powersimdata.input.change_table ct: change_table instance.
-
-    :return: a dict of keys (types of upgrades) and values (floats/ints).
+    :param powersimdata.input.grid.Grid original_grid: grid instance.
+    :param dict ct: change table instance.
+    :return: (*dict*) -- Upgrades to the branches.
     """
 
     upgrade_categories = (
