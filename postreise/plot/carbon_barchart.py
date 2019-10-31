@@ -1,4 +1,5 @@
 from matplotlib import pyplot as plt
+import numpy as np
 
 def carbon_barchart(dict1, dict2, name1, name2):
     plt.rcParams.update({'font.size': 22})

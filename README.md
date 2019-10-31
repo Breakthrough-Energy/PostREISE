@@ -90,3 +90,13 @@ scenarios. This is illustrated [here][collection].
 [collection]: https://github.com/intvenlab/PostREISE/blob/develop/postreise/plot/demo/collection.ipynb
 [transmission]: https://github.com/intvenlab/PostREISE/tree/develop/postreise/analyze/demo/transmission_analysis_demo.ipynb
 [congestion]: https://github.com/intvenlab/PostREISE/tree/develop/postreise/analyze/demo/congestion_interactive_map.ipynb
+
+The `carbon_plot` module is used to plot carbon emissions on a map.
+There are two ways it can be used:
+* Map carbon emissions per bus, size scaled to emissions quantity (tons) and color coded by fuel type.
+* Map carbon emissions per bus for two scenarios and compare.
+Commparison map color codes by increase vs. decrease from first to second scenario analyzed. 
+
+The `carbon_barchart` module is used to make barcharts comparing carbon emissions of two scenarios.
+
+The `carbon_plothelper.py` module contains helper functions such as reprojection, necessary for mapping.

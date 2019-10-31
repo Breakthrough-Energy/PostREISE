@@ -92,9 +92,7 @@ def makemap_carbon(bus_map, scenario_name, color1 = 'black',
 
     return 
     
-def makemap_carbon_compare(gridbus, carbon_dictionary,carbon_dictionary2, scenario_name1, scenario_name2):
-    bus_map1 = make_busmap(gridbus, carbon_dictionary)
-    bus_map2 = make_busmap(gridbus, carbon_dictionary2)
+def makemap_carbon_compare(bus_map1, bus_map2, scenario_name1, scenario_name2):
     makemap_carbon(bus_map1,scenario_name1)
     makemap_carbon(bus_map2,scenario_name2)
 
