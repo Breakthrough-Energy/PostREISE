@@ -481,21 +481,13 @@ class AnalyzePG:
             net_demand = pd.DataFrame({'net_demand': demand['demand']},
                                       index=demand.index)
 
-            for t in type2label.keys():
-                if t == 'solar':
-                    pg_solar = self._get_pg(zone, ['solar'])[0].sum(axis=1)
-                    net_demand['net_demand'] = net_demand['net_demand'] - \
-                        pg_solar
-                    curtailment_solar = self._get_profile(zone, 'solar').sum(
-                        axis=1).tolist() - pg_solar
-                    pg_stack['sc'] = curtailment_solar
-                elif t == 'wind':
-                    pg_wind = self._get_pg(zone, ['wind'])[0].sum(axis=1)
-                    net_demand['net_demand'] = net_demand['net_demand'] - \
-                        pg_wind
-                    curtailment_wind = self._get_profile(zone, 'wind').sum(
-                        axis=1).tolist() - pg_wind
-                    pg_stack['wc'] = curtailment_wind
+            for (t, key) in [('solar', 'sc'), ('wind', 'wc')]:
+                if t in type2label.keys():
+                    pg_t = self._get_pg(zone, [t])[0].sum(axis=1)
+                    net_demand['net_demand'] = net_demand['net_demand'] - pg_t
+                    curtailment_t = self._get_profile(zone, t).sum(
+                        axis=1).tolist() - pg_t
+                    pg_stack[key] = curtailment_t
 
             if self.normalize:
                 pg_stack = pg_stack.divide(capacity * self.timestep,
@@ -1023,10 +1015,11 @@ class AnalyzePG:
         """Returns PG of all storage units located in zone
 
         :param str zone: one of the zones
-        :return: (*tuple*) -- date frame of PG and associated capacity for all
+        :return: (*tuple*) -- data frame of PG and associated capacity for all
             storage units located in zone.
         """
         storage_id = []
+
         for c, bus in enumerate(self.grid.storage['gen'].bus_id.values):
             if self.grid.bus.loc[bus].zone_id in self._get_zone_id(zone):
                 storage_id.append(c)
