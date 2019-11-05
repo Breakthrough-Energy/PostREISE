@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
+import matplotlib.dates as mdates
 from pandas.plotting import scatter_matrix
 
 plt.ioff()
@@ -67,6 +68,11 @@ class AnalyzePG:
         self.hydro = scenario.state.get_hydro()
         self.interconnect = self.grid.interconnect
 
+        if self.grid.storage and 'storage' in resources:
+            self.storage_pg = scenario.state.get_storage_pg().tz_localize('utc')
+        else:
+            self.storage_pg = None
+
         # Zone to time zone
         self.zone2time = {'Arizona': 'US/Mountain',
                           'Bay Area': 'US/Pacific',
@@ -94,17 +100,19 @@ class AnalyzePG:
                           'South': 'US/Central',
                           'South Central': 'US/Central',
                           'Texas': 'US/Central',
-                          'West': 'US/Central'}
+                          'West': 'US/Central',
+                          'Eastern': 'US/Eastern'}
 
         # Fuel type to label for used in plots
         self.type2label = {'nuclear': 'Nuclear',
                            'geothermal': 'Geothermal',
                            'coal': 'Coal',
+                           'dfo': 'Fuel Oil',
                            'hydro': 'Hydro',
                            'ng': 'Natural Gas',
                            'solar': 'Solar',
                            'wind': 'Wind',
-                           'dfo': 'Fuel Oil'}
+                           'storage': 'Storage Discharging'}
 
         # Check parameters
         self._check_dates(time[0], time[1])
@@ -163,6 +171,8 @@ class AnalyzePG:
             possible += ['California', 'Western']
         if 'Texas' in self.interconnect:
             possible += ['Texas']
+        if 'Eastern' in self.interconnect:
+            possible += ['Eastern']
         for z in zones:
             if z not in possible:
                 print("%s is incorrect. Possible zones are: %s" %
@@ -347,6 +357,22 @@ class AnalyzePG:
 
             pg_groups = pg.T.groupby(self.grid.plant['type']).agg(sum).T
             pg_groups.name = "%s (Generation)" % zone
+
+            capacity = self.grid.plant.loc[pg.columns].groupby('type').agg(
+                sum).GenMWMax
+            capacity.name = "%s (Capacity)" % zone
+
+            if self.storage_pg is not None:
+                pg_storage, capacity_storage = self._get_storage_pg(zone)
+                if capacity_storage is not None:
+                    capacity = capacity.append(pd.Series([capacity_storage],
+                                                         index=['storage']))
+                    pg_groups = pd.merge(
+                        pg_groups,
+                        pg_storage.clip(lower=0).sum(axis=1).rename('storage'),
+                        left_index=True,
+                        right_index=True)
+
             type2label = self.type2label.copy()
             for t in self.grid.id2type.values():
                 if t not in pg_groups.columns:
@@ -356,10 +382,6 @@ class AnalyzePG:
                 index=type2label).sum().plot(
                 ax=ax[0], kind='barh', alpha=0.7,
                 color=[self.grid.type2color[r] for r in type2label.keys()])
-
-            capacity = self.grid.plant.loc[pg.columns].groupby(
-               'type').agg(sum).GenMWMax
-            capacity.name = "%s (Capacity)" % zone
 
             ax[1] = capacity[list(type2label.keys())].rename(
                 index=type2label).plot(
@@ -411,53 +433,99 @@ class AnalyzePG:
         """
         pg, capacity = self._get_pg(zone, self.resources)
         if pg is not None:
-            fig = plt.figure(figsize=(20, 10))
-            plt.title('%s' % zone, fontsize=25)
-            ax = fig.gca()
-            ax.grid(color='black', axis='y')
-            ax.tick_params(which='both', labelsize=20)
-
-            demand = self._get_demand(zone)
-            renewable = pd.DataFrame({
-                'wind': self._get_profile(zone, 'wind').sum(axis=1).tolist(),
-                'solar': self._get_profile(zone, 'solar').sum(axis=1).tolist()},
-                index=demand.index)
-
-            net_demand = demand.copy()
-            net_demand['net demand'] = net_demand.demand - \
-                                       renewable.wind - \
-                                       renewable.solar
-            net_demand.drop(columns=['demand'], inplace=True)
 
             pg_groups = pg.T.groupby(self.grid.plant['type'])
             pg_stack = pg_groups.agg(sum).T
+
+            if self.storage_pg is not None:
+                pg_storage, capacity_storage = self._get_storage_pg(zone)
+                if capacity_storage is not None:
+                    capacity += capacity_storage
+                    pg_stack = pd.merge(
+                        pg_stack,
+                        pg_storage.clip(lower=0).sum(axis=1).rename('storage'),
+                        left_index=True,
+                        right_index=True)
+                    fig, (ax, ax_storage) = plt.subplots(
+                        2, 1, figsize=(20, 15), sharex='row',
+                        gridspec_kw={'height_ratios': [3, 1], 'hspace': 0})
+                    plt.subplots_adjust(wspace=0)
+                    ax_storage = pg_storage.tz_localize(None).sum(
+                        axis=1).rename('batteries').plot(
+                        color=self.grid.type2color['storage'], lw=4,
+                        ax=ax_storage)
+                    ax_storage.fill_between(
+                        pg_storage.tz_localize(None).index.values, 0,
+                        pg_storage.tz_localize(None).sum(axis=1).values,
+                        color=self.grid.type2color['storage'], alpha=0.5)
+
+                    ax_storage.tick_params(axis='both', which='both',
+                                           labelsize=20)
+                    ax_storage.set_xlabel('')
+                    ax_storage.set_ylabel('Energy Storage (MW)', fontsize=22)
+                    for a in fig.get_axes():
+                        a.label_outer()
+                else:
+                    fig = plt.figure(figsize=(20, 10))
+                    ax = fig.gca()
+            else:
+                fig = plt.figure(figsize=(20, 10))
+                ax = fig.gca()
+
             type2label = self.type2label.copy()
             for t in self.grid.id2type.values():
                 if t not in pg_stack.columns:
                     del type2label[t]
 
+            demand = self._get_demand(zone)
+            net_demand = pd.DataFrame({'net_demand': demand['demand']},
+                                      index=demand.index)
+
+            for (t, key) in [('solar', 'sc'), ('wind', 'wc')]:
+                if t in type2label.keys():
+                    pg_t = self._get_pg(zone, [t])[0].sum(axis=1)
+                    net_demand['net_demand'] = net_demand['net_demand'] - pg_t
+                    curtailment_t = self._get_profile(zone, t).sum(
+                        axis=1).tolist() - pg_t
+                    pg_stack[key] = curtailment_t
+
             if self.normalize:
                 pg_stack = pg_stack.divide(capacity * self.timestep,
                                            axis='index')
                 demand = demand.divide(capacity * self.timestep, axis='index')
+                net_demand = net_demand.divide(capacity * self.timestep,
+                                               axis='index')
+                ax.set_ylabel('Normalized Generation', fontsize=22)
+            else:
+                pg_stack = pg_stack.divide(1000, axis='index')
+                demand = demand.divide(1000, axis='index')
+                net_demand = net_demand.divide(1000, axis='index')
+                ax.set_ylabel('Generation (GW)', fontsize=22)
+
+            type2color = [self.grid.type2color[r] for r in type2label.keys()]
+            if 'solar' in type2label.keys():
+                type2label['sc'] = 'Solar Curtailment'
+                type2color.append('#e8eb34')
+            if 'wind' in type2label.keys():
+                type2label['wc'] = 'Wind Curtailment'
+                type2color.append('#b6fc03')
 
             ax = pg_stack[list(type2label.keys())].tz_localize(None).rename(
                 columns=type2label).plot.area(
-                color=[self.grid.type2color[r] for r in type2label.keys()], 
-                alpha=0.7, ax=ax)
+                color=type2color, alpha=0.7, ax=ax)
 
             demand.tz_localize(None).plot(color='red', lw=4, ax=ax)
             net_demand.tz_localize(None).plot(color='red', ls='--', lw=2, ax=ax)
-            ax.set_ylim([0, max(ax.get_ylim()[1], 1.1*demand.max().values[0])])
+            ax.set_ylim([min(0, 1.1*net_demand.min().values[0]),
+                         max(ax.get_ylim()[1], 1.1*demand.max().values[0])])
 
+            ax.set_title('%s' % zone, fontsize=25)
+            ax.grid(color='black', axis='y')
+            ax.tick_params(which='both', labelsize=20)
             ax.set_xlabel('')
             handles, labels = ax.get_legend_handles_labels()
             ax.legend(handles[::-1], labels[::-1], frameon=2,
                       prop={'size': 18}, loc='lower right')
-            if self.normalize:
-                ax.set_ylabel('Normalized Generation', fontsize=22)
-            else:
-                ax.set_ylabel('Generation (MWh)', fontsize=22)
 
             pg_stack['demand'] = demand
             pg_stack.name = zone
@@ -595,13 +663,23 @@ class AnalyzePG:
 
             data['curtailment'].tz_localize(None).plot(ax=ax, style='b', lw=4,
                                                        alpha=0.7)
+
+            data['curtailment mean'] = data['curtailment'].mean()
+            data['curtailment mean'].tz_localize(None).plot(ax=ax, style='b',
+                                                            ls='--', lw=4,
+                                                            alpha=0.7)
+
             data['available'].tz_localize(
                 None).rename("%s energy available" % resource).plot(
                 ax=ax_twin, lw=4, alpha=0.7, style={
                     "%s energy available" % resource: self.grid.type2color[
                         resource]})
+
             data['demand'].tz_localize(None).plot(ax=ax_twin, lw=4, alpha=0.7,
                                                   style={'demand': 'r'})
+
+            ax.xaxis.set_major_locator(mdates.MonthLocator())
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%b'))
             ax.tick_params(which='both', labelsize=20)
             ax.grid(color='black', axis='y')
             ax.set_xlabel('')
@@ -873,8 +951,8 @@ class AnalyzePG:
     def _get_zone_id(self, zone):
         """Returns the load zone identification numbers for specified zone.
 
-        :param zone: zone to consider. A specific load zone, *Western*,
-            *California* or *Texas*.
+        :param zone: zone to consider. A specific load zone, *Eastern*,
+            *Western*, *California* or *Texas*.
         :return (*list*): Corresponding load zones identification number.
         """
         if zone == 'Western':
@@ -883,6 +961,8 @@ class AnalyzePG:
             load_zone_id = list(range(301, 309))
         elif zone == 'California':
             load_zone_id = list(range(203, 208))
+        elif zone == 'Eastern':
+            load_zone_id = list(range(1, 53))
         else:
             load_zone_id = [self.grid.zone2id[zone]]
 
@@ -931,8 +1011,32 @@ class AnalyzePG:
 
             return pg, capacity
 
+    def _get_storage_pg(self, zone):
+        """Returns PG of all storage units located in zone
+
+        :param str zone: one of the zones
+        :return: (*tuple*) -- data frame of PG and associated capacity for all
+            storage units located in zone.
+        """
+        storage_id = []
+
+        for c, bus in enumerate(self.grid.storage['gen'].bus_id.values):
+            if self.grid.bus.loc[bus].zone_id in self._get_zone_id(zone):
+                storage_id.append(c)
+
+        if len(storage_id) == 0:
+            print("No storage units in %s" % zone)
+            return [None] * 2
+        else:
+            capacity = sum(self.grid.storage['gen'].loc[storage_id].Pmax.values)
+            pg = self._convert_tz(self.storage_pg[storage_id]).resample(
+                self.freq, label='left').sum()[self.from_index:self.to_index]
+
+            return pg, capacity
+
     def _get_demand(self, zone):
-        """Returns demand profile for load zone, California or total.
+        """Returns demand profile for a specific load zone, *Eastern*,
+            *Western*, *California* or *Texas*.
 
         :param str zone: one of the zones.
         :return: (*pandas.DataFrame*) -- data frame of demand in zone (in MWh).
