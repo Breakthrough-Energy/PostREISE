@@ -2,10 +2,9 @@ import numpy as np
 import pandas as pd
 
 from postreise.analyze.distance import great_circle_distance
-from postreise.analyze import mapping
 
 
-def get_congestion(branch, pf):
+def get_utilization(branch, pf):
     """Generates utilization table to be used as input for congestion analyses.
 
     :param pandas.DataFrame branch: branch data frame.
@@ -18,23 +17,23 @@ def get_congestion(branch, pf):
     return pf.divide(branch.rateA).apply(np.abs).replace(np.inf, 0)
 
 
-def get_utilization(congestion, utilization):
+def _count_hours_above_threshold(utilization, threshold):
     """Calculates number of hours above a given utilization threshold.
 
-    :param pandas.DataFrame congestion: normalized power flow data frame as
-        returned by :func:`get_congestion`.
-    :param float utilization: utilization threshold ([0,1]).
+    :param pandas.DataFrame utilization: normalized power flow data frame as
+        returned by :func:`get_utilization`.
+    :param float threshold: utilization threshold ([0,1]).
     :return: (*pandas.Series*) -- number of hours above utilization threshold.
     """
 
-    return (congestion > utilization).sum()
+    return (utilization > threshold).sum()
 
 
-def flag(statistics, utilname, thresh, uflagname):
+def _flag(statistics, utilname, thresh, uflagname):
     """Flags branches that meet screening criteria for WECC.
 
     :param pandas.DataFrame statistics: congestion statistics as returned by
-        :func:`statistics`.
+        :func:`generate_cong_stats`.
     :param string utilname: field with percent of time above threshold.
     :param float thresh: threshold for percent time for flag level.
     :param string uflagname: name of flag.
@@ -75,14 +74,14 @@ def generate_cong_stats(scenario, util1=0.75, thresh1=0.5, util2=0.9,
     print("Calculating utilization")
     pf = scenario.state.get_pf()
     grid = scenario.state.get_grid()
-    congestion = get_congestion(grid.branch, pf)
-    n_hours = len(congestion)
+    utilization = get_utilization(grid.branch, pf)
+    n_hours = len(utilization)
 
-    per_util1 = get_utilization(congestion, util1) / n_hours
-    per_util2 = get_utilization(congestion, util2) / n_hours
-    per_util3 = get_utilization(congestion, util3) / n_hours
-    bind = (congestion == 1).sum()
-    risk = (pf[congestion > util2].sum()).fillna(0).apply(np.abs)
+    per_util1 = _count_hours_above_threshold(utilization, util1) / n_hours
+    per_util2 = _count_hours_above_threshold(utilization, util2) / n_hours
+    per_util3 = _count_hours_above_threshold(utilization, util3) / n_hours
+    bind = (utilization == 1).sum()
+    risk = (pf[utilization > util2].sum()).fillna(0).apply(np.abs)
     statistics = pd.concat([grid.branch['rateA'],
                             grid.branch['branch_device_type'], per_util1,
                             per_util2, per_util3, bind, risk], axis=1)
@@ -91,29 +90,16 @@ def generate_cong_stats(scenario, util1=0.75, thresh1=0.5, util2=0.9,
     statistics.columns = ['capacity', 'branch_device_type', 'per_util1',
                           'per_util2', 'per_util3', 'bind', 'risk']
 
-    print("Flagging congested branches")
     vals = [['per_util1', thresh1, 'uflag1'], ['per_util2', thresh2, 'uflag2'],
             ['per_util3', thresh3, 'uflag3']]
     for x in vals:
         statistics = pd.concat([statistics,
-                                flag(statistics, x[0], x[1], x[2])], axis=1)
+                                _flag(statistics, x[0], x[1], x[2])], axis=1)
 
     col_list = ['uflag1', 'uflag2', 'uflag3']
     statistics['sumflag'] = statistics[col_list].sum(axis=1)
 
-    print("Calculating branch distance")
     distance = grid.branch.apply(great_circle_distance, axis=1).rename('dist')
     statistics = pd.concat([statistics, distance], axis=1)
-
-    print("make branch_map")
-    branch_map = mapping.projection_fields(grid.branch)
-
-    print("flagging")
-    congested = statistics[statistics.sumflag > 0]
-
-    print("start first maps")
-    mapping.makemap(congested, branch_map)
-    mapping.makemap_all(congestion, branch_map)
-    mapping.makemap_binding(congestion, branch_map)
 
     return statistics
