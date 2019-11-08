@@ -1,6 +1,6 @@
 import unittest
 
-from tests.mocks import MockGrid
+from postreise.tests.mock_grid import MockGrid
 from postreise.analyze.mwmiles import _calculate_mw_miles
 
 # branch 11 from Seattle to San Francisco (~679 miles)
