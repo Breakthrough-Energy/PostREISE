@@ -62,6 +62,9 @@ def _calculate_mw_miles(original_grid, ct):
         'mw_miles', 'transformer_mw', 'num_lines', 'num_transformers')
     upgrades = {u: 0 for u in upgrade_categories}
 
+    if 'branch' not in ct or 'branch_id' not in ct['branch']:
+        return upgrades
+
     base_branch = original_grid.branch
     upgraded_branches = ct['branch']['branch_id']
     for b, v in upgraded_branches.items():
