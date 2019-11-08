@@ -2,46 +2,14 @@ from bokeh.plotting import figure, show
 import matplotlib
 import matplotlib.cm as cm
 import pandas as pd
-from pyproj import Proj
-from pyproj import transform
 from bokeh.tile_providers import get_provider, Vendors
 from bokeh.models import ColumnDataSource, ColorBar
 from bokeh.palettes import Spectral6
 from bokeh.transform import linear_cmap
 
+from postreise.plot.carbon_plothelper import projection_fields
+
 get_provider(Vendors.CARTODBPOSITRON)
-
-
-def _projection_fields(branch_map):
-    """Makes projection fields to be used for mapping.
-
-    :param pandas.DataFrame branch_map: data frame with branches coordinates.
-    :return: (*pandas.DataFrame*) -- version with coord for Bokeh
-    """
-    r_from = branch_map[['from_lon', 'from_lat']].apply(_wgs2itm, axis=1)
-    branch_map['from_x'] = r_from.apply(lambda x: x[0])
-    branch_map['from_y'] = r_from.apply(lambda x: x[1])
-
-    r_to = branch_map[['to_lon', 'to_lat']].apply(_wgs2itm, axis=1)
-    branch_map['to_x'] = r_to.apply(lambda x: x[0])
-    branch_map['to_y'] = r_to.apply(lambda x: x[1])
-
-    return branch_map
-
-
-def _wgs2itm(x_lon_lat):
-    """Convert WGS coordinates system to ITM coordinates system.
-
-    :param pandas.DataFrame x_lon_lat: first column is longitude, second column
-        is latitude, in WGS coordinates system.
-    :return: (*pandas.DataFrame) -- first column is longitude, second column
-        is latitude in the ITM coordinates system.
-    """
-    prj_wgs = Proj(init='epsg:4326')
-    prj_itm = Proj(init='EPSG:3857')
-    x, y = transform(prj_wgs, prj_itm, x_lon_lat[0], x_lon_lat[1])
-    r = [x, y]
-    return r
 
 
 def map_risk(congestion_stats, branch):
@@ -68,7 +36,7 @@ def map_risk(congestion_stats, branch):
     mapper = cm.ScalarMappable(norm=norm, cmap=cm.jet)
     mapper.set_array([])
 
-    _projection_fields(branch_map)
+    projection_fields(branch_map)
 
     multi_line_source = ColumnDataSource({
         'xs': branch_map[['from_x', 'to_x']].values.tolist(),
@@ -116,7 +84,7 @@ def map_utilization(utilization, branch):
     mapper = cm.ScalarMappable(norm=norm, cmap=cm.jet)
     mapper.set_array([])
 
-    _projection_fields(branch_map)
+    projection_fields(branch_map)
 
     multi_line_source = ColumnDataSource({
         'xs': branch_map[['from_x', 'to_x']].values.tolist(),
@@ -150,7 +118,7 @@ def map_binding(utilization, branch):
                            axis=1)
     branch_map = branch_map.loc[(branch_map['max_utilization'] >= 1)]
 
-    _projection_fields(branch_map)
+    projection_fields(branch_map)
 
     multi_line_source = ColumnDataSource({
         'xs': branch_map[['from_x', 'to_x']].values.tolist(),
