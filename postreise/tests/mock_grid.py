@@ -1,5 +1,7 @@
 import pandas as pd
 
+from powersimdata.input.grid import Grid
+
 # The index name of each dataframe attribute
 indices = {
     'branch': 'branch_id',
@@ -45,7 +47,7 @@ class MockGrid:
 
         :param dict grid_attrs: dict of {fieldname, data_dict} pairs.
         """
-
+        
         if not isinstance(grid_attrs, dict):
             raise TypeError('grid_attrs must be a dict')
 
@@ -73,28 +75,8 @@ class MockGrid:
                 df = pd.DataFrame(columns=([indices[df_name]]+cols[df_name]))
             df.set_index(indices[df_name], inplace=True)
             setattr(self, df_name, df)
-
-
-class MockScenario:
-    def __init__(self, grid_attrs, pg):
-        """Constructor.
-
-        :param dict grid_attrs: fields to be added to grid.
-        :param pandas.DataFrame pg: dummy pg
-        """
-        self.grid_attrs = grid_attrs
-        self.pg = pg
-
-    def get_grid(self):
-        """Get grid
-
-        :return: (GridMock) -- mock grid
-        """
-        return MockGrid(self.grid_attrs)
-
-    def get_pg(self):
-        """Get PG
-
-        :return: (pandas.DataFrame) -- dummy pg
-        """
-        return self.pg
+    
+    @property
+    def __class__(self):
+        """If anyone asks, I'm a Grid object!"""
+        return Grid

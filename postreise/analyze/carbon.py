@@ -2,6 +2,9 @@ import numpy as np
 from numpy.polynomial.polynomial import polyval
 import pandas as pd
 
+from powersimdata.scenario.scenario import Scenario
+from powersimdata.scenario.analyze import Analyze
+
 # For simple methods:
 # MWh to metric tons of CO2
 # Source: IPCC Special Report on Renewable Energy Sources and Climate Change
@@ -25,7 +28,11 @@ carbon_per_mmbtu = {
 
 
 def generate_carbon_stats(scenario, method='simple'):
-    """Generates carbon statistics from the input generation data.
+    """Generates carbon statistics from the input generation data. Method
+    descriptions: 'simple' uses a fixed ratio of CO2 to MWh, 'always-on' uses
+    generator heat-rate curves including non-zero intercepts, 'decommit' uses
+    generator heat-rate curves but de-commits generators if they are off
+    (detected by pg < 1 MW).
 
     :param powersimdata.scenario[.analyze.Analyze] scenario: scenario instance.
     :param str method: selected method to handle no-load fuel consumption.
@@ -39,13 +46,13 @@ def generate_carbon_stats(scenario, method='simple'):
         raise ValueError('Unknown method for generate_carbon_stats()')
 
     # Todo: better type-checking for scenario
-    try:
-        pg = scenario.get_pg()
-        grid = scenario.get_grid()
-    except AttributeError:
-        pg = scenario.state.get_pg()
-        grid = scenario.state.get_grid()
+    if not isinstance(scenario, Scenario):
+        raise TypeError('scenario must be a Scenario object')
+    if not isinstance(scenario.state, Analyze):
+        raise ValueError('scenario.state must be Analyze')
 
+    pg = scenario.state.get_pg()
+    grid = scenario.state.get_grid()
     carbon = pd.DataFrame(
         np.zeros_like(pg), index=pg.index, columns=pg.columns)
 
@@ -102,13 +109,16 @@ def summarize_carbon_by_bus(carbon, plant):
 
 
 def calc_costs(pg, gencost, decommit=False):
-    """Calculates individual generator costs at given powers.
+    """Calculates individual generator costs at given powers. If decommit is
+    True, costs will be zero below the decommit threshold (1 MW).
 
     :param pandas.DataFrame pg: Generation solution data frame.
     :param pandas.DataFrame gencost: cost curve polynomials.
     :param boolean decommit: Whether to decommit generator at very low power.
     :return: (*pandas.DataFrame*) -- data frame of costs.
     """
+
+    decommit_threshold = 1
 
     _check_gencost(gencost)
     _check_time_series(pg, 'pg')
@@ -125,7 +135,7 @@ def calc_costs(pg, gencost, decommit=False):
 
     if decommit:
         # mask values where pg is 0 to 0 cost (assume uncommitted, no cost)
-        costs = np.where(pg.to_numpy() < 1, 0, costs)
+        costs = np.where(pg.to_numpy() < decommit_threshold, 0, costs)
 
     return costs
 

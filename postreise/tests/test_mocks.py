@@ -2,7 +2,8 @@ import unittest
 
 import pandas as pd
 
-from tests.mocks import MockGrid, MockScenario
+from postreise.tests.mock_scenario import MockScenario
+from postreise.tests.mock_grid import MockGrid
 
 # plant_id is the index
 mock_plant = {
@@ -51,7 +52,7 @@ class TestMocks(unittest.TestCase):
         scenario = MockScenario(
             grid_attrs={'plant': mock_plant},
             pg=self.mock_pg)
-        pg = scenario.get_pg()
+        pg = scenario.state.get_pg()
         err_msg = 'pg should have dimension (periodNum * len(plant))'
         self.assertEqual(pg.shape, self.mock_pg.shape, err_msg)
 
