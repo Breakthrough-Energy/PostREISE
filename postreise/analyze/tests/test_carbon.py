@@ -4,7 +4,7 @@ import numpy as np
 from numpy.testing import assert_array_almost_equal
 import pandas as pd
 
-from tests.mocks import MockScenario
+from postreise.tests.mock_scenario import MockScenario
 from postreise.analyze.carbon import generate_carbon_stats
 from postreise.analyze.carbon import summarize_carbon_by_bus
 
@@ -86,8 +86,8 @@ class TestCarbonCalculation(unittest.TestCase):
         self.scenario = MockScenario(
             grid_attrs={'plant': mock_plant, 'gencost': mock_gencost},
             pg=self.mock_pg)
-        self.pg = self.scenario.get_pg()
-        self.grid = self.scenario.get_grid()
+        self.pg = self.scenario.state.get_pg()
+        self.grid = self.scenario.state.get_grid()
 
     def test_carbon_calc_always_on(self):
 
