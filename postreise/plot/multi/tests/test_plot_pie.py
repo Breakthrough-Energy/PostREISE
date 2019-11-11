@@ -36,8 +36,6 @@ def test_construct_pie_ax_data():
     }]
     assert ax_data_list == expected_output
 
-# _roll_up_small_pie_wedges
-
 
 def test_roll_up_small_pie_wedges():
     ax_data, labels = _roll_up_small_pie_wedges(

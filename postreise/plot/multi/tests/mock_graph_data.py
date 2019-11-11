@@ -1,9 +1,12 @@
-# Factory for creating mock graph data
-# param: more_gen - adds more robust data to mock data generation
-# will eventually have more parameters to customize the data returned
-
-
 def create_mock_graph_data(more_gen=False):
+    """Factory for creating mock graph data
+        will eventually have more parameters to customize the data returned
+
+    :param more_gen: adds more robust data to mock data generation, defaults to False
+    :type more_gen: bool, optional
+    :return: mock graph data
+    :rtype: dict
+    """
     mock_data = {
         '87': {
             'label': '2016 Simulated Base Case',

@@ -5,6 +5,12 @@ import pandas as pd
 
 
 def create_mock_data_chart():
+    """Factory for creating mock data chart
+        will eventually have parameters to customize the data returned
+
+    :return: mock data chart
+    :rtype: dict
+    """
     return {
         'Washington': {
             'Generation': pd.DataFrame({

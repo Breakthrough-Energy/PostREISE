@@ -4,21 +4,25 @@ import pandas as pd
 from postreise.plot.multi.constants import ALL_RESOURCE_TYPES, RESOURCE_LABELS
 from postreise.plot.multi.plot_helpers import handle_plot_inputs
 
-# plot_bar: Plots any number of scenarios with two columns per scenario
-# interconnect: 'Western' or 'Texas'
-# scenario_ids: list of scenario ids
-# TODO: might want to make a class for custom_data. Waiting until larger refactor
-# custom_data: optional hand-generated data, formatted as thus:
-# {'historical_texas': {
-#   'label': 'Historical Texas 2016 Data',
-#   'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'Far West': {'coal': 45.7, 'ng': 80.2, ...}, ...}}
-#   'cap': { same as gen }}}
-# NOTE: If you want to plot scenario data and custom data together, custom data MUST be in TWh for generation and GW for capacity.
-#       We may add a feature to check for and convert to equal units but it's not currently a priority
-# resource_types: optional. display only these resources
-
 
 def plot_bar(interconnect, scenario_ids=None, custom_data=None, resource_types=None):
+    """Plots any number of scenarios as bar charts with two columns per scenario - defaults to generation and capacity
+
+    :param interconnect: either 'Western' or 'Texas'
+    :type interconnect: string
+    :param scenario_ids: list of scenario ids, defaults to None
+    :type scenario_ids: list(string), optional
+    :param custom_data: hand-generated data, defaults to None
+    :type custom_data: dict {'scenario_id': {
+        'label': 'scenario_name',
+        'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'zone_name': {'resource_type': float value(s), ...}, ...}},
+        'cap': {'label': 'Capacity', 'unit': 'GW', 'data': {'zone_name': {'resource_type': float value(s), ...}, ...}}},
+        ...}, optional
+    NOTE: If you want to plot scenario data and custom data together, custom data MUST be in TWh for generation and GW for capacity.
+        We may add a feature to check for and convert to equal units but it's not currently a priority
+    :param resource_types: list of resource types to show, defaults to None
+    :type resource_types: list(string), optional
+    """
     zone_list, graph_data = handle_plot_inputs(
         interconnect, scenario_ids, custom_data)
     for zone in zone_list:
@@ -26,19 +30,25 @@ def plot_bar(interconnect, scenario_ids=None, custom_data=None, resource_types=N
         _construct_bar_visuals(zone, ax_data_list)
     print(f'\nDone\n')
 
-# plot_hbar: Plots any number of scenarios with two columns per scenario
-# zone_name: 'Western' or 'Texas'
-# scenario_ids: list of scenario ids
-# TODO: might want to make a class for this. Waiting until larger refactor
-# data: optional hand-generated data, formatted as thus:
-# {'historical_texas': {
-#   'label': 'Historical Texas 2016 Data',
-#   'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'Far West': {'coal': 45.7, 'ng': 80.2, ...}, ...}}
-#   'cap': { same as gen }}}
-# resource_types: optional. display only these resources
-
 
 def plot_hbar(zone_name, scenario_ids=None, custom_data=None, resource_types=None):
+    """Plots any number of scenarios as horizontal bar charts with two columns per scenario - defaults to generation and capacity
+
+    :param interconnect: either 'Western' or 'Texas'
+    :type interconnect: string
+    :param scenario_ids: list of scenario ids, defaults to None
+    :type scenario_ids: list(string), optional
+    :param custom_data: hand-generated data, defaults to None
+    :type custom_data: dict {'scenario_id': {
+        'label': 'scenario_name',
+        'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'zone_name': {'resource_type': float value(s), ...}, ...}},
+        'cap': {'label': 'Capacity', 'unit': 'GW', 'data': {'zone_name': {'resource_type': float value(s), ...}, ...}}},
+        ...}, optional
+    NOTE: If you want to plot scenario data and custom data together, custom data MUST be in TWh for generation and GW for capacity.
+        We may add a feature to check for and convert to equal units but it's not currently a priority
+    :param resource_types: list of resource types to show, defaults to None
+    :type resource_types: list(string), optional
+    """
     zone_list, graph_data = handle_plot_inputs(
         zone_name, scenario_ids, custom_data)
     for zone in zone_list:
@@ -46,11 +56,23 @@ def plot_hbar(zone_name, scenario_ids=None, custom_data=None, resource_types=Non
         _construct_hbar_visuals(zone, ax_data_list)
     print(f'\nDone\n')
 
-# Creates a list of labels, values, and colors for each axis of the plot
-# returns a list of dicts: [{title, labels, values, unit}, ...]
-
 
 def _construct_bar_ax_data(zone, scenarios, user_set_resource_types):
+    """Creates a list of labels and values for each axis of the plot
+
+    :param zone: the zone name
+    :type zone: string
+    :param scenarios: the scenario data to format
+    :type scenarios: dict {'scenario_id': {
+        'label': 'scenario_name',
+        'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'zone_name': {'resource_type': float value(s), ...}, ...}},
+        'cap': {'label': 'Capacity', 'unit': 'GW', 'data': {'zone_name': {'resource_type': float value(s), ...}, ...}}},
+        ...}
+    :param user_set_resource_types: list of resource types to show, defaults to None
+    :type user_set_resource_types: list(string), optional
+    :return: a list of labels and values for each axis of the plot
+    :rtype: list(dict) [{title, labels, values, unit}, ...]
+    """
     resource_types = user_set_resource_types if user_set_resource_types is not None else _get_bar_resource_types(
         zone, scenarios)
 
@@ -75,11 +97,22 @@ def _construct_bar_ax_data(zone, scenarios, user_set_resource_types):
 
     return ax_data_list
 
-# Some scenarios might have extra data for resources like biofuel
-# So we join the set of resource types from each scenario
-
 
 def _get_bar_resource_types(zone, scenarios):
+    """Some scenarios might have extra data for resources like biofuel
+        So we join the set of resource types from each scenario
+
+    :param zone: the zone name
+    :type zone: string
+    :param scenarios: the scenario data to format
+    :type scenarios: dict {'scenario_id': {
+        'label': 'scenario_name',
+        'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'zone_name': {'resource_type': float value(s), ...}, ...}},
+        'cap': {'label': 'Capacity', 'unit': 'GW', 'data': {'zone_name': {'resource_type': float value(s), ...}, ...}}},
+        ...}
+    :return: a sorted list of resource types to plot
+    :rtype: list(string)
+    """
     resource_type_set = set()
     for scenario in scenarios.values():
         for side in ['gen', 'cap']:
@@ -90,10 +123,14 @@ def _get_bar_resource_types(zone, scenarios):
     return sorted(resource_types, key=lambda resource: ALL_RESOURCE_TYPES.index(resource) if resource in ALL_RESOURCE_TYPES else float('inf'))
 
 
-# Uses matplotlib to create a bar graph
-# param: ax_data_list: a list of dicts. Each dict represents data for one graph
-# dict structure: {title, labels, values, unit}
 def _construct_bar_visuals(zone, ax_data_list):
+    """Use matplot lib to plot formatted data
+
+    :param zone: the zone name
+    :type zone: string
+    :param ax_data_list: a list of labels and values for each axis of the plot
+    :type ax_data_list: list(dict) [{title, labels, values, unit}, ...]
+    """
     num_scenarios = len(ax_data_list[0]['values'].keys())
     num_resource_types = len(ax_data_list[0]['labels'])
 
@@ -125,6 +162,13 @@ def _construct_bar_visuals(zone, ax_data_list):
 
 
 def _construct_hbar_visuals(zone, ax_data_list):
+    """Use matplot lib to plot formatted data
+
+    :param zone: the zone name
+    :type zone: string
+    :param ax_data_list: a list of labels and values for each axis of the plot
+    :type ax_data_list: list(dict) [{title, labels, values, unit}, ...]
+    """
     num_scenarios = len(ax_data_list[0]['values'].keys())
     num_resource_types = len(ax_data_list[0]['labels'])
 
@@ -155,12 +199,15 @@ def _construct_hbar_visuals(zone, ax_data_list):
             ax.annotate(_get_bar_display_val(b.x1), (b.x1, b.y1-.02),
                         fontsize=14, verticalalignment='top')
 
-# Get bar display val:
-# :param val: int: the value to change
-# return an int if value is 0 or greater than 10, and round to one decimal otherwise
-
 
 def _get_bar_display_val(val):
+    """Formats the display value for a single bar
+
+    :param val: the original value
+    :type val: float
+    :return: the formatted value
+    :rtype: int, float if val is between 0 and 10
+    """
     if val >= 10:
         return int(round(val, 0))
 
