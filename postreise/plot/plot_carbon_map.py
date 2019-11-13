@@ -6,7 +6,7 @@ from bokeh.io import output_notebook
 from bokeh.models import ColumnDataSource, LabelSet
 from bokeh.layouts import row
 
-from postreise.plot.carbon_plothelper import project_bus
+from postreise.plot.projection_helpers import project_bus
 
 
 def map_carbon_emission(bus_info_and_emission, scenario_name,

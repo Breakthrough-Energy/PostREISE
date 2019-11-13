@@ -1,14 +1,14 @@
 import numpy as np
-from bokeh.plotting import figure, show
+import pandas as pd
 import matplotlib
 import matplotlib.cm as cm
-import pandas as pd
+from bokeh.plotting import figure, show
 from bokeh.tile_providers import get_provider, Vendors
 from bokeh.models import ColumnDataSource, ColorBar
 from bokeh.palettes import Spectral6
 from bokeh.transform import linear_cmap
 
-from postreise.plot.carbon_plothelper import project_branch
+from postreise.plot.projection_helpers import project_branch
 
 get_provider(Vendors.CARTODBPOSITRON)
 
