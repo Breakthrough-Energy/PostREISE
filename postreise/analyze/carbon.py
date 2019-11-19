@@ -34,7 +34,7 @@ def generate_carbon_stats(scenario, method='simple'):
     generator heat-rate curves but de-commits generators if they are off
     (detected by pg < 1 MW).
 
-    :param powersimdata.scenario[.analyze.Analyze] scenario: scenario instance.
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param str method: selected method to handle no-load fuel consumption.
     :return: (*pandas.DataFrame*) -- carbon data frame.
     """
@@ -45,7 +45,6 @@ def generate_carbon_stats(scenario, method='simple'):
     if method not in allowed_methods:
         raise ValueError('Unknown method for generate_carbon_stats()')
 
-    # Todo: better type-checking for scenario
     if not isinstance(scenario, Scenario):
         raise TypeError('scenario must be a Scenario object')
     if not isinstance(scenario.state, Analyze):

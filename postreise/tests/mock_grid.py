@@ -75,6 +75,8 @@ class MockGrid:
                 df = pd.DataFrame(columns=([indices[df_name]]+cols[df_name]))
             df.set_index(indices[df_name], inplace=True)
             setattr(self, df_name, df)
+
+        self.id2zone = {1: 'zone1'}
     
     @property
     def __class__(self):
