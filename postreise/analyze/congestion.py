@@ -64,7 +64,7 @@ def map_pg_to_buses(grid, pg):
 
 
 def calculate_congestion_surplus(scenario):
-    """Generates hourly congestion surplus.
+    """Calculates hourly congestion surplus.
     
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :return: (*pandas.DataFrame*) -- congestion surplus.
@@ -84,6 +84,9 @@ def calculate_congestion_surplus(scenario):
     bus_pg = map_pg_to_buses(grid, pg).to_numpy()
 
     congestion_surplus = (lmp.to_numpy() * (bus_demand - bus_pg)).sum(axis=1)
+    # Remove any negative values caused by barrier method imprecision
+    congestion_surplus = np.clip(congestion_surplus, a_min=0, a_max=None)
+    # Return a pandas Series with same index as pg
     congestion_surplus = pd.Series(data=congestion_surplus, index=pg.index)
     congestion_surplus.rename_axis(pg.index.name)
     return congestion_surplus

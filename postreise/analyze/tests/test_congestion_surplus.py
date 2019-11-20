@@ -32,6 +32,7 @@ class TestCalculateCongestionSurplus(unittest.TestCase):
             surplus.to_numpy(), expected_return.to_numpy(), msg)
 
     def test_calculate_congestion_surplus_single_time(self):
+        """Congested case from Kirschen & Strbac Section 5.3.2.4"""
         demand = pd.DataFrame({'UTC': ['t1'], 1: [410]})
         lmp = pd.DataFrame({'UTC': ['t1'], 1: [7.5], 2: [11.25], 3: [10]})
         pg = pd.DataFrame(
@@ -46,19 +47,21 @@ class TestCalculateCongestionSurplus(unittest.TestCase):
         surplus = calculate_congestion_surplus(mock_scenario)
         self._check_return(expected_return, surplus)
 
-    def test_calculate_congestion_surplus_two_times(self):
-        demand = pd.DataFrame({'UTC': ['t1', 't2'], 1: [410]*2})
+    def test_calculate_congestion_surplus_three_times(self):
+        """First: congested. Second: uncongested. Third: uncongested, fuzzy."""
+        time_indices = ['t1', 't2', 't3']
+        demand = pd.DataFrame({'UTC': time_indices, 1: [410]*3})
         lmp = pd.DataFrame({
-            'UTC': ['t1', 't2'],
-            1: [7.5, 7.5], 2: [7.5, 11.25], 3: [7.5, 10]})
+            'UTC': time_indices,
+            1: [7.5, 7.5, 7.5], 2: [11.25, 7.5, 7.5], 3: [10, 7.5, 7.49]})
         pg = pd.DataFrame({
-            'UTC': ['t1', 't2'],
-            'A': [125, 50], 'B': [285, 285], 'C': [0, 0], 'D': [0, 75]})
+            'UTC': time_indices,
+            'A': [50, 125, 125], 'B': [285]*3, 'C': [0]*3, 'D': [75, 0, 0]})
         for df in (demand, lmp, pg):
             df.set_index('UTC', inplace=True)
         mock_scenario = MockScenario(grid_attrs, demand=demand, lmp=lmp, pg=pg)
 
-        expected_return = pd.Series(data=[0, 787.5], index=['t1', 't2'])
+        expected_return = pd.Series(data=[787.5, 0, 0], index=time_indices)
         expected_return.rename_axis('UTC')
 
         surplus = calculate_congestion_surplus(mock_scenario)
