@@ -30,84 +30,81 @@ def plot_shadowprice(scenario_id, hour, lmp_split_points=None):
     if lmp_split_points is not None and len(lmp_split_points) > 10:
         raise ValueError('ERROR: lmp_split_points must have 10 items or fewer')
 
-    bus, lmp, branch, cong = _get_shadowprice_data(scenario_id, hour)
-    lmp_split_points, bus_ax_data = _construct_bus_data(
-        bus, lmp, lmp_split_points)
-    branch_ax_data = _construct_branch_data(branch, cong)
+    interconnect, bus, lmp, branch, cong = _get_shadowprice_data(scenario_id)
+    lmp_split_points, bus_segments = _construct_bus_data(
+        bus, lmp, lmp_split_points, hour)
+    branches_selected = _construct_branch_data(branch, cong, hour)
     _construct_shadowprice_visuals(
-        lmp_split_points, bus_ax_data, branch_ax_data)
+        interconnect, lmp_split_points, bus_segments, branches_selected)
 
 
-def _get_shadowprice_data(scenario_id, hour):
+def _get_shadowprice_data(scenario_id):
     """Get data necessary for plotting shadowprice
 
     :param scenario_id: the id of the scenario to gather data from
     :type scenario_id: string
-    :param hour: the hour we will be analyzing
-    :type hour: string
-    :return: bus data, lmp data, branch data, congestion data
-    :rtype: pandas.DataFrame, pandas.DataFrame, pandas.DataFrame,
+    :return: interconnect, bus data, lmp data, branch data, congestion data
+    :rtype: string, pandas.DataFrame, pandas.DataFrame, pandas.DataFrame,
         pandas.DataFrame
     """
     s = Scenario(scenario_id)
+
+    interconnect = s.info['interconnect']
+    interconnect = ' '.join(interconnect.split('_'))
+
     s_grid = s.state.get_grid()
 
-    # Get lmp
-    lmp = s.state.get_lmp()
-    lmp_selected = lmp[lmp.index == hour]
+    # Get bus and add location data
+    bus_map = project_bus(s_grid.bus)
+
+    # get branch and add location data
+    branch_map = project_branch(s_grid.branch)
 
     # get congestion
     congu = s.state.get_congu()
     congl = s.state.get_congl()
-
     cong_abs = pd.DataFrame(
         np.maximum(congu.to_numpy(), congl.to_numpy()),
         columns=congu.columns,
         index=congu.index)
 
-    cong_selected = cong_abs.iloc[cong_abs.index == hour]
-
-    return s_grid.bus, lmp_selected, s_grid.branch, cong_selected
+    return interconnect, bus_map, s.state.get_lmp(), branch_map, cong_abs
 
 
-def _construct_bus_data(bus, lmp, user_set_split_points):
-    """Adds location and lmp data to each bus,
-        splits buses into 9 segments by lmp
+def _construct_bus_data(bus_map, lmp, user_set_split_points, hour):
+    """Adds lmp data to each bus, splits buses into 9 segments by lmp
 
-    :param bus: [description]
-    :type bus: pandas.DataFrame
-    :param lmp: [description]
+    :param bus_map: bus dataframe with location data
+    :type bus_map: pandas.DataFrame
+    :param lmp: lmp dataframe
     :type lmp: pandas.DataFrame
     :param user_set_split_points: user-set lmp values to split the bus data.
         Must have 10 items or fewer
         example: [-1, 1, 20, 25, 30, 35, 40, 100]
     :type user_set_split_points: list(float), None
+    :param hour: the hour we will be analyzing
+    :type hour: string
     :return: the lmp vals we have chosen to split the bus data,
         bus data split into 9 segments
-    :rtype: list(float), list(bokeh.models.ColumnDataSource)
+    :rtype: list(float), list(pandas.DataFrame)
     """
-    # Add location to bus dataframe
-    bus_map = project_bus(bus)
-
     # Add lmp to bus dataframe
-    bus_mean = lmp.mean()
-    bus_map = pd.concat([bus_map, bus_mean], axis=1)
-    bus_map.rename(columns={0: 'lmp'}, inplace=True)
+    lmp_hour = lmp[lmp.index == hour]
+    lmp_hour = lmp_hour.T
+    lmp_hour = lmp_hour.rename(columns={lmp_hour.columns[0]: 'lmp'})
+    bus_map = pd.concat([bus_map, lmp_hour], axis=1)
 
     lmp_split_points = user_set_split_points \
         if user_set_split_points is not None \
         else _get_lmp_split_points(bus_map)
 
-    bus_source_segments = []
+    bus_segments = []
     for i in range(len(lmp_split_points)-1):
-        bus_map_segment = bus_map[(bus_map['lmp'] > lmp_split_points[i]) &
+        bus_segment = bus_map[(bus_map['lmp'] > lmp_split_points[i]) &
             (bus_map['lmp'] <= lmp_split_points[i+1])]
-        bus_source_segment = ColumnDataSource({'x': bus_map_segment['x'], 'y':
-            bus_map_segment['y'], 'lmp': bus_map_segment['lmp']})
-        bus_source_segments.append(bus_source_segment)
+        bus_segments.append(bus_segment)
 
-    print("lmp split points:", lmp_split_points)
-    return lmp_split_points, bus_source_segments
+    return lmp_split_points, bus_segments
 
 
 def _get_lmp_split_points(bus_map):
@@ -144,53 +141,50 @@ def _get_lmp_split_points(bus_map):
     return split_points + [max_lmp]
 
 
-def _construct_branch_data(branch, cong):
-    """Adds location data and congestion data for each branch
+def _construct_branch_data(branch_map, cong, hour):
+    """Adds congestion data for each branch
 
-    :param branch: dataframe of branch data
-    :type branch: pandas.DataFrame
+    :param branch_map: dataframe of branch data
+    :type branch_map: pandas.DataFrame
     :param cong: dataframe of congestion data for the selected hour
     :type cong: pandas.DataFrame
-    :return: modified branch data adding congestion and
-        location data or each branch
-    :rtype: bokeh.models.ColumnDataSource
+    :param hour: the hour we will be analyzing
+    :type hour: string
+    :return: modified branch data adding congestion data for each branch
+    :rtype: pandas.DataFrame
     """
-    # Add location to branch dataframe
-    branch_map = project_branch(branch)
-
     # Add congestion to branch dataframe
-    cong_median = cong.mean()
-    branch_map = pd.concat([branch_map, cong_median], axis=1)
-    branch_map.rename(columns={0: 'medianval'}, inplace=True)
+    cong_hour = cong.iloc[cong.index == hour]
+    cong_hour = cong_hour.T
+    cong_hour = cong_hour.rename(columns={cong_hour.columns[0]: 'medianval'})
+    branch_map = pd.concat([branch_map, cong_hour], axis=1)
 
     # select branches that have a binding constraint and are of type Line
     branch_map = branch_map.loc[(branch_map['medianval'] > 1e-6) &
         (branch_map['branch_device_type'] == 'Line')]
 
-    return ColumnDataSource({
-        'xs': branch_map[['from_x', 'to_x']].values.tolist(),
-        'ys': branch_map[['from_y', 'to_y']].values.tolist(),
-        'medianval': branch_map.medianval
-    })
+    return branch_map
 
 
 def _construct_shadowprice_visuals(
-        lmp_split_points, bus_source_segments, multi_line_source):
+        interconnect, lmp_split_points, bus_segments, branch_data):
     """Use bokeh to plot formatted data. Make map showing congestion,
         with green dot for transformer winding, blue dot transformer,
         and lines for congested branches with varying color and thickness
         indicating degeree of congestion
 
+    :param interconnect: the scenario interconnect
+    :type interconnect: string
     :param lmp_split_points: the lmp vals we have chosen to split the bus data
     :type lmp_split_points: list(float)
-    :param bus_source_segments: bus data split into 9 segments
-    :type bus_source_segments: list(bokeh.models.ColumnDataSource)
-    :param multi_line_source: branch data
-    :type multi_line_source: bokeh.models.ColumnDataSource
+    :param bus_segments: bus data split into 9 segments
+    :type bus_segments: list(bokeh.models.ColumnDataSource)
+    :param branch_data: branch data
+    :type branch_data: bokeh.models.ColumnDataSource
     """
 
     tools = "pan,wheel_zoom,reset,hover,save"
-    p = figure(title="Western Interconnect", tools=tools,
+    p = figure(title=f'{interconnect} Interconnect', tools=tools,
         x_axis_location=None, y_axis_location=None, plot_width=800,
         plot_height=800)
 
@@ -198,22 +192,26 @@ def _construct_shadowprice_visuals(
     p.add_tile(get_provider(Vendors.CARTODBPOSITRON))
 
     # Add colored circles for bus locations
-    indices = list(range(len(bus_source_segments)))
+    indices = list(range(len(bus_segments)))
     indices.reverse()  # We want the lowest prices on top
     for i in indices:
+        bus_cds = ColumnDataSource({'x': bus_segments[i]['x'], 'y':
+            bus_segments[i]['y'], 'lmp': bus_segments[i]['lmp']})
         p.circle('x', 'y', color=SHADOW_PRICE_COLORS[i], alpha=0.4, size=11,
-            source=bus_source_segments[i])
+            source=bus_cds)
 
     # Add branches
+    branch_cds = ColumnDataSource({
+        'xs': branch_data[['from_x', 'to_x']].values.tolist(),
+        'ys': branch_data[['from_y', 'to_y']].values.tolist(),
+        'medianval': branch_data.medianval})
     # branch outline
-    p.multi_line('xs', 'ys', color='black', line_width=14,
-        source=multi_line_source)
+    p.multi_line('xs', 'ys', color='black', line_width=14, source=branch_cds)
     # branch color
     palette = SHADOW_PRICE_COLORS[-5:]
-    mapper = linear_cmap(field_name='medianval', palette=palette,
-        low=0, high=2000)
-    p.multi_line('xs', 'ys', color=mapper, line_width=9,
-        source=multi_line_source)
+    mapper = linear_cmap(field_name='medianval', palette=palette, low=0,
+        high=2000)
+    p.multi_line('xs', 'ys', color=mapper, line_width=9, source=branch_cds)
 
     # Add legends
     bus_legend = _construct_bus_legend(lmp_split_points)
