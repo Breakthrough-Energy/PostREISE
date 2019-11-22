@@ -1,1 +1,1 @@
-__all__ = ['analyze_pg', 'analyze_set']
+__all__ = ['analyze_pg', 'analyze_set', 'multi']
