@@ -7,7 +7,7 @@ from postreise.plot.multi.constants import (BASELINES, CA_BASELINES,
 from powersimdata.scenario.scenario import Scenario
 
 
-def handle_plot_inputs(interconnect, scenario_ids, scenario_names, \
+def handle_plot_inputs(interconnect, time, scenario_ids, scenario_names, \
     custom_data):
     """Checks input validity for plotting code, fetches data if necessary
 
@@ -22,15 +22,15 @@ def handle_plot_inputs(interconnect, scenario_ids, scenario_names, \
     :raises ValueError: zone must be one of Western or Texas
     :raises ValueError: if scenario names are provided,
         number of scenario names must match number of scenario ids
-    :raises ValueError: must include at least two scenario ids and/or custom 
+    :raises ValueError: must include at least two scenario ids and/or custom
         data
-    :return: list of all zones in interconnect and formatted graph data 
-        (scenario data and custom data combined into one dict) 
+    :return: list of all zones in interconnect and formatted graph data
+        (scenario data and custom data combined into one dict)
     :rtype: list(string), dict {'scenario_id': {
         'label': 'scenario_name',
-        'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'zone_name': 
+        'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'zone_name':
             {'resource_type': float value(s), ...}, ...}},
-        'cap': {'label': 'Capacity', 'unit': 'GW', 'data': {'zone_name': 
+        'cap': {'label': 'Capacity', 'unit': 'GW', 'data': {'zone_name':
             {'resource_type': float value(s), ...}, ...}}},
         ...}
     """
@@ -49,8 +49,9 @@ def handle_plot_inputs(interconnect, scenario_ids, scenario_names, \
     if len(scenario_ids) + len(custom_data) <= 1:
         raise ValueError("ERROR: must include at least two scenario ids \
             and/or custom data")
-    
-    scenario_data = _get_scenario_data(scenario_ids, scenario_names, zone_list)
+
+    scenario_data = _get_scenario_data(
+        time, scenario_ids, scenario_names, zone_list)
     graph_data = dict(scenario_data, **custom_data)
     return (zone_list, graph_data)
 
@@ -58,7 +59,7 @@ def handle_plot_inputs(interconnect, scenario_ids, scenario_names, \
 def handle_shortfall_inputs(is_match_CA, baselines, targets, demand):
     """Fetches baseline, target, and demand data if necessary
 
-    :param is_match_CA: calculate shortfall using special rules that apply 
+    :param is_match_CA: calculate shortfall using special rules that apply
         when all zones match California goals
     :type is_match_CA: bool
     :param baselines: baseline renewables generation for each zone
@@ -82,13 +83,13 @@ def handle_shortfall_inputs(is_match_CA, baselines, targets, demand):
     return baselines, targets, demand
 
 
-def unit_conversion(val, change): 
+def unit_conversion(val, change):
     """Converts between metric units and rounds to two decimal places
 
     :param val: the value to change
     :type val: float
     :param change: the distance between the starting unit and the desired unit.
-        eg 2,500,000 MWh to TWh would be unit_conversion(2500000, 2), 
+        eg 2,500,000 MWh to TWh would be unit_conversion(2500000, 2),
         resulting in 2.50 TWh
     :type change: int
     :return: the new converted value
@@ -97,20 +98,26 @@ def unit_conversion(val, change):
     return round(val/1000**change, 2)
 
 
-def _get_scenario_data(scenario_ids, scenario_names, zone_list):
-    """For each scenario, fetches data and then formats it 
+def _get_scenario_data(time, scenario_ids, scenario_names, zone_list):
+    """For each scenario, fetches data and then formats it
         so it's usable by our plotting code
 
+    :param time: time related parameters. 1st element is the starting
+        date. 2nd element is the ending date (left out). 3rd element is the
+        timezone, only *'utc'*, *'US/Pacific'* and *'local'* are possible. 4th
+        element is the frequency, which can be *'H'* (hour), *'D'* (day), *'W'*
+         (week) or *'auto'*.
+    :type time: tuple
     :param scenario_ids: optional list of scenario ids
     :type scenario_ids: list(string)
     :param scenario_names: list of scenario names of same len as scenario ids
     :type scenario_names: list(string), None
-    :param zone_list: 
+    :param zone_list:
     :type zone_list: list(string)
     :return: formatted scenario data
     :rtype: dict {'my_scenario_id': {
         'label': 'scenario_name',
-        'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'zone_name': 
+        'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'zone_name':
             {'resource_type': value(s), ...}, ...}},
         'cap': { same as gen }},
         ...}
@@ -119,15 +126,15 @@ def _get_scenario_data(scenario_ids, scenario_names, zone_list):
     for i in range(len(scenario_ids)):
         id = scenario_ids[i]
         data_chart, scenario_name = _get_data_chart_from_scenario(
-            id, zone_list)
+            id, time, zone_list)
         if scenario_names is not None:
-            scenario_name = scenario_names[i] 
+            scenario_name = scenario_names[i]
         scenario_data[id] = _format_scenario_data(data_chart, scenario_name)
 
     return scenario_data
 
 
-def _get_data_chart_from_scenario(scenario_id, zone_list):
+def _get_data_chart_from_scenario(scenario_id, time, zone_list):
     """Uses apg to fetch and format data for a scenario
 
     :param scenario_id: the id of the scenario to fetch
@@ -137,9 +144,9 @@ def _get_data_chart_from_scenario(scenario_id, zone_list):
     :return: scenario data chart generated by apg, scenario name
     :rtype: dict {'scenario_id': {
         'label': 'scenario_name',
-        'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'zone_name': 
+        'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'zone_name':
             {'resource_type': flaot value(s), ...}, ...}},
-        'cap': {'label': 'Capacity', 'unit': 'GW', 'data': {'zone_name': 
+        'cap': {'label': 'Capacity', 'unit': 'GW', 'data': {'zone_name':
             {'resource_type': flaot value(s), ...}, ...}}},
         ...},
         list(string)
@@ -148,7 +155,7 @@ def _get_data_chart_from_scenario(scenario_id, zone_list):
     scenario = Scenario(scenario_id)
     scenario_name = scenario.info['name']
     data_chart = apg(scenario,
-                     ('2016-01-01-00', '2016-12-31-23', 'utc', 'H'),
+                     time,
                      zone_list,
                      SCENARIO_RESOURCE_TYPES,
                      'chart', normalize=False).get_data()
@@ -157,20 +164,20 @@ def _get_data_chart_from_scenario(scenario_id, zone_list):
 
 
 def _format_scenario_data(data_chart, scenario_name):
-    """Takes a data chart from a scenario and transforms it into a format 
+    """Takes a data chart from a scenario and transforms it into a format
         usable by our plotting code
 
     :param data_chart: scenario data chart generated by apg, scenario name
-    :type data_chart: dict {'zone_name': {'Generation/Capacity': 
+    :type data_chart: dict {'zone_name': {'Generation/Capacity':
         {'resource_type': float value(s), ...}, ...}, ...}
     :param scenario_name: name of the scenario
     :type scenario_name: string
     :return: formatted scenario data
     :rtype: dict {
         'label': 'scenario_name',
-        'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'zone_name': 
+        'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'zone_name':
             {'resource_type': float value(s), ...}, ...}},
-        'cap': {'label': 'Capacity', 'unit': 'GW', 'data': {'zone_name': 
+        'cap': {'label': 'Capacity', 'unit': 'GW', 'data': {'zone_name':
             'resource_type': float value(s), ...}, ...}}}
     """
     formatted_data = {

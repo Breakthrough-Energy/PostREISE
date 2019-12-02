@@ -5,13 +5,19 @@ from postreise.plot.multi.constants import (RESOURCE_COLORS, RESOURCE_LABELS)
 from postreise.plot.multi.plot_helpers import handle_plot_inputs
 
 
-def plot_pie(interconnect, scenario_ids=None, scenario_names=None, \
+def plot_pie(interconnect, time, scenario_ids=None, scenario_names=None, \
     custom_data=None, min_percentage=0):
-    """Plots any number of scenarios as pie charts with 
+    """Plots any number of scenarios as pie charts with
         two columns per scenario - defaults to generation and capacity
 
     :param interconnect: either 'Western' or 'Texas'
     :type interconnect: string
+    :param time: time related parameters. 1st element is the starting
+        date. 2nd element is the ending date (left out). 3rd element is the
+        timezone, only *'utc'*, *'US/Pacific'* and *'local'* are possible. 4th
+        element is the frequency, which can be *'H'* (hour), *'D'* (day), *'W'*
+         (week) or *'auto'*.
+    :type time: tuple
     :param scenario_ids: list of scenario ids, defaults to None
     :type scenario_ids: list(string), optional
     :param scenario_names: list of scenario names of same len as scenario ids,
@@ -20,21 +26,21 @@ def plot_pie(interconnect, scenario_ids=None, scenario_names=None, \
     :param custom_data: hand-generated data, defaults to None
     :type custom_data: dict {'scenario_id': {
         'label': 'scenario_name',
-        'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'zone_name': 
+        'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'zone_name':
             {'resource_type': float value(s), ...}, ...}},
-        'cap': {'label': 'Capacity', 'unit': 'GW', 'data': {'zone_name': 
+        'cap': {'label': 'Capacity', 'unit': 'GW', 'data': {'zone_name':
             {'resource_type': float value(s), ...}, ...}}},
         ...}, optional
-    NOTE: If you want to plot scenario data and custom data together, 
+    NOTE: If you want to plot scenario data and custom data together,
         custom data MUST be in TWh for generation and GW for capacity.
-        We may add a feature to check for and convert to equal units 
+        We may add a feature to check for and convert to equal units
         but it's not currently a priority
-    :param min_percentage: roll up small pie pieces into an Other category, 
+    :param min_percentage: roll up small pie pieces into an Other category,
         defaults to 0
     :type min_percentage: float, optional
     """
     zone_list, graph_data = handle_plot_inputs(
-        interconnect, scenario_ids, scenario_names, custom_data)
+        interconnect, time, scenario_ids, scenario_names, custom_data)
     for zone in zone_list:
         ax_data_list = _construct_pie_ax_data(zone, graph_data, min_percentage)
         _construct_pie_visuals(zone, ax_data_list)
@@ -49,9 +55,9 @@ def _construct_pie_ax_data(zone, scenarios, min_percentage):
     :param scenarios: the scenario data to format
     :type scenarios: dict {'scenario_id': {
         'label': 'scenario_name',
-        'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'zone_name': 
+        'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'zone_name':
             {'resource_type': float value(s), ...}, ...}},
-        'cap': {'label': 'Capacity', 'unit': 'GW', 'data': {'zone_name': 
+        'cap': {'label': 'Capacity', 'unit': 'GW', 'data': {'zone_name':
             {'resource_type': float value(s), ...}, ...}}},
         ...}
     :param min_percentage: roll up small pie pieces into an Other category
@@ -84,7 +90,7 @@ def _roll_up_small_pie_wedges(resource_data, min_percentage):
     :type resource_data: dict {'resource_type': float value, ...}
     :param min_percentage: roll up small pie pieces into an Other category
     :type min_percentage: float
-    :return: Returns updated axis data and a list of labels 
+    :return: Returns updated axis data and a list of labels
         that includes the other category label if it exists
     :rtype: dict {'resource_type': float value, ...}
     """
@@ -122,7 +128,7 @@ def _construct_pie_visuals(zone, ax_data_list):
 
     :param zone: the zone name
     :type zone: string
-    :param ax_data_list: a list of labels, values, and colors 
+    :param ax_data_list: a list of labels, values, and colors
         for each axis of the plot
     :type ax_data_list: list(dict) [{title, labels, values, colors, unit}, ...]
     """
