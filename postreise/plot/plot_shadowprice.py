@@ -6,9 +6,10 @@ from bokeh.models import ColorBar, ColumnDataSource
 from bokeh.plotting import figure
 from bokeh.tile_providers import Vendors, get_provider
 from bokeh.transform import linear_cmap
+from powersimdata.scenario.scenario import Scenario
+
 from postreise.plot.multi.constants import SHADOW_PRICE_COLORS
 from postreise.plot.projection_helpers import project_branch, project_bus
-from powersimdata.scenario.scenario import Scenario
 
 
 def plot_shadowprice(scenario_id, hour, lmp_split_points=None):
@@ -21,8 +22,9 @@ def plot_shadowprice(scenario_id, hour, lmp_split_points=None):
     :type scenario_id: string
     :param hour: the hour we will be analyzing
     :type hour: string
-    :param lmp_split_points: the lmp values we have chosen to
-        split the bus data. Must have 10 items or fewer. defaults to None
+    :param lmp_split_points: the locational marginal pricing (lmp) values
+        we have chosen to split the bus data. Includes min and max values.
+        Must have 10 items or fewer. defaults to None
         example: [-1, 1, 20, 25, 30, 35, 40, 100]
     :type lmp_split_points: list(float), optional
     :raises ValueError: lmp_split_points must have 10 items or fewer
@@ -99,9 +101,9 @@ def _construct_bus_data(bus_map, lmp, user_set_split_points, hour):
         else _get_lmp_split_points(bus_map)
 
     bus_segments = []
-    for i in range(len(lmp_split_points)-1):
+    for i in range(len(lmp_split_points) - 1):
         bus_segment = bus_map[(bus_map['lmp'] > lmp_split_points[i]) &
-            (bus_map['lmp'] <= lmp_split_points[i+1])]
+                              (bus_map['lmp'] <= lmp_split_points[i + 1])]
         bus_segments.append(bus_segment)
 
     return lmp_split_points, bus_segments
@@ -135,9 +137,9 @@ def _get_lmp_split_points(bus_map):
 
     # split remaining busses into equally sized groups
     num_splits = 9 - len(split_points)
-    quantiles = [(i+1)/(num_splits + 1) for i in range(num_splits)]
+    quantiles = [(i + 1) / (num_splits + 1) for i in range(num_splits)]
     split_points += [round(bus_map_pos.lmp.quantile(val), 2)
-        for val in quantiles]
+                     for val in quantiles]
     return split_points + [max_lmp]
 
 
@@ -161,7 +163,7 @@ def _construct_branch_data(branch_map, cong, hour):
 
     # select branches that have a binding constraint and are of type Line
     branch_map = branch_map.loc[(branch_map['medianval'] > 1e-6) &
-        (branch_map['branch_device_type'] == 'Line')]
+                                (branch_map['branch_device_type'] == 'Line')]
 
     return branch_map
 
@@ -178,15 +180,15 @@ def _construct_shadowprice_visuals(
     :param lmp_split_points: the lmp vals we have chosen to split the bus data
     :type lmp_split_points: list(float)
     :param bus_segments: bus data split into 9 segments
-    :type bus_segments: list(bokeh.models.ColumnDataSource)
+    :type bus_segments: list(pandas.DataFrame)
     :param branch_data: branch data
-    :type branch_data: bokeh.models.ColumnDataSource
+    :type branch_data: pandas.DataFrame
     """
 
     tools = "pan,wheel_zoom,reset,hover,save"
     p = figure(title=f'{interconnect} Interconnect', tools=tools,
-        x_axis_location=None, y_axis_location=None, plot_width=800,
-        plot_height=800)
+               x_axis_location=None, y_axis_location=None, plot_width=800,
+               plot_height=800)
 
     # Add USA map
     p.add_tile(get_provider(Vendors.CARTODBPOSITRON))
@@ -195,10 +197,11 @@ def _construct_shadowprice_visuals(
     indices = list(range(len(bus_segments)))
     indices.reverse()  # We want the lowest prices on top
     for i in indices:
-        bus_cds = ColumnDataSource({'x': bus_segments[i]['x'], 'y':
-            bus_segments[i]['y'], 'lmp': bus_segments[i]['lmp']})
+        bus_cds = ColumnDataSource({'x': bus_segments[i]['x'],
+                                    'y': bus_segments[i]['y'],
+                                    'lmp': bus_segments[i]['lmp']})
         p.circle('x', 'y', color=SHADOW_PRICE_COLORS[i], alpha=0.4, size=11,
-            source=bus_cds)
+                 source=bus_cds)
 
     # Add branches
     branch_cds = ColumnDataSource({
@@ -210,13 +213,15 @@ def _construct_shadowprice_visuals(
     # branch color
     palette = SHADOW_PRICE_COLORS[-5:]
     mapper = linear_cmap(field_name='medianval', palette=palette, low=0,
-        high=2000)
+                         high=2000)
     p.multi_line('xs', 'ys', color=mapper, line_width=9, source=branch_cds)
 
     # Add legends
     bus_legend = _construct_bus_legend(lmp_split_points)
     branch_legend = ColorBar(color_mapper=mapper['transform'], width=16,
-        location=(0, 0), title="SP")
+                             location=(0, 0), title="SP ($/MWh)",
+                             title_text_font_size='8pt', title_standoff=8)
+
     p.add_layout(branch_legend, 'right')
 
     output_notebook()
@@ -233,13 +238,14 @@ def _construct_bus_legend(lmp_split_points):
     :rtype: bokeh.plotting.figure
     """
     x_range = ['']
-    bars, labels = _get_bus_legend_bars_and_labels(lmp_split_points, x_range)
+    bars, bar_len_sum, labels = _get_bus_legend_bars_and_labels(
+        lmp_split_points, x_range)
 
     # Make legend
     p = figure(x_range=x_range, plot_height=800, plot_width=110,
-        title="LMP$/mwh", toolbar_location=None, tools="")
+               toolbar_location=None, tools="")
     p.vbar_stack(list(bars.keys())[1:], x='x_range', width=0.9,
-        color=SHADOW_PRICE_COLORS[:(len(bars)-1)], source=bars)
+                 color=SHADOW_PRICE_COLORS[:(len(bars) - 1)], source=bars)
 
     p.y_range.start = -1
     p.x_range.range_padding = 0.1
@@ -248,6 +254,9 @@ def _construct_bus_legend(lmp_split_points):
     p.outline_line_color = None
     p.yaxis.ticker = list(labels.keys())
     p.yaxis.major_label_overrides = labels
+
+    p.text(x=[-0.05], y=[bar_len_sum*1.01], text=[f'LMP ($/MWh)'],
+           text_font_size='8pt', text_font_style='italic')
 
     return p
 
@@ -260,12 +269,13 @@ def _get_bus_legend_bars_and_labels(lmp_split_points, x_range):
     :param x_range: the x-range for the vbar_stack
     :type x_range: list(string)
     :return: bar lengths and labels for the bus legend
-    :rtype: dict, dict
+    :rtype: dict, float, dict
     """
     bars = {'x_range': x_range}
     bar_length_sum = 0
     labels = {}  # { y-position: label_text, ... }
     for i in range(len(lmp_split_points)):
+        bar_length = 0
         if i == 0 or i == len(lmp_split_points) - 2:
             # For first and last bars, clamp bar length between 1 and 5
             # to prevent extreme min and max vals from overwhelming the legend
@@ -282,4 +292,4 @@ def _get_bus_legend_bars_and_labels(lmp_split_points, x_range):
             bars[str(i)] = [bar_length]
             bar_length_sum += bar_length
 
-    return bars, labels
+    return bars, bar_length_sum, labels
