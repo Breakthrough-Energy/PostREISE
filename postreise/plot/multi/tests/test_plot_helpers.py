@@ -23,26 +23,30 @@ from postreise.plot.multi.tests.mock_graph_data import create_mock_graph_data
 
 def test_handle_plot_inputs():
     mock_graph_data = create_mock_graph_data()
+    time = ('2016-01-01-00', '2016-12-31-23', 'utc', 'H')
     zone_list, graph_data = handle_plot_inputs(
-        'Western', None, None, mock_graph_data)
+        'Western', time, None, None, mock_graph_data)
     assert zone_list == ZONES['Western']
     assert graph_data == mock_graph_data
 
 
 def test_handle_plot_inputs_throws_valueError_for_incorrect_interconnect():
+    time = ('2016-01-01-00', '2016-12-31-23', 'utc', 'H')
     with pytest.raises(ValueError):
-        handle_plot_inputs('The Moon', None, None, create_mock_graph_data())
+        handle_plot_inputs('The Moon', time, None, None, create_mock_graph_data())
 
 
 def test_handle_plot_inputs_throws_valueError_when_wrong_number_of_scenario_names():
+    time = ('2016-01-01-00', '2016-12-31-23', 'utc', 'H')
     with pytest.raises(ValueError):
         handle_plot_inputs(
-            'The Moon', ['123', '456'], ['Hist. Moon Cheese'], None)
+            'Western', time, ['123', '456'], ['Hist. Moon Cheese'], None)
 
 
 def test_handle_plot_inputs_throws_valueError_if_not_enough_scenario_ids_or_custom_data():
+    time = ('2016-01-01-00', '2016-12-31-23', 'utc', 'H')
     with pytest.raises(ValueError):
-        handle_plot_inputs('Western', ['123'], None, custom_data=None)
+        handle_plot_inputs('Western', time, ['123'], None, custom_data=None)
 
 
 def test_handle_shortfall_inputs_where_is_match_CA_is_false():
