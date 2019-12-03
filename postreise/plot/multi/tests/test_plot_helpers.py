@@ -3,16 +3,21 @@ from pprint import pprint
 import pytest
 from postreise.plot.multi.constants import (BASELINES, CA_BASELINES,
                                             CA_TARGETS, DEMAND, TARGETS, ZONES)
+from postreise.plot.multi.data.historical_2016_data import (
+    HISTORICAL_WESTERN_GEN,
+    HISTORICAL_WESTERN_CAP)
 from postreise.plot.multi.plot_helpers import (_format_scenario_data,
+                                               _make_empty_data,
                                                handle_plot_inputs,
                                                handle_shortfall_inputs,
+                                               make_gen_cap_custom_data,
                                                unit_conversion)
 from postreise.plot.multi.tests.mock_data_chart import create_mock_data_chart
 from postreise.plot.multi.tests.mock_graph_data import create_mock_graph_data
 
-# Since these are unit tests we're intentionally 
+# Since these are unit tests we're intentionally
 # not testing methods that pull in data
-# handle_plot_inputs has more functionality than just pulling in data 
+# handle_plot_inputs has more functionality than just pulling in data
 # so we test that
 
 
@@ -31,7 +36,8 @@ def test_handle_plot_inputs_throws_valueError_for_incorrect_interconnect():
 
 def test_handle_plot_inputs_throws_valueError_when_wrong_number_of_scenario_names():
     with pytest.raises(ValueError):
-        handle_plot_inputs('The Moon', ['123', '456'], ['Hist. Moon Cheese'], None)
+        handle_plot_inputs(
+            'The Moon', ['123', '456'], ['Hist. Moon Cheese'], None)
 
 
 def test_handle_plot_inputs_throws_valueError_if_not_enough_scenario_ids_or_custom_data():
@@ -79,3 +85,93 @@ def test_unit_conversion_increase_by_2():
 
 def test_unit_conversion_decrease_by_1():
     assert unit_conversion(0.32, -1) == 320.00
+
+
+def test_make_empty_data_with_western():
+    data = _make_empty_data('Western')
+    empty_resources = {'wind': 0, 'solar': 0, 'ng': 0, 'coal': 0,
+                       'nuclear': 0, 'geothermal': 0, 'hydro': 0}
+    expected_data = {'Arizona': empty_resources,
+                     'California': empty_resources, 'Colorado': empty_resources,
+                     'Idaho': empty_resources, 'Montana Western': empty_resources,
+                     'Nevada': empty_resources, 'New Mexico Western': empty_resources,
+                     'Oregon': empty_resources, 'Utah': empty_resources,
+                     'Washington': empty_resources, 'Wyoming': empty_resources,
+                     'El Paso': empty_resources, 'Western': empty_resources}
+
+    assert data == expected_data
+
+
+def test_make_empty_data_with_texas():
+    data = _make_empty_data('Texas')
+    empty_resources = {'wind': 0, 'solar': 0, 'ng': 0, 'coal': 0,
+                       'nuclear': 0, 'geothermal': 0, 'hydro': 0}
+    expected_data = {'Far West': empty_resources, 'North': empty_resources,
+                     'West': empty_resources, 'South': empty_resources,
+                     'North Central': empty_resources, 'South Central': empty_resources,
+                     'Coast': empty_resources, 'East': empty_resources,
+                     'Texas': empty_resources}
+
+    assert data == expected_data
+
+
+def test_make_gen_cap_custom_data_given_no_data():
+    label = "my data"
+    gen_cap_data = make_gen_cap_custom_data('Western', label)
+    expected_gen_cap_data = {
+        'label': label,
+        'gen': {
+            'label': 'Generation',
+            'unit': 'TWh',
+            'data': _make_empty_data('Western')
+        },
+        'cap': {
+            'label': 'Capacity',
+            'unit': 'GW',
+            'data': _make_empty_data('Western')
+        }
+    }
+
+    assert gen_cap_data == expected_gen_cap_data
+
+
+def test_make_gen_cap_custom_data_given_cap_data():
+    label = "my data"
+    gen_cap_data = make_gen_cap_custom_data(
+        'Western', label, cap_data=HISTORICAL_WESTERN_CAP)
+    expected_gen_cap_data = {
+        'label': label,
+        'gen': {
+            'label': 'Generation',
+            'unit': 'TWh',
+            'data': _make_empty_data('Western')
+        },
+        'cap': {
+            'label': 'Capacity',
+            'unit': 'GW',
+            'data': HISTORICAL_WESTERN_CAP
+        }
+    }
+
+    assert gen_cap_data == expected_gen_cap_data
+
+
+def test_make_gen_cap_custom_data_given_gen_and_cap_data():
+    label = "my data"
+    gen_cap_data = make_gen_cap_custom_data(
+        'Western', label, HISTORICAL_WESTERN_GEN, HISTORICAL_WESTERN_CAP)
+    expected_gen_cap_data = {
+        'label': label,
+        'gen': {
+            'label': 'Generation',
+            'unit': 'TWh',
+            'data': HISTORICAL_WESTERN_GEN
+        },
+        'cap': {
+            'label': 'Capacity',
+            'unit': 'GW',
+            'data': HISTORICAL_WESTERN_CAP
+        }
+    }
+
+    assert gen_cap_data == expected_gen_cap_data
