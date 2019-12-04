@@ -1,24 +1,31 @@
 import matplotlib.pyplot as plt
+from powersimdata.scenario.scenario import Scenario
+
 from postreise.plot.analyze_pg import AnalyzePG as apg
 from postreise.plot.multi.constants import (BASELINES, CA_BASELINES,
                                             CA_TARGETS, DEMAND,
                                             SCENARIO_RESOURCE_TYPES, TARGETS,
                                             ZONES)
-from powersimdata.scenario.scenario import Scenario
 
 
 def handle_plot_inputs(interconnect, time, scenario_ids, scenario_names,
-    custom_data):
+                       custom_data):
     """Checks input validity for plotting code, fetches data if necessary
 
     :param interconnect: either 'Western' or 'Texas'
     :type interconnect: string
+    :param time: time related parameters. 1st element is the starting
+        date. 2nd element is the ending date (left out). 3rd element is the
+        timezone, only *'utc'*, *'US/Pacific'* and *'local'* are possible. 4th
+        element is the frequency, which can be *'H'* (hour), *'D'* (day), *'W'*
+         (week) or *'auto'*.
+    :type time: tuple
     :param scenario_ids: list of scenario ids
     :type scenario_ids: list(string)
     :param scenario_names: list of scenario names of same len as scenario ids
     :type scenario_names: list(string), None
     :param custom_data: hand-generated data
-    :type custom_data: dict
+    :type custom_data: dict, None
     :raises ValueError: zone must be one of Western or Texas
     :raises ValueError: if scenario names are provided,
         number of scenario names must match number of scenario ids
@@ -53,7 +60,7 @@ def handle_plot_inputs(interconnect, time, scenario_ids, scenario_names,
     scenario_data = _get_scenario_data(
         time, scenario_ids, scenario_names, zone_list)
     graph_data = dict(scenario_data, **custom_data)
-    return (zone_list, graph_data)
+    return zone_list, graph_data
 
 
 def handle_shortfall_inputs(is_match_CA, baselines, targets, demand):
@@ -149,7 +156,7 @@ def unit_conversion(val, change):
     :return: the new converted value
     :rtype: float
     """
-    return round(val/1000**change, 2)
+    return round(val / 1000**change, 2)
 
 
 def _get_scenario_data(time, scenario_ids, scenario_names, zone_list):
@@ -178,12 +185,12 @@ def _get_scenario_data(time, scenario_ids, scenario_names, zone_list):
     """
     scenario_data = dict()
     for i in range(len(scenario_ids)):
-        id = scenario_ids[i]
+        sid = scenario_ids[i]
         data_chart, scenario_name = _get_data_chart_from_scenario(
-            id, time, zone_list)
+            sid, time, zone_list)
         if scenario_names is not None:
             scenario_name = scenario_names[i]
-        scenario_data[id] = _format_scenario_data(data_chart, scenario_name)
+        scenario_data[sid] = _format_scenario_data(data_chart, scenario_name)
 
     return scenario_data
 
@@ -199,9 +206,9 @@ def _get_data_chart_from_scenario(scenario_id, time, zone_list):
     :rtype: dict {'scenario_id': {
         'label': 'scenario_name',
         'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'zone_name':
-            {'resource_type': flaot value(s), ...}, ...}},
+            {'resource_type': float value(s), ...}, ...}},
         'cap': {'label': 'Capacity', 'unit': 'GW', 'data': {'zone_name':
-            {'resource_type': flaot value(s), ...}, ...}}},
+            {'resource_type': float value(s), ...}, ...}}},
         ...},
         list(string)
     TODO do this ourselves instead of using apg as a middle man

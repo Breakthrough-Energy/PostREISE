@@ -1,11 +1,7 @@
-from pprint import pprint
-
 import pytest
+
 from postreise.plot.multi.constants import (BASELINES, CA_BASELINES,
                                             CA_TARGETS, DEMAND, TARGETS, ZONES)
-from postreise.plot.multi.data.historical_2016_data import (
-    HISTORICAL_WESTERN_GEN,
-    HISTORICAL_WESTERN_CAP)
 from postreise.plot.multi.plot_helpers import (_format_scenario_data,
                                                _make_empty_data,
                                                handle_plot_inputs,
@@ -33,7 +29,12 @@ def test_handle_plot_inputs():
 def test_handle_plot_inputs_throws_valueError_for_incorrect_interconnect():
     time = ('2016-01-01-00', '2016-12-31-23', 'utc', 'H')
     with pytest.raises(ValueError):
-        handle_plot_inputs('The Moon', time, None, None, create_mock_graph_data())
+        handle_plot_inputs(
+            'The Moon',
+            time,
+            None,
+            None,
+            create_mock_graph_data())
 
 
 def test_handle_plot_inputs_throws_valueError_when_wrong_number_of_scenario_names():
@@ -95,13 +96,20 @@ def test_make_empty_data_with_western():
     data = _make_empty_data('Western')
     empty_resources = {'wind': 0, 'solar': 0, 'ng': 0, 'coal': 0,
                        'nuclear': 0, 'geothermal': 0, 'hydro': 0}
-    expected_data = {'Arizona': empty_resources,
-                     'California': empty_resources, 'Colorado': empty_resources,
-                     'Idaho': empty_resources, 'Montana Western': empty_resources,
-                     'Nevada': empty_resources, 'New Mexico Western': empty_resources,
-                     'Oregon': empty_resources, 'Utah': empty_resources,
-                     'Washington': empty_resources, 'Wyoming': empty_resources,
-                     'El Paso': empty_resources, 'Western': empty_resources}
+    expected_data = {
+        'Arizona': empty_resources,
+        'California': empty_resources,
+        'Colorado': empty_resources,
+        'Idaho': empty_resources,
+        'Montana Western': empty_resources,
+        'Nevada': empty_resources,
+        'New Mexico Western': empty_resources,
+        'Oregon': empty_resources,
+        'Utah': empty_resources,
+        'Washington': empty_resources,
+        'Wyoming': empty_resources,
+        'El Paso': empty_resources,
+        'Western': empty_resources}
 
     assert data == expected_data
 
@@ -110,11 +118,16 @@ def test_make_empty_data_with_texas():
     data = _make_empty_data('Texas')
     empty_resources = {'wind': 0, 'solar': 0, 'ng': 0, 'coal': 0,
                        'nuclear': 0, 'geothermal': 0, 'hydro': 0}
-    expected_data = {'Far West': empty_resources, 'North': empty_resources,
-                     'West': empty_resources, 'South': empty_resources,
-                     'North Central': empty_resources, 'South Central': empty_resources,
-                     'Coast': empty_resources, 'East': empty_resources,
-                     'Texas': empty_resources}
+    expected_data = {
+        'Far West': empty_resources,
+        'North': empty_resources,
+        'West': empty_resources,
+        'South': empty_resources,
+        'North Central': empty_resources,
+        'South Central': empty_resources,
+        'Coast': empty_resources,
+        'East': empty_resources,
+        'Texas': empty_resources}
 
     assert data == expected_data
 
@@ -141,8 +154,9 @@ def test_make_gen_cap_custom_data_given_no_data():
 
 def test_make_gen_cap_custom_data_given_cap_data():
     label = "my data"
+    mock_data = {'moon_cheese': 'gouda'}
     gen_cap_data = make_gen_cap_custom_data(
-        'Western', label, cap_data=HISTORICAL_WESTERN_CAP)
+        'Western', label, cap_data=mock_data)
     expected_gen_cap_data = {
         'label': label,
         'gen': {
@@ -153,7 +167,7 @@ def test_make_gen_cap_custom_data_given_cap_data():
         'cap': {
             'label': 'Capacity',
             'unit': 'GW',
-            'data': HISTORICAL_WESTERN_CAP
+            'data': mock_data
         }
     }
 
@@ -162,19 +176,21 @@ def test_make_gen_cap_custom_data_given_cap_data():
 
 def test_make_gen_cap_custom_data_given_gen_and_cap_data():
     label = "my data"
+    mock_gen_data = {'moon_cheese': 'gouda'}
+    mock_cap_data = {'moon_cheese': 'brie'}
     gen_cap_data = make_gen_cap_custom_data(
-        'Western', label, HISTORICAL_WESTERN_GEN, HISTORICAL_WESTERN_CAP)
+        'Western', label, mock_gen_data, mock_cap_data)
     expected_gen_cap_data = {
         'label': label,
         'gen': {
             'label': 'Generation',
             'unit': 'TWh',
-            'data': HISTORICAL_WESTERN_GEN
+            'data': mock_gen_data
         },
         'cap': {
             'label': 'Capacity',
             'unit': 'GW',
-            'data': HISTORICAL_WESTERN_CAP
+            'data': mock_cap_data
         }
     }
 
