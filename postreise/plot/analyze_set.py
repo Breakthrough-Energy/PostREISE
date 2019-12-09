@@ -1,4 +1,5 @@
 from powersimdata.scenario.scenario import Scenario
+from postreise.plot.multi import constants
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -97,14 +98,9 @@ def fraction(scenarios, zone):
         type as columns.
     """
 
-    r2l = {'nuclear': 'Nuclear',
-           'hydro': 'Hydro',
-           'coal': 'Coal',
-           'ng': 'Natural Gas',
-           'solar': 'Solar',
-           'wind': 'Wind',
-           'dfo': 'Fuel Oil',
-           'geothermal': 'Geothermal'}
+    plotted_resources = ('nuclear', 'hydro', 'coal', 'ng', 'solar', 'wind',
+                         'dfo', 'geothermal', 'biomass', 'other')
+    r2l = {r: constants.RESOURCE_LABELS[r] for r in plotted_resources}
 
     thermal_gen_types = ['dfo', 'geothermal', 'nuclear', 'hydro', 'coal', 'ng']
 
@@ -195,22 +191,18 @@ def generation(scenarios, zone, grid_type=0):
     allotment = []
     title = []
 
+    analyzed_types = ['nuclear', 'hydro', 'coal', 'ng', 'solar', 'wind']
+
     for key, files in scenarios.items():
         f = files[grid_type]
         if f:
             scenario = Scenario(f)
             grid = scenario.state.get_grid()
             pg = scenario.state.get_pg()
-            allotment_scenario = pd.DataFrame(columns=['nuclear', 'hydro',
-                                                       'coal', 'ng', 'solar',
-                                                       'wind'], index=zone)
+            allotment_scenario = pd.DataFrame(
+                columns=analyzed_types, index=zone)
             for z in zone:
-                r2l = {'nuclear': 'Nuclear',
-                       'hydro': 'Hydro',
-                       'coal': 'Coal',
-                       'ng': 'Natural Gas',
-                       'solar': 'Solar',
-                       'wind': 'Wind'}
+                r2l = {r: constants.RESOURCE_LABELS[r] for r in analyzed_types}
                 plant_id = get_plant_id(grid, z)
                 pg_tmp = pg[plant_id]
 
@@ -234,14 +226,12 @@ def generation(scenarios, zone, grid_type=0):
     ax.tick_params(labelsize=20)
     ax.set_ylabel('Generation [GWh]', fontsize=22)
 
-    colors = [grid.type2color[r]
-              for r in ['nuclear', 'hydro', 'coal', 'ng', 'solar', 'wind']]
+    colors = [grid.type2color[r] for r in analyzed_types]
     for df in allotment:
-        ax = df.rename(columns={'nuclear': 'Nuclear', 'hydro': 'Hydro',
-                                'coal': 'Coal', 'ng': 'Natural Gas',
-                                'solar': 'Solar', 'wind': 'Wind'}).plot(
-                                kind="bar", linewidth=0, stacked=True,
-                                ax=ax, color=colors, label=True, alpha=0.7)
+        rename_dict = {r: constants.RESOURCE_LABELS[r] for r in analyzed_types}
+        ax = df.rename(columns=rename_dict).plot(
+            kind="bar", linewidth=0, stacked=True, ax=ax, color=colors,
+            label=True, alpha=0.7)
     ax.set_ylim(0, ax.get_ylim()[1])
     ax.ticklabel_format(axis='y', useOffset=False, style='plain')
 

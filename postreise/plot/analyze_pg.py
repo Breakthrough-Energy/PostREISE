@@ -112,6 +112,8 @@ class AnalyzePG:
                            'ng': 'Natural Gas',
                            'solar': 'Solar',
                            'wind': 'Wind',
+                           'biomass': 'Biomass',
+                           'other': 'Other',
                            'storage': 'Storage Discharging'}
 
         # Check parameters
