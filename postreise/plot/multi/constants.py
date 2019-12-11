@@ -27,6 +27,7 @@ RESOURCE_COLORS = {
     'other inc. biomass': 'rebeccapurple',
     'other': 'royalblue'
 }
+SHADOW_PRICE_COLORS = ['darkmagenta' ,'blue', '#66bd63', '#d9ef8b', 'gold', '#fdae61', '#f46d43', '#d73027', 'darkred']
 BASELINES = {
     'Arizona': 4.567094,
     'California': 81.0,
