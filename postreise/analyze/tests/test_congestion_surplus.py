@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from postreise.analyze.congestion import \
-    calculate_congestion_surplus, map_demand_to_buses, map_pg_to_buses
+    calculate_congestion_surplus, map_demand_to_buses
 from postreise.tests.mock_grid import MockGrid
 from postreise.tests.mock_scenario import MockScenario
 
@@ -93,17 +93,3 @@ class TestMappingHelpers(unittest.TestCase):
 
         bus_demand = map_demand_to_buses(grid, demand)
         self._check_expected(bus_demand, expected_return, name='bus_demand')
-
-    def test_map_pg_to_buses(self):
-        grid = MockGrid(grid_attrs)
-        pg = pd.DataFrame({
-            'UTC': ['t1', 't2'],
-            'A': [125, 50], 'B': [285, 285], 'C': [0, 0], 'D': [0, 75]})
-        pg.set_index('UTC', inplace=True)
-        expected_return = pd.DataFrame({
-            'UTC': ['t1', 't2'],
-            1: [410, 335], 2: [0, 0], 3: [0, 75]})
-        expected_return.set_index('UTC', inplace=True)
-
-        bus_pg = map_pg_to_buses(grid, pg)
-        self._check_expected(bus_pg, expected_return, name='bus_pg')

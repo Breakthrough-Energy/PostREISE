@@ -4,6 +4,7 @@ import pandas as pd
 from powersimdata.input.grid import Grid
 from powersimdata.scenario.analyze import Analyze
 from powersimdata.scenario.scenario import Scenario
+from postreise.analyze.helpers import summarize_plant_to_bus
 
 
 def map_demand_to_buses(grid, demand):
@@ -36,33 +37,6 @@ def map_demand_to_buses(grid, demand):
     return bus_demand
 
 
-def map_pg_to_buses(grid, pg):
-    """Map pg by (hour, plant) to (hour, bus).
-
-    :param powersimdata.input.grid.Grid grid: Grid instance.
-    :param pandas.DataFrame pg: pg DataFrame.
-    :return: (*pandas.DataFrame*) -- bus_pg, indices (hour, bus).
-    """
-
-    if not isinstance(grid, Grid):
-        raise TypeError('grid must be a Grid object')
-    if not isinstance(pg, pd.DataFrame):
-        raise TypeError('pg must be a pandas DataFrame')
-
-    bus = grid.bus
-    plant = grid.plant
-    bus_index_lookup = {b: i for i, b in enumerate(bus.index)}
-    plant_buses = plant['bus_id'].to_numpy()
-    gen_to_bus_mapping = np.zeros((plant.shape[0], bus.shape[0]), dtype='int8')
-    for i, p in enumerate(plant.index):
-        bus_index = bus_index_lookup[plant_buses[i]]
-        gen_to_bus_mapping[i, bus_index] = 1
-    bus_pg = pd.DataFrame(
-        data=np.matmul(pg.to_numpy(), gen_to_bus_mapping),
-        index=pg.index, columns=bus.index)
-    return bus_pg
-
-
 def calculate_congestion_surplus(scenario):
     """Calculates hourly congestion surplus.
     
@@ -81,7 +55,7 @@ def calculate_congestion_surplus(scenario):
     pg = scenario.state.get_pg()
 
     bus_demand = map_demand_to_buses(grid, demand).to_numpy()
-    bus_pg = map_pg_to_buses(grid, pg).to_numpy()
+    bus_pg = summarize_plant_to_bus(pg, grid, all_buses=True)
 
     congestion_surplus = (lmp.to_numpy() * (bus_demand - bus_pg)).sum(axis=1)
     # Remove any negative values caused by barrier method imprecision
