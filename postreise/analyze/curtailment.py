@@ -1,5 +1,6 @@
 import pandas as pd
 
+from postreise.analyze.helpers import summarize_plant_to_bus
 from powersimdata.scenario.scenario import Scenario
 from powersimdata.scenario.analyze import Analyze
 
@@ -63,9 +64,6 @@ def calculate_curtailment_time_series(scenario, resources=('solar', 'wind')):
     pg = scenario.state.get_pg()
     rentype_genpotential = {
         r: getattr(scenario.state, _resource_func[r])() for r in resources}
-        #'solar': scenario.state.get_solar(),
-        #'wind': scenario.state.get_wind(),
-        #}
 
     # Calculate differences for each resource
     curtailment = {}
@@ -94,9 +92,6 @@ def calculate_curtailment_percentage(scenario, resources=('solar', 'wind')):
     rentype_total_potential = {
         r: getattr(scenario.state, _resource_func[r])().sum().sum()
         for r in resources}
-        #'solar': scenario.state.get_solar().sum().sum(),
-        #'wind': scenario.state.get_wind().sum().sum(),
-        #}
     
     total_curtailment = (
         sum(v for v in rentype_total_curtailment.values())
@@ -105,7 +100,7 @@ def calculate_curtailment_percentage(scenario, resources=('solar', 'wind')):
     return total_curtailment
 
 
-def summarize_curtailment_by_bus(curtailment, plant):
+def summarize_curtailment_by_bus(curtailment, grid):
     """Calculate year-long average curtailment for selected resources.
     :param dict curtailment: keys are resources, values are pandas.DataFrame.
     :param pandas.DataFrame plant: plant dataframe from Grid object.
@@ -119,20 +114,15 @@ def summarize_curtailment_by_bus(curtailment, plant):
             raise TypeError('curtailment keys must be str')
         if not isinstance(v, pd.DataFrame):
             raise TypeError('curtailment values must be pandas.DataFrame')
-    gentypes_in_grid = plant['type'].unique()
+    gentypes_in_grid = grid.plant['type'].unique()
     if list(curtailment.keys()) not in gentypes_in_grid:
         err_msg = 'Curtailment has types not present in plant DataFrame.'
         err_msg += ' Curtailment: ' + ', '.join(curtailment.keys())
         err_msg += '. Plant: ' + ', '.join(gentypes_in_grid)
         raise ValueError(err_msg)
     
-    bus_curtailment = {}
-    for ren_type, ts_curtailment in curtailment.items():
-        plant_totals = ts_curtailment.sum()
-        ren_buses = plant.loc[ts_curtailment.columns]['bus_id'].unique()
-        bus_curtailment[ren_type] = {b: 0 for b in ren_buses}
-        for p in plant_totals.index:
-            plant_bus = plant.loc[p, 'bus_id']
-            bus_curtailment[ren_type][plant_bus] += plant_totals.loc[p]
+    bus_curtailment = {
+        ren_type: summarize_plant_to_bus(curtailment_df, grid).sum().to_dict()
+        for ren_type, curtailment_df in curtailment.items()}
     
     return bus_curtailment

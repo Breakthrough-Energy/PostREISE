@@ -136,10 +136,10 @@ class TestCalculateCurtailmentPercentage(unittest.TestCase):
 class TestSummarizeCurtailmentByBus(unittest.TestCase):
 
     def test_summarize_curtailment_by_bus(self):
-        plant = scenario.state.get_grid().plant
+        grid = scenario.state.get_grid()
         expected_return = {
             'solar': {1: 3.5},
             'wind': {2: 0.5, 3: 2.5},
             }
-        bus_curtailment = summarize_curtailment_by_bus(mock_curtailment, plant)
+        bus_curtailment = summarize_curtailment_by_bus(mock_curtailment, grid)
         self.assertEqual(bus_curtailment, expected_return)
