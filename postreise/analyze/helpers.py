@@ -26,7 +26,9 @@ def summarize_plant_to_bus(df, grid, all_buses=False):
     """
     _check_df_grid(df, grid)
     
-    bus_data = df.T.groupby(grid.plant['bus_id']).sum().T
+    all_buses_in_grid = grid.plant['bus_id']
+    buses_in_df = all_buses_in_grid.loc[df.columns]
+    bus_data = df.T.groupby(buses_in_df).sum().T
     if all_buses:
         bus_data = pd.DataFrame(
             bus_data, columns=grid.bus.index, index=df.index).fillna(0.0)
@@ -43,7 +45,8 @@ def summarize_plant_to_location(df, grid):
     """
     _check_df_grid(df, grid)
     
-    locations = grid.plant[['lat', 'lon']].to_records(index=False)
-    location_data = df.T.groupby(locations).sum().T
+    all_locations = grid.plant[['lat', 'lon']]
+    locations_in_df = all_locations.loc[df.columns].to_records(index=False)
+    location_data = df.T.groupby(locations_in_df).sum().T
     
     return location_data
