@@ -7,13 +7,15 @@ import pandas as pd
 from postreise.tests.mock_scenario import MockScenario
 from postreise.analyze.curtailment import \
     calculate_curtailment_time_series, calculate_curtailment_percentage, \
-    summarize_curtailment_by_bus
+    summarize_curtailment_by_bus, summarize_curtailment_by_location
 
 
 # plant_id is the index
 mock_plant = {
     'plant_id': ['A', 'B', 'C', 'D'],
     'bus_id': [1, 1, 2, 3],
+    'lat': [47.6, 47.6, 37.8, 37.8],
+    'lon': [122.3, 122.3, 122.4, 122.4],
     'type': ['solar', 'solar', 'wind', 'wind']
     }
 
@@ -143,3 +145,15 @@ class TestSummarizeCurtailmentByBus(unittest.TestCase):
             }
         bus_curtailment = summarize_curtailment_by_bus(mock_curtailment, grid)
         self.assertEqual(bus_curtailment, expected_return)
+
+class TestSummarizeCurtailmentByLocation(unittest.TestCase):
+
+    def test_summarize_curtailment_by_location(self):
+        grid = scenario.state.get_grid()
+        expected_return = {
+            'solar': {(47.6, 122.3): 3.5},
+            'wind': {(37.8, 122.4): 3},
+            }
+        location_curtailment = summarize_curtailment_by_location(
+            mock_curtailment, grid)
+        self.assertEqual(location_curtailment, expected_return)

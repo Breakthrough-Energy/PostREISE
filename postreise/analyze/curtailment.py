@@ -1,6 +1,7 @@
 import pandas as pd
 
-from postreise.analyze.helpers import summarize_plant_to_bus
+from postreise.analyze.helpers import \
+    summarize_plant_to_bus, summarize_plant_to_location
 from powersimdata.scenario.scenario import Scenario
 from powersimdata.scenario.analyze import Analyze
 
@@ -49,6 +50,27 @@ def _check_resource_in_scenario(resources, scenario):
         raise ValueError(err_msg)
 
 
+def _check_curtailment_in_grid(curtailment, grid):
+    """Ensure that curtailment is a dict of dataframes, and that each key is
+    represented in at least one generator in grid.
+    :param dict curtailment: keys are resources, values are pandas.DataFrame.
+    :param powersimdata.input.grid grid: Grid instance.
+    :return: (*None*).
+    """
+    if not isinstance(curtailment, dict):
+        raise TypeError('curtailment must be a dict')
+    for k, v in curtailment.items():
+        if not isinstance(k, str):
+            raise TypeError('curtailment keys must be str')
+        if not isinstance(v, pd.DataFrame):
+            raise TypeError('curtailment values must be pandas.DataFrame')
+    gentypes_in_grid = grid.plant['type'].unique()
+    if list(curtailment.keys()) not in gentypes_in_grid:
+        err_msg = 'Curtailment has types not present in grid.plant DataFrame.'
+        err_msg += ' Curtailment: ' + ', '.join(curtailment.keys())
+        err_msg += '. Plant: ' + ', '.join(gentypes_in_grid)
+        raise ValueError(err_msg)
+
 def calculate_curtailment_time_series(scenario, resources=('solar', 'wind')):
     """Calculate a time series of curtailment for a set of valid resources.
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
@@ -84,45 +106,49 @@ def calculate_curtailment_percentage(scenario, resources=('solar', 'wind')):
     _check_scenario(scenario)
     _check_resources(resources)
     _check_resource_in_scenario(resources, scenario)
-    
+
     curtailment = calculate_curtailment_time_series(scenario)
     rentype_total_curtailment = {
         r: curtailment[r].sum().sum() for r in resources}
-    
+
     rentype_total_potential = {
         r: getattr(scenario.state, _resource_func[r])().sum().sum()
         for r in resources}
-    
+
     total_curtailment = (
         sum(v for v in rentype_total_curtailment.values())
         / sum(v for v in rentype_total_potential.values()))
-    
+
     return total_curtailment
 
 
 def summarize_curtailment_by_bus(curtailment, grid):
-    """Calculate year-long average curtailment for selected resources.
+    """Calculate total curtailment for selected resources, by bus.
     :param dict curtailment: keys are resources, values are pandas.DataFrame.
-    :param pandas.DataFrame plant: plant dataframe from Grid object.
+    :param powersimdata.input.grid grid: Grid instance.
     :return: (*dict*) -- keys are resources, values are dict of
         (bus: curtailment vector).
     """
-    if not isinstance(curtailment, dict):
-        raise TypeError('curtailment must be a dict')
-    for k, v in curtailment.items():
-        if not isinstance(k, str):
-            raise TypeError('curtailment keys must be str')
-        if not isinstance(v, pd.DataFrame):
-            raise TypeError('curtailment values must be pandas.DataFrame')
-    gentypes_in_grid = grid.plant['type'].unique()
-    if list(curtailment.keys()) not in gentypes_in_grid:
-        err_msg = 'Curtailment has types not present in plant DataFrame.'
-        err_msg += ' Curtailment: ' + ', '.join(curtailment.keys())
-        err_msg += '. Plant: ' + ', '.join(gentypes_in_grid)
-        raise ValueError(err_msg)
-    
+    _check_curtailment_in_grid(curtailment, grid)
+
     bus_curtailment = {
         ren_type: summarize_plant_to_bus(curtailment_df, grid).sum().to_dict()
         for ren_type, curtailment_df in curtailment.items()}
-    
+
     return bus_curtailment
+
+def summarize_curtailment_by_location(curtailment, grid):
+    """Calculate total curtailment for selected resources, by location.
+    :param dict curtailment: keys are resources, values are pandas.DataFrame.
+    :param powersimdata.input.grid grid: Grid instance.
+    :return: (*dict*) -- keys are resources, values are dict of
+        ((lat, lon): curtailment vector).
+    """
+    _check_curtailment_in_grid(curtailment, grid)
+
+    location_curtailment = {
+        ren_type: summarize_plant_to_location(
+            curtailment_df, grid).sum().to_dict()
+        for ren_type, curtailment_df in curtailment.items()}
+
+    return location_curtailment
