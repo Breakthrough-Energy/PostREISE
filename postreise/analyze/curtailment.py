@@ -54,7 +54,7 @@ def _check_curtailment_in_grid(curtailment, grid):
     """Ensure that curtailment is a dict of dataframes, and that each key is
     represented in at least one generator in grid.
     :param dict curtailment: keys are resources, values are pandas.DataFrame.
-    :param powersimdata.input.grid grid: Grid instance.
+    :param powersimdata.input.grid.Grid grid: Grid instance.
     :return: (*None*).
     """
     if not isinstance(curtailment, dict):
@@ -70,6 +70,7 @@ def _check_curtailment_in_grid(curtailment, grid):
         err_msg += ' Curtailment: ' + ', '.join(curtailment.keys())
         err_msg += '. Plant: ' + ', '.join(gentypes_in_grid)
         raise ValueError(err_msg)
+
 
 def calculate_curtailment_time_series(scenario, resources=('solar', 'wind')):
     """Calculate a time series of curtailment for a set of valid resources.
@@ -91,7 +92,6 @@ def calculate_curtailment_time_series(scenario, resources=('solar', 'wind')):
     curtailment = {}
     for rentype, genpotential in rentype_genpotential.items():
         ren_plants = list(genpotential.columns)
-        #gens_pg = pg[ren_plants]
         curtailment[rentype] = genpotential - pg[ren_plants]
 
     return curtailment
@@ -125,7 +125,7 @@ def calculate_curtailment_percentage(scenario, resources=('solar', 'wind')):
 def summarize_curtailment_by_bus(curtailment, grid):
     """Calculate total curtailment for selected resources, by bus.
     :param dict curtailment: keys are resources, values are pandas.DataFrame.
-    :param powersimdata.input.grid grid: Grid instance.
+    :param powersimdata.input.grid.Grid grid: Grid instance.
     :return: (*dict*) -- keys are resources, values are dict of
         (bus: curtailment vector).
     """
@@ -137,10 +137,11 @@ def summarize_curtailment_by_bus(curtailment, grid):
 
     return bus_curtailment
 
+
 def summarize_curtailment_by_location(curtailment, grid):
     """Calculate total curtailment for selected resources, by location.
     :param dict curtailment: keys are resources, values are pandas.DataFrame.
-    :param powersimdata.input.grid grid: Grid instance.
+    :param powersimdata.input.grid.Grid grid: Grid instance.
     :return: (*dict*) -- keys are resources, values are dict of
         ((lat, lon): curtailment vector).
     """
