@@ -24,7 +24,8 @@ def _check_epsilon(epsilon):
 
 def pmin_constraints(scenario, epsilon=1e-3):
     """Identify time periods in which generators are at minimum power.
-    Note:
+    .. note:: some minimum powers are modified by REISE, so this may be
+        inaccurate.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param float epsilon: allowable 'fuzz' for whether constraint is binding.
@@ -61,7 +62,8 @@ def pmax_constraints(scenario, epsilon=1e-3):
 
 def ramp_constraints(scenario, epsilon=1e-3):
     """Identify time periods in which generators have binding ramp constraints.
-    Note: The first time period will always return *False* for each column.
+    .. note:: The first time period will always return *False* for each column.
+        Some ramp rates are modified by REISE, so this may be inaccurate.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param float epsilon: allowable 'fuzz' for whether constraint is binding.
