@@ -9,11 +9,13 @@ ZONES = {
 }
 SCENARIO_RESOURCE_TYPES = ['wind', 'solar', 'ng',
                            'coal', 'nuclear', 'geothermal', 'hydro']
-ALL_RESOURCE_TYPES = SCENARIO_RESOURCE_TYPES + ['other inc. biomass']
+ADDITIONAL_RESOURCE_TYPES = ['dfo', 'other inc. biomass', 'other', 'biomass']
+ALL_RESOURCE_TYPES = SCENARIO_RESOURCE_TYPES + ADDITIONAL_RESOURCE_TYPES
 RESOURCE_LABELS = {'wind': 'Wind', 'solar': 'Solar', 'ng': 'Natural Gas', \
-                   'coal': 'Coal', 'nuclear': 'Nuclear',
+                   'coal': 'Coal', 'dfo': 'Fuel Oil', 'nuclear': 'Nuclear',
                    'geothermal': 'Geothermal', 'hydro': 'Hydro', \
-                   'other inc. biomass': 'Other inc. Biomass'}
+                   'other inc. biomass': 'Other inc. Biomass',
+                   'other': 'Other', 'biomass': 'Biomass'}
 RESOURCE_COLORS = {
     'wind': sns.xkcd_rgb["green"],
     'solar': sns.xkcd_rgb["amber"],
@@ -25,7 +27,8 @@ RESOURCE_COLORS = {
     'dfo': sns.xkcd_rgb["royal blue"],
     'storage': sns.xkcd_rgb["orange"],
     'other inc. biomass': 'rebeccapurple',
-    'other': 'royalblue'
+    'other': sns.xkcd_rgb["melon"],
+    'biomass': sns.xkcd_rgb["dark green"],
 }
 SHADOW_PRICE_COLORS = ['darkmagenta' ,'blue', '#66bd63', '#d9ef8b', 'gold', '#fdae61', '#f46d43', '#d73027', 'darkred']
 BASELINES = {
