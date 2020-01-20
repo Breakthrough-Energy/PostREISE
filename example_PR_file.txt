@@ -1,0 +1,400 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+
+import matplotlib.dates as mdates
+from pandas.plotting import scatter_matrix
+
+plt.ioff()
+
+
+class AnalyzePG:
+    """Analysis based on PG.
+
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
+    :param tuple time: time related parameters. 1st element is the starting
+        date. 2nd element is the ending date (left out). 3rd element is the
+        timezone, only *'utc'*, *'US/Pacific'* and *'local'* are possible. 4th
+        element is the frequency, which can be *'H'* (hour), *'D'* (day), *'W'*
+         (week) or *'auto'*.
+    :param list zones: geographical zones. Any combinations of load zones in the
+        Western interconnection or ERCOT plus *'California'*, *'Western'* or
+        *'Texas'*.
+    :param list resources: energy resources. Can be any combinations of
+        *'coal'*, *'dfo'*, *'geothermal'*, *'hydro'*, *'ng'*, *'nuclear'*,
+        *'solar'*, *'wind'*.
+    :param str kind: one of: *'stacked'*, *'comp'*, *'curtailment'*,
+        *'correlation'*, *'chart'*, *'variability'* or *'yield'*.
+    :param bool normalize: should generation be normalized by capacity.
+    :param int seed: seed for random number generator. Only used in the
+        *'variability'* analysis.
+
+    .. note::
+        * *'stacked'*:
+            calculates time series of power generated and demand in one zone.
+        * *'comp'*:
+            calculates time series of power generated for one resource in
+                multiple zones.
+        * *'curtailment'*:
+            calculates time series of curtailment for one resource in one zone.
+        * *'correlation'*:
+            calculates correlation coefficients of power generated between
+                multiple zones for one resource.
+        * *'chart'*:
+            calculates proportion of resources and generation in one zone.
+        * *'variability'*:
+            calculates time series of power generated in one zone for one
+            resource. Also calculates the time series of the power generated
+            of 2, 8 and 15 randomly chosen plants in the same zone and using
+            the same resource.
+        * *'yield'*:
+            calculates capacity factor of one resource in one zone.
+    """
+
+    def __init__(self, scenario, time, zones, resources, kind,
+                 normalize=False, seed=0):
+        """Constructor.
+
+        """
+        plt.close('all')
+
+        # Note: Data is downloaded even if not needed
+        self.pg = scenario.state.get_pg().tz_localize('utc')
+        self.grid = scenario.state.get_grid()
+        self.demand = scenario.state.get_demand(original=True)
+        self.solar = scenario.state.get_solar()
+        self.wind = scenario.state.get_wind()
+        self.hydro = scenario.state.get_hydro()
+        self.interconnect = self.grid.interconnect
+
+        if self.grid.storage and 'storage' in resources:
+            self.storage_pg = scenario.state.get_storage_pg().tz_localize('utc')
+        else:
+            self.storage_pg = None
+
+        # Zone to time zone
+        self.zone2time = {'Arizona': 'US/Mountain',
+                          'Bay Area': 'US/Pacific',
+                          'California': 'US/Pacific',
+                          'Central California': 'US/Pacific',
+                          'Colorado': 'US/Mountain',
+                          'El Paso': 'US/Mountain',
+                          'Idaho': 'US/Mountain',
+                          'Montana Western': 'US/Mountain',
+                          'Nevada': 'US/Mountain',
+                          'New Mexico Western': 'US/Mountain',
+                          'Northern California': 'US/Pacific',
+                          'Oregon': 'US/Pacific',
+                          'Southeast California': 'US/Pacific',
+                          'Southwest California': 'US/Pacific',
+                          'Utah': 'US/Mountain',
+                          'Washington': 'US/Pacific',
+                          'Western': 'US/Pacific',
+                          'Wyoming': 'US/Mountain',
+                          'Coast': 'US/Central',
+                          'East': 'US/Central',
+                          'Far West': 'US/Central',
+                          'North': 'US/Central',
+                          'North Central': 'US/Central',
+                          'South': 'US/Central',
+                          'South Central': 'US/Central',
+                          'Texas': 'US/Central',
+                          'West': 'US/Central',
+                          'Eastern': 'US/Eastern'}
+
+        # Fuel type to label for used in plots
+        self.type2label = {'nuclear': 'Nuclear',
+                           'geothermal': 'Geothermal',
+                           'coal': 'Coal',
+                           'dfo': 'Fuel Oil',
+                           'hydro': 'Hydro',
+                           'ng': 'Natural Gas',
+                           'solar': 'Solar',
+                           'wind': 'Wind',
+                           'biomass': 'Biomass',
+                           'other': 'Other',
+                           'storage': 'Storage Discharging'}
+
+        # Check parameters
+        self._check_dates(time[0], time[1])
+        self._check_zones(zones)
+        self._check_resources(resources)
+        self._check_tz(time[2])
+        self._check_freq(time[3])
+        self._check_kind(kind)
+
+        # Set attributes
+        self.freq = time[3]
+        self.zones = zones
+        self.resources = resources
+        self.kind = kind
+        self.normalize = normalize
+        self.seed = seed
+
+        if self.freq == 'auto':
+            self._set_frequency(time[0], time[1])
+
+        if kind == 'stacked':
+            self._do_stacked(time[0], time[1], time[2])
+        elif kind == 'comp':
+            self._do_comp(time[0], time[1], time[2])
+        elif kind == 'curtailment':
+            self._do_curtailment(time[0], time[1], time[2])
+        elif kind == 'correlation':
+            self._do_correlation(time[0], time[1], time[2])
+        elif kind == 'chart':
+            self._do_chart(time[0], time[1])
+        elif kind == 'variability':
+            self._do_variability(time[0], time[1], time[2])
+        elif kind == 'yield':
+            self._do_yield(time[0], time[1])
+
+    @staticmethod
+    def _check_dates(start_date, end_date):
+        """Test dates.
+
+        :param str start_date: starting date.
+        :param str end_date: ending date.
+        :raise Exception: if dates are invalid.
+        """
+        if pd.Timestamp(start_date) > pd.Timestamp(end_date):
+            print("Starting date must be greater than ending date")
+            raise Exception("Invalid dates")
+
+    def _check_zones(self, zones):
+        """Test zones.
+
+        :param list zones: geographical zones.
+        :raise Exception: if zone(s) are invalid.
+        """
+        possible = list(self.grid.id2zone.values())
+        if 'Western' in self.interconnect:
+            possible += ['California', 'Western']
+        if 'Texas' in self.interconnect:
+            possible += ['Texas']
+        if 'Eastern' in self.interconnect:
+            possible += ['Eastern']
+        for z in zones:
+            if z not in possible:
+                print("%s is incorrect. Possible zones are: %s" %
+                      (z, possible))
+                raise Exception('Invalid zone(s)')
+
+    def _check_resources(self, resources):
+        """Test resources.
+
+        :param list resources: type of generators.
+        :raise Exception: if resource(s) are invalid.
+        """
+        for r in resources:
+            if r not in self.type2label.keys():
+                print("%s is incorrect. Possible resources are: %s" %
+                      (r, self.type2label.keys()))
+                raise Exception('Invalid resource(s)')
+
+    @staticmethod
+    def _check_tz(tz):
+        """Test time zone.
+
+        :param str tz: time zone.
+        :raise Exception: if time zone is invalid.
+        """
+        possible = ['utc', 'US/Pacific', 'local']
+        if tz not in possible:
+            print("%s is incorrect. Possible time zones are: %s" %
+                  (tz, possible))
+            raise Exception('Invalid time zone')
+
+    @staticmethod
+    def _check_freq(freq):
+        """Test freq.
+
+        :param str freq: frequency for re-sampling.
+        :raise Exception: if frequency is invalid.
+        """
+        possible = ['H', 'D', 'W', 'auto']
+        if freq not in possible:
+            print("%s is incorrect. Possible frequency are: %s" %
+                  (freq, possible))
+            raise Exception('Invalid frequency')
+
+    @staticmethod
+    def _check_kind(kind):
+        """Test kind.
+
+        :param str kind: type of analysis.
+        :raise Exception: if analysis is invalid.
+        """
+        possible = ['chart', 'stacked', 'comp', 'curtailment', 'correlation',
+                    'variability', 'yield']
+        if kind not in possible:
+            print("%s is incorrect. Possible analysis are: %s" %
+                  (kind, possible))
+            raise Exception('Invalid Analysis')
+
+    def _convert_tz(self, df_utc):
+        """Convert data frame from UTC time zone to desired time zone.
+
+        :param pandas.DataFrame df_utc: data frame with UTC timestamp as
+            indices.
+        :return: (*pandas.DataFrame*) -- data frame converted to desired
+            time zone.
+        """
+        df_new = df_utc.tz_convert(self.tz)
+        df_new.index.name = self.tz
+
+        return df_new
+
+    def _set_frequency(self, start_date, end_date):
+        """Sets frequency for resampling.
+
+        :param str start_date: starting timestamp.
+        :param str end_date: ending timestamp.
+        """
+        delta = pd.Timestamp(start_date) - pd.Timestamp(end_date)
+
+        if delta.days < 7:
+            self.freq = 'H'
+        elif 31 < delta.days < 180:
+            self.freq = 'D'
+        else:
+            self.freq = 'W'
+
+    def _set_date_range(self, start_date, end_date):
+        """Calculates the appropriate date range after resampling in order to
+            get an equal number of entries per sample.
+
+        :param str start_date: starting timestamp.
+        :param str end_date: ending timestamp.
+        """
+        first_available = self.pg.index[0].tz_convert(self.tz)
+        last_available = self.pg.index[-1].tz_convert(self.tz)
+
+        timestep = pd.DataFrame(index=pd.date_range(
+            start_date, end_date, freq='H', tz=self.tz)).resample(
+            self.freq, label='left').size().rename('Number of Hours')
+
+        if self.freq == 'H':
+            if first_available > pd.Timestamp(start_date, tz=self.tz):
+                self.from_index = first_available
+            else:
+                self.from_index = pd.Timestamp(start_date, tz=self.tz)
+            if last_available < pd.Timestamp(end_date, tz=self.tz):
+                self.to_index = last_available
+                self.to_index = pd.Timestamp(end_date, tz=self.tz)
+            else:
+                pass
+
+        elif self.freq == 'D':
+            if timestep[0] == timestep[1]:
+                first_full = pd.Timestamp(timestep.index.values[0], tz=self.tz)
+            else:
+                first_full = pd.Timestamp(timestep.index.values[1], tz=self.tz)
+            if timestep[-1] == timestep[-2]:
+                last_full = pd.Timestamp(timestep.index.values[-1], tz=self.tz)
+            else:
+                last_full = pd.Timestamp(timestep.index.values[-2], tz=self.tz)
+
+            if first_available > first_full:
+                self.from_index = first_available.ceil('D')
+            else:
+                self.from_index = first_full
+            if last_available < pd.Timestamp(end_date, tz=self.tz):
+                self.to_index = last_available.floor('D') - \
+                                pd.Timedelta('1 days')
+            else:
+                self.to_index = last_full
+
+        elif self.freq == 'W':
+            if timestep[0] == timestep[1]:
+                first_full = pd.Timestamp(timestep.index.values[0], tz=self.tz)
+            else:
+                first_full = pd.Timestamp(timestep.index.values[1], tz=self.tz)
+            if timestep[-1] == timestep[-2]:
+                last_full = pd.Timestamp(timestep.index.values[-1], tz=self.tz)
+            else:
+                last_full = pd.Timestamp(timestep.index.values[-2], tz=self.tz)
+
+            if first_available > first_full:
+                self.from_index = min(timestep[first_available:].index)
+            else:
+                self.from_index = first_full
+            if last_available < last_full:
+                self.to_index = max(timestep[:last_available].index)
+            else:
+                self.to_index = last_full
+
+        self.timestep = timestep[self.from_index:self.to_index]
+
+    def _do_chart(self, start_date, end_date):
+        """Performs chart analysis.
+
+        :param str start_date: starting timestamp.
+        :param str end_date: ending timestamp.
+        """
+        print('Set UTC for all zones')
+        self.tz = 'utc'
+
+        self._set_date_range(start_date, end_date)
+        self.data = []
+        self.filename = []
+        for z in self.zones:
+            self.data.append(self._get_chart(z))
+
+    def _get_chart(self, zone):
+        """Calculates proportion of resources and generation in one zone.
+
+        :param str zone: zone to consider.
+        :return: (*tuple*) -- First element is a time series of PG with type of
+            generators as columns. Second element is a data frame with type of
+            generators as indices and corresponding capacity as column.
+        """
+        pg, _ = self._get_pg(zone, self.resources)
+        if pg is not None:
+            fig, ax = plt.subplots(1, 2, figsize=(20, 10), sharey='row')
+            plt.subplots_adjust(wspace=1)
+            plt.suptitle("%s" % zone, fontsize=30)
+            ax[0].set_title('Generation (MWh)', fontsize=25)
+            ax[1].set_title('Resources (MW)', fontsize=25)
+
+            pg_groups = pg.T.groupby(self.grid.plant['type']).agg(sum).T
+            pg_groups.name = "%s (Generation)" % zone
+
+            capacity = self.grid.plant.loc[pg.columns].groupby('type').agg(
+                sum).GenMWMax
+            capacity.name = "%s (Capacity)" % zone
+
+            if self.storage_pg is not None:
+                pg_storage, capacity_storage = self._get_storage_pg(zone)
+                if capacity_storage is not None:
+                    capacity = capacity.append(pd.Series([capacity_storage],
+                                                         index=['storage']))
+                    pg_groups = pd.merge(
+                        pg_groups,
+                        pg_storage.clip(lower=0).sum(axis=1).rename('storage'),
+                        left_index=True,
+                        right_index=True)
+
+            type2label = self.type2label.copy()
+            for t in self.grid.id2type.values():
+                if t not in pg_groups.columns:
+                    del type2label[t]
+
+            ax[0] = pg_groups[list(type2label.keys())].rename(
+                index=type2label).sum().plot(
+                ax=ax[0], kind='barh', alpha=0.7,
+                color=[self.grid.type2color[r] for r in type2label.keys()])
+
+            ax[1] = capacity[list(type2label.keys())].rename(
+                index=type2label).plot(
+                ax=ax[1], kind='barh', alpha=0.7,
+                color=[self.grid.type2color[r] for r in type2label.keys()])
+
+            y_offset = 0.3
+            for i in [0, 1]:
+                ax[i].tick_params(axis='y', which='both', labelsize=20)
+                ax[i].set_xticklabels('')
+                ax[i].set_ylabel('')
+                ax[i].spines['right'].set_visible(False)
+                
