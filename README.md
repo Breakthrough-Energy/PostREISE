@@ -81,6 +81,7 @@ the same zone and using the same resource.
 * Calculate the capacity factor of one resource in one zone and show result
 using box plots.
 * Map the shadowprice and congested branches for a given hour
+* Tornado plot: Horizontal bar chart styled to show both positive and negative values cleanly
 
 Check out the notebooks within the [demo][plot_notebooks] folder.
 
