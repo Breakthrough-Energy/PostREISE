@@ -110,31 +110,35 @@ def test_construct_branch_data():
 
 def test_get_bus_legend_bars_and_labels():
     mock_split_points = [-1, 1, 2, 3, 4]
-    bars, labels = _get_bus_legend_bars_and_labels(mock_split_points, [''])
+    bars, bar_length_sum, labels = _get_bus_legend_bars_and_labels(mock_split_points, [''])
 
     assert bars == {'x_range': [''], '0': [2], '1': [1], '2': [1], '3': [1]}
+    assert bar_length_sum == 5
     assert labels == {0: '-1', 2: '1', 3: '2', 4: '3', 5: '4'}
 
 
 def test_get_bus_legend_bars_and_labels_with_rounding():
     mock_split_points = [-1, 1, 1.9999, 3, 4]
-    bars, labels = _get_bus_legend_bars_and_labels(mock_split_points, [''])
+    bars, bar_length_sum, labels = _get_bus_legend_bars_and_labels(mock_split_points, [''])
 
     assert bars == {'x_range': [''], '0': [2], '1': [1], '2': [1], '3': [1]}
+    assert bar_length_sum == 5
     assert labels == {0: '-1', 2: '1', 3: '1.9999', 4: '3', 5: '4'}
 
 
 def test_get_bus_legend_bars_and_labels_clamps_large_numbers_on_end():
     mock_split_points = [-500, 100, 200, 300, 400]
-    bars, labels = _get_bus_legend_bars_and_labels(mock_split_points, [''])
+    bars, bar_length_sum, labels = _get_bus_legend_bars_and_labels(mock_split_points, [''])
 
     assert bars == {'x_range': [''], '0': [5], '1': [100], '2': [100], '3': [5]}
+    assert bar_length_sum == 210
     assert labels == {0: '-500', 5: '100', 105: '200', 205: '300', 210: '400'}
 
 
 def test_get_bus_legend_bars_and_labels_min_bar_len_is_one():
     mock_split_points = [-.9, .1, .2, .3, .4]
-    bars, labels = _get_bus_legend_bars_and_labels(mock_split_points, [''])
+    bars, bar_length_sum, labels = _get_bus_legend_bars_and_labels(mock_split_points, [''])
 
     assert bars == {'x_range': [''], '0': [1], '1': [1], '2': [1], '3': [1]}
+    assert bar_length_sum == 4.0
     assert labels == {0: '-0.9', 1: '0.1', 2: '0.2', 3: '0.3', 4: '0.4'}
