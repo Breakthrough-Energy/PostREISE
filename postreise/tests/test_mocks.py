@@ -3,7 +3,7 @@ import unittest
 import pandas as pd
 
 from postreise.tests.mock_scenario import MockScenario
-from postreise.tests.mock_grid import MockGrid
+from powersimdata.tests.mock_grid import MockGrid
 
 # plant_id is the index
 mock_plant = {
@@ -11,7 +11,6 @@ mock_plant = {
     'bus_id': [1001, 1002, 1003, 1004, 1005],
     'type': ['solar', 'wind', 'ng', 'coal', 'dfo'],
     'zone_id': [1, 2, 3, 1, 3],
-    'Pmax': [200, 150, 100, 300, 120],
     'GenFuelCost': [0, 0, 3.3, 4.4, 5.5],
     'Pmin': [20, 30, 25, 100, 20],
     'Pmax': [40, 80, 50, 150, 80],
@@ -42,11 +41,11 @@ class TestMocks(unittest.TestCase):
     
     def test_mock_grid_failures(self):
         with self.assertRaises(TypeError):
-            grid = MockGrid(grid_attrs='foo')
+            MockGrid(grid_attrs='foo')
         with self.assertRaises(TypeError):
-            grid = MockGrid(grid_attrs={1: 'foo'})
+            MockGrid(grid_attrs={1: 'foo'})
         with self.assertRaises(ValueError):
-            grid = MockGrid(grid_attrs={'foo': 'bar'})
+            MockGrid(grid_attrs={'foo': 'bar'})
 
     def test_mockpg_stored_properly(self):
         scenario = MockScenario(
