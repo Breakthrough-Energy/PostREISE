@@ -1,4 +1,4 @@
-from azure.storage.blob import BlobClient
+from azure.storage.blob import BlobServiceClient, BlobClient
 
 
 class BlobUtil(object):
@@ -10,6 +10,8 @@ class BlobUtil(object):
         :param connection_string:str needed in order to access storage account container
         :param container_name:str name of blob storage container
         """
+        blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+        self.container_client = blob_service_client.get_container_client(container_name)
         self.connection_string = connection_string
         self.container_name = container_name
 
@@ -21,9 +23,23 @@ class BlobUtil(object):
         :param file_name:str name of blob on server
         :return: nothing at the moment
         """
-        blob = BlobClient.from_connection_string(conn_str=self.connection_string,\
-                                                 container_name=self.container_name,\
+        blob = BlobClient.from_connection_string(conn_str=self.connection_string,
+                                                 container_name=self.container_name,
                                                  blob_name=scenario_id+'/'+file_name)
-        with open(fig_path, "rb") as data:
-            blob.upload_blob(data)
-            
+        try:
+            with open(fig_path, "rb") as data:
+                blob.upload_blob(data)
+        except Exception as e:
+            print(e)
+
+    def list_scenario_figures(self, scenario_id):
+        """
+        Lists the blobs that start with scenario_id
+        :param scenario_id:str string to match start of container blob names
+        :return: enumerable list of blob info
+        """
+        blobs = self.container_client.list_blobs(name_starts_with=scenario_id)
+        blob_list = list(blobs)
+        for blob in blob_list:
+            print("\t" + blob.name)
+        return blob_list

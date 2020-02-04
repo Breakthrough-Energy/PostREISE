@@ -6,6 +6,9 @@ def test_blob_upload():
     blob_store = BlobUtil(conn_str , 'test-blob')
 
     scenario_id = '99'
-    fig_path = './TestFigure.png'
+    fig_path = './tests/TestFigure.png'
     file_name = 'TestFigure.png'
     blob_store.upload_figure_as_blob(scenario_id, fig_path, file_name)
+
+    blob_list = blob_store.list_scenario_figures(scenario_id)
+    assert blob_list[0].name == scenario_id + '/' + file_name
