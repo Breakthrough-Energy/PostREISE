@@ -3,19 +3,40 @@ from postreise.tests.mock_grid import MockGrid
 
 
 class MockAnalyze:
-    def __init__(self, grid_attrs, demand=None, lmp=None, pg=None, solar=None,
-                 wind=None):
+    def __init__(self, grid_attrs, congl=None, congu=None, ct=None,
+                 demand=None, lmp=None, pg=None, solar=None, wind=None):
         """Constructor.
 
         :param dict grid_attrs: fields to be added to grid.
         :param pandas.DataFrame pg: dummy pg
         """
         self.grid = MockGrid(grid_attrs)
+        self.congl = congl
+        self.congu = congu
+        self.ct = ct
         self.demand = demand
         self.lmp = lmp
         self.pg = pg
         self.solar = solar
         self.wind = wind
+
+    def get_congl(self):
+        """Get congl.
+        :return: (pandas.DataFrame) -- dummy congl
+        """
+        return self.congl
+
+    def get_congu(self):
+        """Get congu.
+        :return: (pandas.DataFrame) -- dummy congu
+        """
+        return self.congu
+
+    def get_ct(self):
+        """Get ct.
+        :return: (Dict) -- dummy ct
+        """
+        return self.ct
 
     def get_demand(self, original=None):
         """Get demand.
