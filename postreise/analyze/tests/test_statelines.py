@@ -1,6 +1,6 @@
 import unittest
 
-from postreise.tests.mock_grid import MockGrid
+from powersimdata.tests.mock_grid import MockGrid
 from postreise.analyze.statelines import _classify_interstate_intrastate
 
 # branch_id is the index

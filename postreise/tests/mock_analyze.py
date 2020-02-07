@@ -1,5 +1,5 @@
 from powersimdata.scenario.analyze import Analyze
-from postreise.tests.mock_grid import MockGrid
+from powersimdata.tests.mock_grid import MockGrid
 
 
 class MockAnalyze:

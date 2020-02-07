@@ -3,7 +3,7 @@ import unittest
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import pandas as pd
 
-from postreise.tests.mock_grid import MockGrid
+from powersimdata.tests.mock_grid import MockGrid
 from postreise.analyze.helpers import \
     summarize_plant_to_bus, summarize_plant_to_location
 

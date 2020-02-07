@@ -361,7 +361,7 @@ class AnalyzePG:
             pg_groups.name = "%s (Generation)" % zone
 
             capacity = self.grid.plant.loc[pg.columns].groupby('type').agg(
-                sum).GenMWMax
+                sum).Pmax
             capacity.name = "%s (Capacity)" % zone
 
             if self.storage_pg is not None:
@@ -754,7 +754,7 @@ class AnalyzePG:
                 norm = [capacity]
                 for i in [15, 8, 2]:
                     norm += [sum(self.grid.plant.loc[
-                        selected[:i]].GenMWMax.values)]
+                        selected[:i]].Pmax.values)]
                 total['15 plants (%d MW)' % norm[1]] = pg[selected].T.sum()
                 total['8 plants (%d MW)' % norm[2]] = pg[selected[:8]].T.sum()
                 total['2 plants (%d MW)' % norm[3]] = pg[selected[:2]].T.sum()
@@ -921,7 +921,7 @@ class AnalyzePG:
         else:
             available = self._get_profile(zone, resource)
 
-            capacity = self.grid.plant.loc[pg.columns].GenMWMax.values
+            capacity = self.grid.plant.loc[pg.columns].Pmax.values
 
             uncurtailed = available.sum().divide(len(pg) * capacity,
                                                  axis='index')
@@ -1007,7 +1007,7 @@ class AnalyzePG:
             print("No %s plants in %s" % ("/".join(resources), zone))
             return [None] * 2
         else:
-            capacity = sum(self.grid.plant.loc[plant_id].GenMWMax.values)
+            capacity = sum(self.grid.plant.loc[plant_id].Pmax.values)
             pg = self._convert_tz(self.pg[plant_id]).resample(
                 self.freq, label='left').sum()[self.from_index:self.to_index]
 
