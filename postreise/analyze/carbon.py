@@ -62,7 +62,7 @@ def generate_carbon_stats(scenario, method='simple'):
     elif method in ('decommit', 'always-on'):
         decommit = True if method == 'decommit' else False
 
-        costs = calc_costs(pg, grid.gencost, decommit=decommit)
+        costs = calc_costs(pg, grid.gencost['before'], decommit=decommit)
         heat = np.zeros_like(costs)
 
         for fuel, val in carbon_per_mmbtu.items():
