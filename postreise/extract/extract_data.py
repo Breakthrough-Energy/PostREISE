@@ -1,10 +1,11 @@
-from postreise.extract import const
+from postreise.process import const
 
 import glob
 import numpy as np
 import pandas as pd
 import time
 import os
+import shutil
 
 from scipy.io import loadmat
 from tqdm import tqdm
@@ -161,6 +162,20 @@ def extract_data(scenario_info):
     return outputs
 
 
+def copy_input(scenario_id):
+    """Copies input file
+
+    :param str scenario_id: scenario id
+    """
+    src = os.path.join(const.EXECUTE_DIR,
+                       'scenario_%s' % scenario_id,
+                       'output',
+                       'input.mat')
+    dst = os.path.join(const.INPUT_DIR,
+                       '%s_grid.mat' % scenario_id)
+    shutil.copyfile(src, dst)
+
+
 def extract_scenario(scenario_id):
     """Extracts data and save data as csv.
 
@@ -169,6 +184,7 @@ def extract_scenario(scenario_id):
 
     scenario_info = get_scenario(scenario_id)
 
+    copy_input(scenario_id)
     outputs = extract_data(scenario_info)
     
     for k, v in outputs.items():
