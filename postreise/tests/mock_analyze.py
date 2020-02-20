@@ -76,7 +76,7 @@ class MockAnalyze:
         return self.wind
 
     def get_hydro(self):
-        """Get wind.
+        """Get hydro.
         :return: (pandas.DataFrame) -- dummy wind
         """
         return self.hydro
