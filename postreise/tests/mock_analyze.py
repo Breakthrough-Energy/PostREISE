@@ -4,7 +4,7 @@ from powersimdata.tests.mock_grid import MockGrid
 
 class MockAnalyze:
     def __init__(self, grid_attrs, congl=None, congu=None, ct=None,
-                 demand=None, lmp=None, pg=None, solar=None, wind=None):
+                 demand=None, lmp=None, pg=None, solar=None, wind=None, hydro=None):
         """Constructor.
 
         :param dict grid_attrs: fields to be added to grid.
@@ -19,6 +19,7 @@ class MockAnalyze:
         self.pg = pg
         self.solar = solar
         self.wind = wind
+        self.hydro = hydro
 
     def get_congl(self):
         """Get congl.
@@ -73,6 +74,12 @@ class MockAnalyze:
         :return: (pandas.DataFrame) -- dummy wind
         """
         return self.wind
+
+    def get_hydro(self):
+        """Get hydro.
+        :return: (pandas.DataFrame) -- dummy hydro
+        """
+        return self.hydro
 
     @property
     def __class__(self):
