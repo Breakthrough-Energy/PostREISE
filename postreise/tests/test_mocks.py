@@ -70,7 +70,7 @@ class TestMocks(unittest.TestCase):
             grid_attrs={'plant': mock_plant},
             solar=self.mock_solar)
         solar = scenario.state.get_solar()
-        err_msg = 'solar profile should have dimension (periodNum * len(plant))'
+        err_msg = 'solar profile should have dimension (periodNum * len(solar_plant))'
         self.assertEqual(solar.shape, self.mock_solar.shape, err_msg)
 
     def test_mock_wind_stored_properly(self):
@@ -78,7 +78,7 @@ class TestMocks(unittest.TestCase):
             grid_attrs={'plant': mock_plant},
             wind=self.mock_wind)
         wind = scenario.state.get_wind()
-        err_msg = 'wind profile should have dimension (periodNum * len(plant))'
+        err_msg = 'wind profile should have dimension (periodNum * len(wind_plant))'
         self.assertEqual(wind.shape, self.mock_wind.shape, err_msg)
 
     def test_mock_hydro_stored_properly(self):
@@ -86,7 +86,7 @@ class TestMocks(unittest.TestCase):
             grid_attrs={'plant': mock_plant},
             hydro=self.mock_hydro)
         hydro = scenario.state.get_hydro()
-        err_msg = 'hydro profile should have dimension (periodNum * len(plant))'
+        err_msg = 'hydro profile should have dimension (periodNum * len(hydro_plant))'
         self.assertEqual(hydro.shape, self.mock_hydro.shape, err_msg)
 
 if __name__ == '__main__':
