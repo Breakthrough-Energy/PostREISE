@@ -84,7 +84,7 @@ class TestCarbonCalculation(unittest.TestCase):
             plant_id: [(i+1)*p for p in range(self.period_num)]
             for i, plant_id in enumerate(mock_plant['plant_id'])})
         self.scenario = MockScenario(
-            grid_attrs={'plant': mock_plant, 'gencost': mock_gencost},
+            grid_attrs={'plant': mock_plant, 'gencost_before': mock_gencost},
             pg=self.mock_pg)
         self.pg = self.scenario.state.get_pg()
         self.grid = self.scenario.state.get_grid()
