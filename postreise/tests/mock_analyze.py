@@ -20,6 +20,7 @@ class MockAnalyze:
         self.solar = solar
         self.wind = wind
         self.hydro = hydro
+        self.name = 'analyze'
 
     def get_congl(self):
         """Get congl.
