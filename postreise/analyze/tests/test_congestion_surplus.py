@@ -33,7 +33,7 @@ class TestCalculateCongestionSurplus(unittest.TestCase):
 
     def test_calculate_congestion_surplus_single_time(self):
         """Congested case from Kirschen & Strbac Section 5.3.2.4"""
-        demand = pd.DataFrame({'UTC': ['t1'], 1: [410]})
+        demand = pd.DataFrame({'UTC': ['t1'], 1: [410], 2: [0]})
         lmp = pd.DataFrame({'UTC': ['t1'], 1: [7.5], 2: [11.25], 3: [10]})
         pg = pd.DataFrame(
             {'UTC': ['t1'], 'A': [50], 'B': [285], 'C': [0], 'D': [75]})
@@ -50,7 +50,7 @@ class TestCalculateCongestionSurplus(unittest.TestCase):
     def test_calculate_congestion_surplus_three_times(self):
         """First: congested. Second: uncongested. Third: uncongested, fuzzy."""
         time_indices = ['t1', 't2', 't3']
-        demand = pd.DataFrame({'UTC': time_indices, 1: [410]*3})
+        demand = pd.DataFrame({'UTC': time_indices, 1: [410]*3, 2: [0]*3})
         lmp = pd.DataFrame({
             'UTC': time_indices,
             1: [7.5, 7.5, 7.5], 2: [11.25, 7.5, 7.5], 3: [10, 7.5, 7.49]})
@@ -84,7 +84,7 @@ class TestMappingHelpers(unittest.TestCase):
 
     def test_map_demand_to_buses(self):
         grid = MockGrid(grid_attrs)
-        demand = pd.DataFrame({'UTC': ['t1', 't2'], 1: [410]*2})
+        demand = pd.DataFrame({'UTC': ['t1', 't2'], 1: [410]*2, 2: [0]*2})
         demand.set_index('UTC', inplace=True)
         expected_return = pd.DataFrame({
             'UTC': ['t1', 't2'],
