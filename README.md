@@ -46,9 +46,9 @@ pf = scenario.state.get_pf()
 
 
 ## 4. Analyze
-The `postreise.analyze` module encloses the congestion analysis.
+The `postreise.analyze` module encloses several analysis modules.
 
-### A. Transmission Congestion Analysis
+### A. Transmission Congestion (Utilization) Analysis
 To carry out transmission congestion analyses per scenario:
 1. download the power flow output;
 2. calculate congestion statistics;
@@ -61,7 +61,92 @@ output of the ***[transmission_analysis_demo.ipynb][transmission]*** notebook
 is used to display the congested transmission lines. Note that since the plot
 outputs are meant to be interactive, they may not render on GitHub.
 
+### B. Transmission Congestion (Surplus) Analysis
+The congestion surplus for each hour can be calculated by calling
+```postreise.analyze.congestion.calculate_congestion_surplus(scenario)```
+where `scenario` is a powersimdata.scenario.scenario.Scenario object in Analyze
+state.
 
+### C. Analysis of Transmission Upgrades
+
+#### I. Cumulative Upgrade Quantity
+Using the change table of a scenario, the number of upgrades lines/transformers
+and their cumulative upgraded capacity (for transformers) and cumulative
+upgraded megawatt-miles (for lines) can be calculated with:
+```
+postreise.analyze.mwmiles.calculate_mw_miles(scenario)
+```
+where `scenario` is a powersimdata.scenario.scenario.Scenario object.
+
+#### II. Cumulative Upgrade Quantity
+The upgraded branches can also be classified into either interstate or
+intrastate branches by calling:
+```
+postreise.analyze.statelines.classify_interstate_intrastate(scenario)
+```
+where `scenario` is a powersimdata.scenario.scenario.Scenario object.
+
+### D. Carbon Analysis
+The hourly CO<sub>2</sub> emissions from a scenario may be analyzed by calling
+```
+postreise.analyze.carbon.generate_carbon_stats(scenario)
+```
+where `scenario` is a powersimdata.scenario.scenario.Scenario object in Analyze
+state.
+
+The resulting dataframe can be summed by generator type and bus by calling
+```
+postreise.analyze.carbon.summarize_carbon_by_bus(carbon, plant)
+```
+where `carbon` is a pandas.DataFrame as returned by `generate_carbon_stats` and
+`grid` is a powersimdata.input.grid.Grid object.
+
+### E. Curtailment Analysis
+The level of curtailment for a Scenario may be calculated in several ways.
+
+#### I. Calculating Time Series
+To calculate the time-series curtailment for each solar and wind generator, call
+```
+postreise.analyze.curtailment.calculate_curtailment_time_series(scenario)
+```
+where `scenario` is a powersimdata.scenario.scenario.Scenario object in Analyze
+state. To calculate the curtailment just for wind or solar, call
+```
+postreise.analyze.curtailment.calculate_curtailment_time_series(scenario, resources={'wind'})
+```
+or
+```
+postreise.analyze.curtailment.calculate_curtailment_time_series(scenario, resources={'solar'})
+```
+
+#### II. Summarizing Time Series: Plant => Bus/Location
+A curtailment dataframe with plants as columns can be further summarized by bus
+or by location (substation) with:
+```
+postreise.analyze.curtailment.summarize_curtailment_by_bus(curtailment, grid)
+```
+or
+```
+postreise.analyze.curtailment.summarize_curtailment_by_location(curtailment, grid)
+```
+where `curtailment` is a pandas.DataFrame as returned by
+`calculate_curtailment_time_series` and `grid` is a
+powersimdata.input.grid.Grid object.
+
+#### III. Calculating Annual Curtailment Percentage
+An annual average curtailment value can be found for all wind/solar plants with
+```
+postreise.analyze.curtailment.calculate_curtailment_percentage(scenario)
+```
+where `scenario` is a powersimdata.scenario.scenario.Scenario object in Analyze
+state. To calculate the average curtailment just for wind or solar, call
+```
+postreise.analyze.curtailment.calculate_curtailment_percentage(scenario, resources={'wind'})
+```
+or
+```
+postreise.analyze.curtailment.calculate_curtailment_percentage(scenario, resources={'solar'})
+```
 
 ## 5. Plot
 The `postreise.plot.analyze_pg` module is dedicated to the analysis of the PG
