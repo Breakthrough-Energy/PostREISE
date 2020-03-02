@@ -176,6 +176,19 @@ def copy_input(scenario_id):
     shutil.copyfile(src, dst)
 
 
+def delete_output(scenario_id):
+    """Deletes output MAT-files
+
+    :param str scenario_id: scenario id
+    """
+    folder = os.path.join(const.EXECUTE_DIR,
+                          'scenario_%s' % scenario_id,
+                          'output')
+    files = glob.glob(os.path.join(folder, 'result_*.mat'))
+    for f in files:
+        os.remove(f)
+
+
 def extract_scenario(scenario_id):
     """Extracts data and save data as csv.
 
@@ -185,15 +198,16 @@ def extract_scenario(scenario_id):
     scenario_info = get_scenario(scenario_id)
 
     copy_input(scenario_id)
+
     outputs = extract_data(scenario_info)
-    
     for k, v in outputs.items():
         v.to_pickle(os.path.join(
             const.OUTPUT_DIR, scenario_info['id']+'_'+k.upper()+'.pkl'))
 
-    # Update status
     insert_in_file(const.EXECUTE_LIST, scenario_info['id'], '2', 'extracted')
     insert_in_file(const.SCENARIO_LIST, scenario_info['id'], '4', 'analyze')
+
+    delete_output(scenario_id)
 
 
 if __name__ == "__main__":
