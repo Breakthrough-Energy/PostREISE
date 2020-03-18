@@ -8,7 +8,15 @@ class MockAnalyze:
         """Constructor.
 
         :param dict grid_attrs: fields to be added to grid.
+        :param pandas.DataFrame congl: dummy congl
+        :param pandas.DataFrame congu: dummy congu
+        :param dict ct: dummy ct
+        :param pandas.DataFrame demand: dummy demand
+        :param pandas.DataFrame lmp: dummy lmp
         :param pandas.DataFrame pg: dummy pg
+        :param pandas.DataFrame solar: dummy solar
+        :param pandas.DataFrame wind: dummy wind
+        :param pandas.DataFrame hydro: dummy hydro
         """
         self.grid = MockGrid(grid_attrs)
         self.congl = congl
