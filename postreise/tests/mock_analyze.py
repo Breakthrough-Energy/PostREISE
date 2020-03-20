@@ -21,7 +21,7 @@ class MockAnalyze:
         self.grid = MockGrid(grid_attrs)
         self.congl = congl
         self.congu = congu
-        self.ct = ct
+        self.ct = ct if ct is not None else {}
         self.demand = demand
         self.lmp = lmp
         self.pg = pg
