@@ -1,5 +1,8 @@
 import pandas as pd
 from powersimdata.input.grid import Grid
+from powersimdata.scenario.scenario import Scenario
+from powersimdata.scenario.analyze import Analyze
+
 
 def _check_df_grid(df, grid):
     """Ensure that dataframe and grid are of proper type for processing.
@@ -50,3 +53,24 @@ def summarize_plant_to_location(df, grid):
     location_data = df.T.groupby(locations_in_df).sum().T
     
     return location_data
+
+
+def sum_generation_by_type_zone(scenario):
+    """Sums generation for a Scenario in Analyze state by {type, zone}.
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
+    :return: (*pandas.DataFrame*) -- total generation, indexed by {type, zone}.
+    :raise Exception: if scenario is not a Scenario object in Analyze state.
+    """
+    if not isinstance(scenario, Scenario):
+        raise TypeError('scenario must be a Scenario object')
+    if not isinstance(scenario.state, Analyze):
+        raise ValueError('scenario.state must be Analyze')
+
+    pg = scenario.state.get_pg()
+    grid = scenario.state.get_grid()
+    plant = grid.plant
+
+    summed_gen_series = pg.sum().groupby([plant.type, plant.zone_id]).sum()
+    summed_gen_dataframe = summed_gen_series.unstack().fillna(value=0)
+
+    return summed_gen_dataframe

@@ -4,8 +4,10 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 import pandas as pd
 
 from powersimdata.tests.mock_grid import MockGrid
+from postreise.tests.mock_scenario import MockScenario
 from postreise.analyze.helpers import \
-    summarize_plant_to_bus, summarize_plant_to_location
+    summarize_plant_to_bus, summarize_plant_to_location, \
+    sum_generation_by_type_zone
 
 # plant_id is the index
 mock_plant = {
@@ -13,6 +15,8 @@ mock_plant = {
     'bus_id': [1, 1, 2, 3],
     'lat': [47.6, 47.6, 37.8, 37.8],
     'lon': [122.3, 122.3, 122.4, 122.4],
+    'zone_id': [1, 1, 2, 2],
+    'type': ['solar', 'wind', 'hydro', 'hydro']
     }
 
 # bus_id is the index
@@ -32,19 +36,20 @@ mock_pg = pd.DataFrame({
 grid_attrs = {'plant': mock_plant, 'bus': mock_bus}
 
 
+def _check_dataframe_matches(received_return, expected_return):
+    assert isinstance(received_return, pd.DataFrame)
+    assert_array_equal(
+        received_return.index.to_numpy(), expected_return.index.to_numpy())
+    assert_array_equal(
+        received_return.columns.to_numpy(), expected_return.columns.to_numpy())
+    assert_array_almost_equal(
+        received_return.to_numpy(), expected_return.to_numpy())
+
+
 class TestSummarizePlantToBus(unittest.TestCase):
     
     def setUp(self):
         self.grid = MockGrid(grid_attrs)
-
-    def _check_dataframe_matches(self, bus_data, expected_return):
-        self.assertIsInstance(bus_data, pd.DataFrame)
-        assert_array_equal(
-            bus_data.index.to_numpy(), expected_return.index.to_numpy())
-        assert_array_equal(
-            bus_data.columns.to_numpy(), expected_return.columns.to_numpy())
-        assert_array_almost_equal(
-            bus_data.to_numpy(), expected_return.to_numpy())
 
     def test_summarize_default(self):
         expected_return = pd.DataFrame({
@@ -53,7 +58,7 @@ class TestSummarizePlantToBus(unittest.TestCase):
             3: [1, 3, 5, 7],
             })
         bus_data = summarize_plant_to_bus(mock_pg, self.grid)
-        self._check_dataframe_matches(bus_data, expected_return)
+        _check_dataframe_matches(bus_data, expected_return)
 
     def test_summarize_all_buses_false(self):
         expected_return = pd.DataFrame({
@@ -62,7 +67,7 @@ class TestSummarizePlantToBus(unittest.TestCase):
             3: [1, 3, 5, 7],
             })
         bus_data = summarize_plant_to_bus(mock_pg, self.grid, all_buses=False)
-        self._check_dataframe_matches(bus_data, expected_return)
+        _check_dataframe_matches(bus_data, expected_return)
 
     def test_summarize_all_buses_true(self):
         expected_return = pd.DataFrame({
@@ -72,7 +77,7 @@ class TestSummarizePlantToBus(unittest.TestCase):
             4: [0, 0, 0, 0],
             })
         bus_data = summarize_plant_to_bus(mock_pg, self.grid, all_buses=True)
-        self._check_dataframe_matches(bus_data, expected_return)
+        _check_dataframe_matches(bus_data, expected_return)
 
 
 class TestSummarizePlantToLocation(unittest.TestCase):
@@ -98,3 +103,28 @@ class TestSummarizePlantToLocation(unittest.TestCase):
             })
         loc_data = summarize_plant_to_location(mock_pg, self.grid)
         self._check_dataframe_matches(loc_data, expected_return)
+
+
+class TestSumGenerationByTypeZone(unittest.TestCase):
+
+    def setUp(self):
+        self.scenario = MockScenario(grid_attrs, pg=mock_pg)
+
+    def test_sum_generation(self):
+        expected_return = pd.DataFrame({
+            'type': ['hydro', 'solar', 'wind'],
+            1: [0, 10, 15],
+            2: [23, 0, 0]})
+        expected_return.set_index('type', inplace=True)
+        summed_generation = sum_generation_by_type_zone(self.scenario)
+        _check_dataframe_matches(summed_generation, expected_return)
+
+    def test_with_string(self):
+        with self.assertRaises(TypeError):
+            sum_generation_by_type_zone('scenario_number')
+
+    def test_with_scenario_not_analyze(self):
+        test_scenario = MockScenario(grid_attrs, pg=mock_pg)
+        test_scenario.state = 'Create'
+        with self.assertRaises(ValueError):
+            sum_generation_by_type_zone(test_scenario)
