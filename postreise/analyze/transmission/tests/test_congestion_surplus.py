@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from postreise.analyze.congestion import \
+from postreise.analyze.transmission.congestion import \
     calculate_congestion_surplus, map_demand_to_buses
 from powersimdata.tests.mock_grid import MockGrid
 from postreise.tests.mock_scenario import MockScenario
