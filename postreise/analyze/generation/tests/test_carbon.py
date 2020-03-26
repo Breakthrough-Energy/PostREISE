@@ -5,19 +5,15 @@ from numpy.testing import assert_array_almost_equal
 import pandas as pd
 
 from postreise.tests.mock_scenario import MockScenario
-from postreise.analyze.carbon import generate_carbon_stats
-from postreise.analyze.carbon import summarize_carbon_by_bus
+from postreise.analyze.generation.carbon import \
+    generate_carbon_stats, summarize_carbon_by_bus
 
 # plant_id is the index
 mock_plant = {
     'plant_id': [101, 102, 103, 104, 105],
     'bus_id': [1001, 1002, 1003, 1004, 1005],
     'type': ['solar', 'wind', 'ng', 'coal', 'dfo'],
-    'zone_id': [1, 2, 3, 1, 3],
-    'Pmax': [200, 150, 100, 300, 120],
     'GenFuelCost': [0, 0, 3.3, 4.4, 5.5],
-    'Pmin': [20, 30, 25, 100, 20],
-    'Pmax': [40, 80, 50, 150, 80],
     }
 
 # branch_id is the index

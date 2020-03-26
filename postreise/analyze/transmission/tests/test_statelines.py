@@ -1,7 +1,8 @@
 import unittest
 
 from powersimdata.tests.mock_grid import MockGrid
-from postreise.analyze.statelines import _classify_interstate_intrastate
+from postreise.analyze.transmission.statelines import \
+    _classify_interstate_intrastate
 
 # branch_id is the index
 mock_branch = {

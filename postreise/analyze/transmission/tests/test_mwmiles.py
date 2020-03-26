@@ -1,7 +1,7 @@
 import unittest
 
 from powersimdata.tests.mock_grid import MockGrid
-from postreise.analyze.mwmiles import _calculate_mw_miles
+from postreise.analyze.transmission.mwmiles import _calculate_mw_miles
 
 # branch 11 from Seattle to San Francisco (~679 miles)
 # branch 12 from Seattle to Spokane (~229 miles)
