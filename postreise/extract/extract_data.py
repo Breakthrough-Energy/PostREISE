@@ -41,8 +41,8 @@ def insert_in_file(filename, scenario_id, column_number, column_value):
 
 
 def extract_data(scenario_info):
-    """Builds data frames of {PG, PF, LMP, CONGU, CONGL}
-        from MATLAB simulation output binary files produced by MATPOWER.
+    """Builds data frames of {PG, PF, LMP, CONGU, CONGL} from MATLAB simulation
+        output binary files produced by MATPOWER.
 
     :param dict scenario_info: scenario information.
     :return: (*pandas.DataFrame*) -- data frames of: PG, PF, LMP, CONGU, CONGL.
@@ -162,8 +162,37 @@ def extract_data(scenario_info):
     return outputs
 
 
+def calculate_averaged_congestion(congl, congu):
+    """Calculates the averaged congestion lower (upper) flow limit.
+
+    :param pandas.DataFrame congl: congestion lower power flow limit.
+    :param pandas.DataFrame congu: congestion upper power flow limit.
+    :return: (*pandas.DataFrame*) -- averaged congestion power flow limit.
+        Indices are the branch id and columns are the averaged congestion lower
+        and upper power flow limit.
+    :raises TypeError: if arguments are not data frame.
+    :raises ValueError: if shape or indices of data frames differ.
+    """
+    for k, v in locals().items():
+        if not isinstance(v, pd.DataFrame):
+            raise TypeError('%s must be a pandas data frame' % k)
+
+    if congl.shape != congu.shape:
+        raise ValueError('%data frame must have same shape')
+
+    if not all(congl.columns == congu.columns):
+        raise ValueError('%data frame must have same indices')
+
+    mean_congl = congl.mean()
+    mean_congl.name = 'CONGL'
+    mean_congu = congu.mean()
+    mean_congu.name = 'CONGU'
+
+    return pd.merge(mean_congl, mean_congu, left_index=True, right_index=True)
+
+
 def copy_input(scenario_id):
-    """Copies input file
+    """Copies input file.
 
     :param str scenario_id: scenario id
     """
@@ -177,9 +206,9 @@ def copy_input(scenario_id):
 
 
 def delete_output(scenario_id):
-    """Deletes output MAT-files
+    """Deletes output MAT-files.
 
-    :param str scenario_id: scenario id
+    :param str scenario_id: scenario id.
     """
     folder = os.path.join(const.EXECUTE_DIR,
                           'scenario_%s' % scenario_id,
@@ -190,7 +219,7 @@ def delete_output(scenario_id):
 
 
 def extract_scenario(scenario_id):
-    """Extracts data and save data as csv.
+    """Extracts data and save data as pickle files.
 
     :param str scenario_id: scenario id.
     """
@@ -203,6 +232,10 @@ def extract_scenario(scenario_id):
     for k, v in outputs.items():
         v.to_pickle(os.path.join(
             const.OUTPUT_DIR, scenario_info['id']+'_'+k.upper()+'.pkl'))
+
+    calculate_averaged_congestion(
+        outputs['CONGL'], outputs['CONGU']).to_pickle(os.path.join(
+            const.OUTPUT_DIR, scenario_info['id'] + '_AVERAGED_CONG.pkl'))
 
     insert_in_file(const.EXECUTE_LIST, scenario_info['id'], '2', 'extracted')
     insert_in_file(const.SCENARIO_LIST, scenario_info['id'], '4', 'analyze')
