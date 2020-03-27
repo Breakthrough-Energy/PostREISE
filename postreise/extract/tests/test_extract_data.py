@@ -57,4 +57,4 @@ def test_calculate_averaged_congestion_returned_df_values():
     congl = pd.DataFrame({'bart': [1, 2, 3, 4], 'lisa': [10, 11, 12, 13]})
     congu = pd.DataFrame({'bart': [21, 22, 23, 24], 'lisa': [30, 31, 32, 33]})
     mean_cong = calculate_averaged_congestion(congl, congu)
-    assert np.array_equal(mean_cong.values, [[ 2.5, 22.5], [11.5, 31.5]])
+    assert np.array_equal(mean_cong.values, [[2.5, 22.5], [11.5, 31.5]])
