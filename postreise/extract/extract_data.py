@@ -234,7 +234,7 @@ def extract_scenario(scenario_id):
             const.OUTPUT_DIR, scenario_info['id']+'_'+k.upper()+'.pkl'))
 
     calculate_averaged_congestion(
-        outputs['CONGL'], outputs['CONGU']).to_pickle(os.path.join(
+        outputs['congl'], outputs['congu']).to_pickle(os.path.join(
             const.OUTPUT_DIR, scenario_info['id'] + '_AVERAGED_CONG.pkl'))
 
     insert_in_file(const.EXECUTE_LIST, scenario_info['id'], '2', 'extracted')
