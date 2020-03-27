@@ -99,11 +99,13 @@ def extract_data(scenario_info):
         except AttributeError:
             pass
         for v in extraction_vars:
-            if i > 0:
-                outputs[v] = outputs[v].append(pd.DataFrame(temps[v]))
-            else:
-                outputs[v] = pd.DataFrame(temps[v])
+            if i == 0:
+                interval_length, n_columns = temps[v].shape
+                total_length = end_index * interval_length
+                outputs[v] = pd.DataFrame(np.zeros((total_length, n_columns)))
                 outputs[v].name = scenario_info['id'] + '_' + v.upper()
+            start_hour, end_hour = (i*interval_length), ((i+1)*interval_length)
+            outputs[v].iloc[start_hour:end_hour, :] = temps[v]
     
     print(extraction_vars)
 
