@@ -54,6 +54,7 @@ def extract_data(scenario_info):
     optimize_time = []
 
     extraction_vars = ['pf', 'pg', 'lmp', 'congu', 'congl']
+    sparse_extraction_vars = {'congu', 'congl'}
     temps = {}
     outputs = {}
 
@@ -160,6 +161,10 @@ def extract_data(scenario_info):
             outputs[k].columns = [v]
         else:
             outputs[k].columns = v.tolist()
+
+    # Convert outputs with many zero or near-zero values to sparse dtype
+    for v in sparse_extraction_vars:
+        outputs[v] = outputs[v].round(6).astype(pd.SparseDtype("float", 0))
 
     return outputs
 
