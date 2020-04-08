@@ -35,6 +35,15 @@ def get_borders(us_states):
 
     return a, b
 
+def group_lat_lon(bus_map):
+    bus_map1 = bus_map
+
+    bus_map1.lat = bus_map1.lat.round()
+    bus_map1.lon = bus_map1.lon.round()
+
+    bus_map1 = bus_map1.groupby(["lat", "lon"]).agg({'coal': 'sum', 'ng': 'sum', 'x': 'mean', 'y': 'mean'})
+    return bus_map1
+
 def map_carbon_emission(bus_info_and_emission, scenario_name,
                         color_coal='black', color_ng='purple',
                         label_coal="Coal: tons", label_ng="NG: tons", us_states = us_states):
@@ -50,8 +59,11 @@ def map_carbon_emission(bus_info_and_emission, scenario_name,
     :param str label_ng: label for legend associated with ng.
     """
     bus_map = project_bus(bus_info_and_emission)
+    bus_map = group_lat_lon(bus_map)
+
     us_states = us_states.data.copy()
     a,b = get_borders(us_states)
+
     bus_source = ColumnDataSource({
         'x': bus_map['x'],
         'y': bus_map['y'],
