@@ -5,13 +5,39 @@ from bokeh.tile_providers import get_provider, Vendors
 from bokeh.io import output_notebook
 from bokeh.models import ColumnDataSource, LabelSet
 from bokeh.layouts import row
-
+from bokeh.sampledata import us_states
 from postreise.plot.projection_helpers import project_bus
+from pyproj import Proj, transform
 
+#prepare data for us state borders
+def get_borders(us_states):
+    del us_states["HI"]
+    del us_states["AK"]
+    # separate latitude and longitude points for the borders of the states.
+    state_xs = [us_states[code]["lons"] for code in us_states]
+    state_ys = [us_states[code]["lats"] for code in us_states]
+    #transform/reproject coordinates for Bokeh
+    prj_wgs = Proj(init='epsg:4326')
+    prj_itm = Proj(init='EPSG:3857')
+    a1 = []
+    b1 = []
+    a = []
+    b = []
+    for j in range(0, len(state_xs)):
+        for i in range(0,len(state_xs[j])):
+            a_a,b_b = transform(prj_wgs, prj_itm, state_xs[j][i], state_ys[j][i])
+            a1.append(a_a)
+            b1.append(b_b)
+        a.append(a1)
+        b.append(b1)
+        a1 = []
+        b1 = []
+
+    return a, b
 
 def map_carbon_emission(bus_info_and_emission, scenario_name,
                         color_coal='black', color_ng='purple',
-                        label_coal="Coal: tons", label_ng="NG: tons"):
+                        label_coal="Coal: tons", label_ng="NG: tons", us_states = us_states):
     """Makes map of carbon emissions, color code by fuel type. Size/area
         indicates emissions.
 
@@ -24,7 +50,8 @@ def map_carbon_emission(bus_info_and_emission, scenario_name,
     :param str label_ng: label for legend associated with ng.
     """
     bus_map = project_bus(bus_info_and_emission)
-
+    us_states = us_states.data.copy()
+    a,b = get_borders(us_states)
     bus_source = ColumnDataSource({
         'x': bus_map['x'],
         'y': bus_map['y'],
@@ -39,6 +66,10 @@ def map_carbon_emission(bus_info_and_emission, scenario_name,
                       toolbar_location=None, plot_width=200, plot_height=400,
                       y_range=(0, 4), x_range=(0, 2))
     p.add_tile(get_provider(Vendors.CARTODBPOSITRON_RETINA))
+    #state borders
+    p.patches(a, b, fill_alpha=0.0,
+        line_color="black", line_width=2)
+    #emissions circles
     p.circle('x', 'y', fill_color=color_coal, color=color_coal, alpha=0.25,
              size='coal', source=bus_source)
     p.circle('x', 'y', fill_color=color_ng, color=color_ng, alpha=0.25,
