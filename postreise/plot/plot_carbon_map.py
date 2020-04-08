@@ -113,7 +113,7 @@ def combine_bus_info_and_emission(bus_info, carbon_by_bus):
     :param pandas.DataFrame bus_info: bus data frame.
     :param dict carbon_by_bus: keys are fuel type and values is a dictionary
         where keys and values are the bus id and emission, respectively. This is
-        returned :func:`postreise.analyze.carbon.summarize_carbon_by_bus`.
+        returned :func:`postreise.analyze.generation.carbon.summarize_carbon_by_bus`.
     :return: (*pandas.DataFrame*) -- combined data frame.
     """
 
