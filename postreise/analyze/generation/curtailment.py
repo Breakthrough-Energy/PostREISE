@@ -42,8 +42,8 @@ def _check_resource_in_scenario(resources, scenario):
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :return: (*None*).
     """
-    gentypes_in_grid = scenario.state.get_grid().plant['type'].unique()
-    if resources not in gentypes_in_grid:
+    gentypes_in_grid = set(scenario.state.get_grid().plant['type'].unique())
+    if not set(resources) <= gentypes_in_grid:
         err_msg = 'Curtailment requested for resources not in scenario.'
         err_msg += ' Requested: ' + ', '.join(resources)
         err_msg += '. Scenario: ' + ', '.join(gentypes_in_grid)

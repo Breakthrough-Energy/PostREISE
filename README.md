@@ -63,7 +63,9 @@ outputs are meant to be interactive, they may not render on GitHub.
 
 ### B. Transmission Congestion (Surplus) Analysis
 The congestion surplus for each hour can be calculated by calling
-```postreise.analyze.congestion.calculate_congestion_surplus(scenario)```
+```
+postreise.analyze.transmission.congestion.calculate_congestion_surplus(scenario)
+```
 where `scenario` is a powersimdata.scenario.scenario.Scenario object in Analyze
 state.
 
@@ -74,7 +76,7 @@ Using the change table of a scenario, the number of upgrades lines/transformers
 and their cumulative upgraded capacity (for transformers) and cumulative
 upgraded megawatt-miles (for lines) can be calculated with:
 ```
-postreise.analyze.mwmiles.calculate_mw_miles(scenario)
+postreise.analyze.transmission.mwmiles.calculate_mw_miles(scenario)
 ```
 where `scenario` is a powersimdata.scenario.scenario.Scenario object.
 
@@ -82,21 +84,21 @@ where `scenario` is a powersimdata.scenario.scenario.Scenario object.
 The upgraded branches can also be classified into either interstate or
 intrastate branches by calling:
 ```
-postreise.analyze.statelines.classify_interstate_intrastate(scenario)
+postreise.analyze.transmission.statelines.classify_interstate_intrastate(scenario)
 ```
 where `scenario` is a powersimdata.scenario.scenario.Scenario object.
 
 ### D. Carbon Analysis
 The hourly CO<sub>2</sub> emissions from a scenario may be analyzed by calling
 ```
-postreise.analyze.carbon.generate_carbon_stats(scenario)
+postreise.analyze.generation.carbon.generate_carbon_stats(scenario)
 ```
 where `scenario` is a powersimdata.scenario.scenario.Scenario object in Analyze
 state.
 
 The resulting dataframe can be summed by generator type and bus by calling
 ```
-postreise.analyze.carbon.summarize_carbon_by_bus(carbon, plant)
+postreise.analyze.generation.carbon.summarize_carbon_by_bus(carbon, plant)
 ```
 where `carbon` is a pandas.DataFrame as returned by `generate_carbon_stats` and
 `grid` is a powersimdata.input.grid.Grid object.
@@ -107,27 +109,27 @@ The level of curtailment for a Scenario may be calculated in several ways.
 #### I. Calculating Time Series
 To calculate the time-series curtailment for each solar and wind generator, call
 ```
-postreise.analyze.curtailment.calculate_curtailment_time_series(scenario)
+postreise.analyze.generation.curtailment.calculate_curtailment_time_series(scenario)
 ```
 where `scenario` is a powersimdata.scenario.scenario.Scenario object in Analyze
 state. To calculate the curtailment just for wind or solar, call
 ```
-postreise.analyze.curtailment.calculate_curtailment_time_series(scenario, resources={'wind'})
+postreise.analyze.generation.curtailment.calculate_curtailment_time_series(scenario, resources={'wind'})
 ```
 or
 ```
-postreise.analyze.curtailment.calculate_curtailment_time_series(scenario, resources={'solar'})
+postreise.analyze.generation.curtailment.calculate_curtailment_time_series(scenario, resources={'solar'})
 ```
 
 #### II. Summarizing Time Series: Plant => Bus/Location
 A curtailment dataframe with plants as columns can be further summarized by bus
 or by location (substation) with:
 ```
-postreise.analyze.curtailment.summarize_curtailment_by_bus(curtailment, grid)
+postreise.analyze.generation.curtailment.summarize_curtailment_by_bus(curtailment, grid)
 ```
 or
 ```
-postreise.analyze.curtailment.summarize_curtailment_by_location(curtailment, grid)
+postreise.analyze.generation.curtailment.summarize_curtailment_by_location(curtailment, grid)
 ```
 where `curtailment` is a pandas.DataFrame as returned by
 `calculate_curtailment_time_series` and `grid` is a
@@ -136,16 +138,16 @@ powersimdata.input.grid.Grid object.
 #### III. Calculating Annual Curtailment Percentage
 An annual average curtailment value can be found for all wind/solar plants with
 ```
-postreise.analyze.curtailment.calculate_curtailment_percentage(scenario)
+postreise.analyze.generation.curtailment.calculate_curtailment_percentage(scenario)
 ```
 where `scenario` is a powersimdata.scenario.scenario.Scenario object in Analyze
 state. To calculate the average curtailment just for wind or solar, call
 ```
-postreise.analyze.curtailment.calculate_curtailment_percentage(scenario, resources={'wind'})
+postreise.analyze.generation.curtailment.calculate_curtailment_percentage(scenario, resources={'wind'})
 ```
 or
 ```
-postreise.analyze.curtailment.calculate_curtailment_percentage(scenario, resources={'solar'})
+postreise.analyze.generation.curtailment.calculate_curtailment_percentage(scenario, resources={'solar'})
 ```
 
 ## 5. Plot
