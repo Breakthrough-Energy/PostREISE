@@ -71,10 +71,22 @@ class TestCalculateCurtailmentTimeSeries(unittest.TestCase):
             scenario, resources=('solar',))
         self._check_curtailment_vs_expected(curtailment, expected_return)
 
-    def test_calculate_curtailment_time_series_wind(self):
+    def test_calculate_curtailment_time_series_wind_tuple(self):
         expected_return = {'wind': mock_curtailment['wind']}
         curtailment = calculate_curtailment_time_series(
             scenario, resources=('wind',))
+        self._check_curtailment_vs_expected(curtailment, expected_return)
+    
+    def test_calculate_curtailment_time_series_wind_set(self):
+        expected_return = {'wind': mock_curtailment['wind']}
+        curtailment = calculate_curtailment_time_series(
+            scenario, resources={'wind'})
+        self._check_curtailment_vs_expected(curtailment, expected_return)
+    
+    def test_calculate_curtailment_time_series_wind_list(self):
+        expected_return = {'wind': mock_curtailment['wind']}
+        curtailment = calculate_curtailment_time_series(
+            scenario, resources=['wind'])
         self._check_curtailment_vs_expected(curtailment, expected_return)
 
     def test_calculate_curtailment_time_series_default(self):
@@ -82,10 +94,22 @@ class TestCalculateCurtailmentTimeSeries(unittest.TestCase):
         curtailment = calculate_curtailment_time_series(scenario)
         self._check_curtailment_vs_expected(curtailment, expected_return)
 
-    def test_calculate_curtailment_time_series_solar_wind(self):
+    def test_calculate_curtailment_time_series_solar_wind_tuple(self):
         expected_return = mock_curtailment
         curtailment = calculate_curtailment_time_series(
-            scenario, resources=('solar', 'wind',))
+            scenario, resources=('solar', 'wind'))
+        self._check_curtailment_vs_expected(curtailment, expected_return)
+    
+    def test_calculate_curtailment_time_series_solar_wind_set(self):
+        expected_return = mock_curtailment
+        curtailment = calculate_curtailment_time_series(
+            scenario, resources={'solar', 'wind'})
+        self._check_curtailment_vs_expected(curtailment, expected_return)
+    
+    def test_calculate_curtailment_time_series_wind_solar_list(self):
+        expected_return = mock_curtailment
+        curtailment = calculate_curtailment_time_series(
+            scenario, resources=['wind', 'solar'])
         self._check_curtailment_vs_expected(curtailment, expected_return)
 
 
