@@ -3,22 +3,30 @@ import pandas as pd
 from bokeh.plotting import show, figure
 from bokeh.tile_providers import get_provider, Vendors
 from bokeh.io import output_notebook
-from bokeh.models import ColumnDataSource, LabelSet
+from bokeh.models import ColumnDataSource, LabelSet, Label
 from bokeh.layouts import row
 from bokeh.sampledata import us_states
 from postreise.plot.projection_helpers import project_bus
 from pyproj import Proj, transform
 
+# make default states list
+default_states_dict = us_states.data.copy()
+del default_states_dict["HI"]
+del default_states_dict["AK"]
+default_states_list = list(default_states_dict.keys())
 
-def get_borders(us_states_dat):
+
+def get_borders(us_states_dat, state_list=None):
     """Prepares US state borders data for use on the map.
 
     :param dict us_states_dat: us_states data file, imported from bokeh
+    :param list state_list: us states, defaults to all states except AK and HI
     :return: (*tuple*) -- reprojected coordinates for use on map.
     """
-    del us_states_dat["HI"]
-    del us_states_dat["AK"]
     # separate latitude and longitude points for the borders of the states.
+    if state_list is None:
+        state_list = default_states_list
+    us_states_dat = dict((k, us_states_dat[k]) for k in state_list)
     state_xs = [us_states_dat[code]["lons"] for code in us_states_dat]
     state_ys = [us_states_dat[code]["lats"] for code in us_states_dat]
     # transform/re-project coordinates for Bokeh
@@ -40,6 +48,50 @@ def get_borders(us_states_dat):
         b1 = []
 
     return a, b
+
+
+def plot_states(state_list, col_list, labels_list,
+                us_states_dat=us_states.data):
+    """Plots US state borders and allows color coding by state,
+        for example to represent different emissions goals.
+
+    :param labels_list: list of labels for us states.
+    :param state_list: list of us states to color code.
+    :param col_list: list of colors associated with states in state_list.
+    :param dict us_states_dat: us_states data file, imported from bokeh.
+    :return:  -- map of us states with option to color by value.
+    """
+    # warn if inputs diff lengths
+    if len(state_list) != len(col_list):
+        print('warning: state_list and col_list must be same length')
+    if len(state_list) != len(labels_list):
+        print('warning: state_list and labels_list must be same length')
+
+    a, b = get_borders(us_states_dat.copy())
+
+    tools: str = "pan,wheel_zoom,reset,hover,save"
+    p = figure(title='US States', tools=tools, x_axis_location=None,
+               y_axis_location=None, plot_width=800, plot_height=800)
+    p.add_tile(get_provider(Vendors.CARTODBPOSITRON_RETINA))
+    p.patches(a, b, fill_alpha=0, fill_color='blue',
+              line_color="black", line_width=2)
+    # counter
+    n = -1
+    # loop through states and colors, plot patches
+    for i in state_list:
+        n = n+1
+        a1, b1 = get_borders(us_states_dat.copy(), state_list=[i])
+        p.patches(a1, b1, fill_alpha=0.8, fill_color=[col_list[n]],
+                  line_color="black", line_width=2)
+        citation = Label(x=min(a1[0])+100000, y=(max(b1[0])+min(b1[0])) / 2,
+                         x_units='data', y_units='data', text_font_size='20pt',
+                         text=labels_list[n], render_mode='css',
+                         border_line_color='black', border_line_alpha=0,
+                         background_fill_color='white',
+                         background_fill_alpha=0.8)
+        p.add_layout(citation)
+    output_notebook()
+    show(p)
 
 
 def group_lat_lon(bus_map):
@@ -69,7 +121,6 @@ def map_carbon_emission(bus_info_and_emission, scenario_name,
     """Makes map of carbon emissions, color code by fuel type. Size/area
         indicates emissions.
 
-    :param dict us_states_dat: us_states data file, imported from bokeh
     :param pandas.DataFrame bus_info_and_emission: info and emission of buses
         as returned by :func:`combine_bus_info_and_emission`.
     :param str scenario_name: name of scenario for labeling.
@@ -77,6 +128,7 @@ def map_carbon_emission(bus_info_and_emission, scenario_name,
     :param str color_ng: color assigned for ng, default to purple.
     :param str label_coal: label for legend associated with coal.
     :param str label_ng: label for legend associated with ng.
+    :param dict us_states_dat: us_states data file, imported from bokeh
     """
     bus_map = project_bus(bus_info_and_emission)
     bus_map = group_lat_lon(bus_map)
