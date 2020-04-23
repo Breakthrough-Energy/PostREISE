@@ -6,7 +6,7 @@ import pandas as pd
 from postreise.analyze.transmission.congestion import \
     calculate_congestion_surplus, map_demand_to_buses
 from powersimdata.tests.mock_grid import MockGrid
-from postreise.tests.mock_scenario import MockScenario
+from powersimdata.tests.mock_scenario import MockScenario
 
 mock_plant = {
     'plant_id': ['A', 'B', 'C', 'D'],

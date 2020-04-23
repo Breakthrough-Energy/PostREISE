@@ -4,7 +4,7 @@ import numpy as np
 from numpy.testing import assert_array_almost_equal
 import pandas as pd
 
-from postreise.tests.mock_scenario import MockScenario
+from powersimdata.tests.mock_scenario import MockScenario
 from postreise.analyze.generation.carbon import \
     generate_carbon_stats, summarize_carbon_by_bus
 

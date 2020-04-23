@@ -3,7 +3,7 @@ import unittest
 from numpy.testing import assert_array_equal
 import pandas as pd
 
-from postreise.tests.mock_scenario import MockScenario
+from powersimdata.tests.mock_scenario import MockScenario
 from postreise.analyze.generation.curtailment import \
     calculate_curtailment_time_series, calculate_curtailment_percentage, \
     summarize_curtailment_by_bus, summarize_curtailment_by_location
