@@ -2,7 +2,7 @@ import unittest
 
 import pandas as pd
 
-from postreise.tests.mock_scenario import MockScenario
+from powersimdata.tests.mock_scenario import MockScenario
 from postreise.analyze.tests.test_helpers import check_dataframe_matches
 from postreise.analyze.generation.summarize import sum_generation_by_type_zone
 

@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from postreise.analyze.transmission.distance import great_circle_distance
+from powersimdata.utility.distance import great_circle_distance
 
 
 def get_utilization(branch, pf):

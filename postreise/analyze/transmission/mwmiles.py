@@ -1,4 +1,4 @@
-from postreise.analyze.transmission.distance import haversine
+from powersimdata.utility.distance import haversine
 from powersimdata.input.grid import Grid
 
 
