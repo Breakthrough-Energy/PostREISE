@@ -1,8 +1,0 @@
-version: '3.7'
-services:
-  postreise:
-    build:
-      context: .
-    container_name: postreise
-    volumes:
-      - $PWD:/tmp/PostREISE
