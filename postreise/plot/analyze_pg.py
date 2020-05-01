@@ -489,7 +489,7 @@ class AnalyzePG:
                     net_demand['net_demand'] = net_demand['net_demand'] - pg_t
                     curtailment_t = self._get_profile(zone, t).sum(
                         axis=1).tolist() - pg_t
-                    pg_stack[key] = curtailment_t
+                    pg_stack[key] = np.clip(curtailment_t, 0, None)
 
             if self.normalize:
                 pg_stack = pg_stack.divide(capacity * self.timestep,
