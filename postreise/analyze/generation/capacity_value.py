@@ -43,7 +43,7 @@ def check_scenario_resources_hours(scenario, resources, hours):
         raise ValueError('hours must not be greater than simulation length')
     # Finally, return the set of resources
     return resources
-    
+
 
 def calculate_NLDC(scenario, resources, hours=100):
     """Calculate the capacity value of a class of resources by comparing the
@@ -59,11 +59,33 @@ def calculate_NLDC(scenario, resources, hours=100):
     resources = check_scenario_resources_hours(scenario, resources, hours)
     # Then calculate capacity value
     total_demand = scenario.state.get_demand().sum(axis=1)
+    prev_peak = total_demand.sort_values(ascending=False).head(hours).mean()
     plant_groupby = scenario.state.get_grid().plant.groupby('type')
     plant_indices = sum(
         [plant_groupby.get_group(r).index.tolist() for r in resources], [])
     resource_generation = scenario.state.get_pg()[plant_indices].sum(axis=1)
-    prev_peak = total_demand.sort_values(ascending=False).head(hours).mean()
     net_demand = total_demand - resource_generation
     net_peak = net_demand.sort_values(ascending=False).head(hours).mean()
     return prev_peak - net_peak
+
+
+def calculate_net_load_peak(scenario, resources, hours=100):
+    """Calculate the capacity value of a class of resources by averaging the
+    power generated in the top N hours of net load peak.
+
+    :param powersimdata.scenario.scenario.Scenario scenario: analyzed scenario.
+    :param (str/list/tuple/set) resources: one or more resources to analyze.
+    :param int hours: number of hours to analyze.
+    :return: (*float*) -- resource capacity during hours of peak net demand.
+    """
+    # Check inputs
+    resources = check_scenario_resources_hours(scenario, resources, hours)
+    # Then calculate capacity value
+    total_demand = scenario.state.get_demand().sum(axis=1)
+    plant_groupby = scenario.state.get_grid().plant.groupby('type')
+    plant_indices = sum(
+        [plant_groupby.get_group(r).index.tolist() for r in resources], [])
+    resource_generation = scenario.state.get_pg()[plant_indices].sum(axis=1)
+    net_demand = total_demand - resource_generation
+    top_hours = net_demand.sort_values(ascending=False).head(hours).index
+    return resource_generation[top_hours].mean()
