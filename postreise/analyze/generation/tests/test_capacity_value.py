@@ -3,7 +3,8 @@ import pytest
 from pytest import approx
 
 from powersimdata.tests.mock_scenario import MockScenario
-from postreise.analyze.generation.capacity_value import calculate_NLDC
+from postreise.analyze.generation.capacity_value import \
+    calculate_NLDC, check_scenario_resources_hours
 
 
 mock_plant = {
@@ -64,39 +65,39 @@ def test_NLDC_calculation_solar_wind():
 
 def test_failure_scenario_type():
     with pytest.raises(TypeError):
-        calculate_NLDC('scenario', ['solar', 'wind'], hours=10)
+        check_scenario_resources_hours('scenario', ['solar', 'wind'], hours=10)
 
 
 def test_failure_resources_type():
     with pytest.raises(TypeError):
-        calculate_NLDC(scenario, {'solar': 'wind'}, hours=10)
+        check_scenario_resources_hours(scenario, {'solar': 'wind'}, hours=10)
 
 
 def test_failure_hours_type():
     with pytest.raises(TypeError):
-        calculate_NLDC(scenario, ['solar', 'wind'], hours=10.0)
+        check_scenario_resources_hours(scenario, ['solar', 'wind'], hours=10.0)
 
 
 def test_failure_no_resources_present():
     with pytest.raises(ValueError):
-        calculate_NLDC(scenario, ['geothermal'], hours=10)
+        check_scenario_resources_hours(scenario, ['geothermal'], hours=10)
 
 
 def test_failure_one_resource_not_present():
     with pytest.raises(ValueError):
-        calculate_NLDC(scenario, ['solar', 'wind', 'geothermal'], 10)
+        check_scenario_resources_hours(scenario, ['wind', 'geothermal'], 10)
 
 
 def test_failure_no_resources():
     with pytest.raises(ValueError):
-        calculate_NLDC(scenario, [], 10)
+        check_scenario_resources_hours(scenario, [], 10)
 
 
 def test_failure_zero_hours():
     with pytest.raises(ValueError):
-        calculate_NLDC(scenario, ['solar'], hours=0)
+        check_scenario_resources_hours(scenario, ['solar'], hours=0)
 
 
 def test_failure_too_many_hours():
     with pytest.raises(ValueError):
-        calculate_NLDC(scenario, ['solar'], hours=100)
+        check_scenario_resources_hours(scenario, ['solar'], hours=100)
