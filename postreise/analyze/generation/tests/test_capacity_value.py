@@ -4,7 +4,7 @@ from pytest import approx
 
 from powersimdata.tests.mock_scenario import MockScenario
 from postreise.analyze.generation.capacity_value import \
-    calculate_NLDC, check_scenario_resources_hours
+    check_scenario_resources_hours, calculate_NLDC, calculate_net_load_peak
 
 
 mock_plant = {
@@ -54,13 +54,37 @@ def test_NLDC_calculation_solar():
 
 
 def test_NLDC_calculation_wind_solar():
-    capacity_value = calculate_NLDC(scenario, ['wind', 'solar'], 10)
-    assert capacity_value == approx(8478.9)
+    assert calculate_NLDC(scenario, ['wind', 'solar'], 10) == approx(8478.9)
 
 
 def test_NLDC_calculation_solar_wind():
-    capacity_value = calculate_NLDC(scenario, ['solar', 'wind'], 10)
-    assert capacity_value == approx(8478.9)
+    assert calculate_NLDC(scenario, ['solar', 'wind'], 10) == approx(8478.9)
+
+
+def test_calculate_net_load_peak_solar():
+    assert calculate_net_load_peak(scenario, {'solar'}, 10) == approx(2535.2)
+
+
+def test_calculate_net_load_peak_solar_5():
+    assert calculate_net_load_peak(scenario, {'solar'}, 5) == approx(2088.6)
+
+
+def test_calculate_net_load_peak_wind():
+    assert calculate_net_load_peak(scenario, {'wind'}, 10) == approx(3370.8)
+
+
+def test_calculate_net_load_peak_wind_5():
+    assert calculate_net_load_peak(scenario, {'wind'}, 5) == approx(3017.4)
+
+
+def test_calculate_net_load_peak_solar_wind():
+    capacity_value = calculate_net_load_peak(scenario, {'solar', 'wind'}, 10)
+    assert capacity_value == approx(8211.5)
+
+
+def test_calculate_net_load_peak_solar_wind_5():
+    capacity_value = calculate_net_load_peak(scenario, {'solar', 'wind'}, 5)
+    assert capacity_value == approx(7397.2)
 
 
 def test_failure_scenario_type():
