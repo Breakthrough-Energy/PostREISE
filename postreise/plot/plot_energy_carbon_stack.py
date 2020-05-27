@@ -1,3 +1,6 @@
+# This plotting module has a corresponding demo notebook in
+#   PostREISE/postreise/plot/demo: plot_carbon_energy_carbon_stack.ipynb
+
 import matplotlib.pyplot as plt
 import numpy as np
 
