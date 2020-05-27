@@ -60,12 +60,12 @@ class TestCalculateCurtailmentTimeSeries(unittest.TestCase):
         self.assertEqual(curtailment.keys(), expected.keys())
         for key in curtailment.keys():
             self.assertIsInstance(curtailment[key], pd.DataFrame)
-        assert_array_equal(curtailment[key].index.to_numpy(),
-                           expected[key].index.to_numpy())
-        assert_array_equal(curtailment[key].columns.to_numpy(),
-                           expected[key].columns.to_numpy())
-        assert_array_equal(curtailment[key].to_numpy(),
-                           expected[key].to_numpy())
+            assert_array_equal(curtailment[key].index.to_numpy(),
+                               expected[key].index.to_numpy())
+            assert_array_equal(curtailment[key].columns.to_numpy(),
+                               expected[key].columns.to_numpy())
+            assert_array_equal(curtailment[key].to_numpy(),
+                               expected[key].to_numpy())
 
     def test_calculate_curtailment_time_series_solar(self):
         expected_return = {'solar': mock_curtailment['solar']}
