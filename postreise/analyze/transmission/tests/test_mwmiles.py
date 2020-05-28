@@ -78,6 +78,28 @@ class TestCalculateMWMiles(unittest.TestCase):
         mw_miles = _calculate_mw_miles(self.grid, mock_ct)
         self._check_expected_values(mw_miles, expected_mw_miles)
 
+    def test_calculate_mw_miles_many_scaled_one_branch_excluded(self):
+        mock_ct = {"branch": {"branch_id": {11: 2, 12: 3, 13: 1.5, 14: 1.2, 15: 3}}}
+        expected_mw_miles = {
+            "mw_miles": 9125.027895725,
+            "transformer_mw": 123,
+            "num_lines": 1,
+            "num_transformers": 3,
+        }
+        mw_miles = _calculate_mw_miles(self.grid, mock_ct, exclude_branches={11})
+        self._check_expected_values(mw_miles, expected_mw_miles)
+
+    def test_calculate_mw_miles_many_scaled_two_branches_excluded(self):
+        mock_ct = {"branch": {"branch_id": {11: 2, 12: 3, 13: 1.5, 14: 1.2, 15: 3}}}
+        expected_mw_miles = {
+            "mw_miles": 9125.027895725,
+            "transformer_mw": 108,
+            "num_lines": 1,
+            "num_transformers": 2,
+        }
+        mw_miles = _calculate_mw_miles(self.grid, mock_ct, exclude_branches=[11, 13])
+        self._check_expected_values(mw_miles, expected_mw_miles)
+
 
 if __name__ == "__main__":
     unittest.main()
