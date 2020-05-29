@@ -13,10 +13,7 @@ from postreise.plot.projection_helpers import project_branch, project_bus
 
 
 def plot_shadowprice(scenario_id, hour, lmp_split_points=None):
-    """Make map showing congestion, with green dot for transformer winding,
-        blue dot transformer, and lines for
-        congested branches with varying color and
-        thickness indicating degeree of congestion
+    """Make map lmp variation and shadow prices
 
     :param scenario_id: the id of the scenario to gather data from
     :type scenario_id: string
@@ -87,7 +84,7 @@ def _construct_bus_data(bus_map, lmp, user_set_split_points, hour):
     :param hour: the hour we will be analyzing
     :type hour: string
     :return: the lmp vals we have chosen to split the bus data,
-        bus data split into 9 segments
+        bus data split into segments
     :rtype: list(float), list(pandas.DataFrame)
     """
     # Add lmp to bus dataframe
@@ -110,9 +107,9 @@ def _construct_bus_data(bus_map, lmp, user_set_split_points, hour):
 
 
 def _get_lmp_split_points(bus_map):
-    """Determine ten points to split the bus data (inc. min and max lmp).
+    """Determine up to ten points to split the bus data (inc. min and max lmp).
         Always split on lmp -1 and 1 if possible
-        Split the rest of the busses into groups
+        Split the rest of the buses into groups
         with an equal number of members
 
     :param bus_map: bus data with lmp
@@ -170,10 +167,7 @@ def _construct_branch_data(branch_map, cong, hour):
 
 def _construct_shadowprice_visuals(
         interconnect, lmp_split_points, bus_segments, branch_data):
-    """Use bokeh to plot formatted data. Make map showing congestion,
-        with green dot for transformer winding, blue dot transformer,
-        and lines for congested branches with varying color and thickness
-        indicating degeree of congestion
+    """Use bokeh to plot variation in lmp and shadow prices
 
     :param interconnect: the scenario interconnect
     :type interconnect: string
