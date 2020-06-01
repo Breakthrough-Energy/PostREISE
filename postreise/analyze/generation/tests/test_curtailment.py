@@ -12,10 +12,10 @@ from postreise.analyze.generation.curtailment import \
 # plant_id is the index
 mock_plant = {
     'plant_id': ['A', 'B', 'C', 'D'],
-    'bus_id': [1, 1, 2, 3],
+    'bus_id': [1, 2, 3, 4],
     'lat': [47.6, 47.6, 37.8, 37.8],
     'lon': [122.3, 122.3, 122.4, 122.4],
-    'type': ['solar', 'solar', 'wind', 'wind']
+    'type': ['solar', 'solar', 'wind', 'wind_offshore']
     }
 
 mock_pg = pd.DataFrame({
@@ -44,12 +44,14 @@ mock_curtailment_data = pd.DataFrame({
 
 mock_curtailment = {
     'solar': mock_curtailment_data[['A', 'B']],
-    'wind': mock_curtailment_data[['C', 'D']],
+    'wind': mock_curtailment_data[['C']],
+    'wind_offshore': mock_curtailment_data[['D']],
     }
 
 grid_attrs = {'plant': mock_plant}
 scenario = MockScenario(
     grid_attrs, pg=mock_pg, solar=mock_solar, wind=mock_wind)
+
 
 class TestCalculateCurtailmentTimeSeries(unittest.TestCase):
 
@@ -58,12 +60,12 @@ class TestCalculateCurtailmentTimeSeries(unittest.TestCase):
         self.assertEqual(curtailment.keys(), expected.keys())
         for key in curtailment.keys():
             self.assertIsInstance(curtailment[key], pd.DataFrame)
-        assert_array_equal(curtailment[key].index.to_numpy(),
-                           expected[key].index.to_numpy())
-        assert_array_equal(curtailment[key].columns.to_numpy(),
-                           expected[key].columns.to_numpy())
-        assert_array_equal(curtailment[key].to_numpy(),
-                           expected[key].to_numpy())
+            assert_array_equal(curtailment[key].index.to_numpy(),
+                               expected[key].index.to_numpy())
+            assert_array_equal(curtailment[key].columns.to_numpy(),
+                               expected[key].columns.to_numpy())
+            assert_array_equal(curtailment[key].to_numpy(),
+                               expected[key].to_numpy())
 
     def test_calculate_curtailment_time_series_solar(self):
         expected_return = {'solar': mock_curtailment['solar']}
@@ -95,19 +97,19 @@ class TestCalculateCurtailmentTimeSeries(unittest.TestCase):
         self._check_curtailment_vs_expected(curtailment, expected_return)
 
     def test_calculate_curtailment_time_series_solar_wind_tuple(self):
-        expected_return = mock_curtailment
+        expected_return = {r: mock_curtailment[r] for r in ('solar', 'wind')}
         curtailment = calculate_curtailment_time_series(
             scenario, resources=('solar', 'wind'))
         self._check_curtailment_vs_expected(curtailment, expected_return)
     
     def test_calculate_curtailment_time_series_solar_wind_set(self):
-        expected_return = mock_curtailment
+        expected_return = {r: mock_curtailment[r] for r in ('solar', 'wind')}
         curtailment = calculate_curtailment_time_series(
             scenario, resources={'solar', 'wind'})
         self._check_curtailment_vs_expected(curtailment, expected_return)
     
     def test_calculate_curtailment_time_series_wind_solar_list(self):
-        expected_return = mock_curtailment
+        expected_return = {r: mock_curtailment[r] for r in ('solar', 'wind')}
         curtailment = calculate_curtailment_time_series(
             scenario, resources=['wind', 'solar'])
         self._check_curtailment_vs_expected(curtailment, expected_return)
@@ -141,18 +143,18 @@ class TestCalculateCurtailmentPercentage(unittest.TestCase):
         self.assertAlmostEqual(total_curtailment, expected_return)
 
     def test_calculate_curtailment_percentage_wind(self):
-        expected_return = 3 / 23
+        expected_return = 0.5 / 23
         total_curtailment = calculate_curtailment_percentage(
             scenario, resources=('wind',))
         self.assertAlmostEqual(total_curtailment, expected_return)
 
     def test_calculate_curtailment_percentage_default(self):
-        expected_return = 6.5 / 48
+        expected_return = 4 / 48
         total_curtailment = calculate_curtailment_percentage(scenario)
         self.assertAlmostEqual(total_curtailment, expected_return)
 
     def test_calculate_curtailment_percentage_solar_wind(self):
-        expected_return = 6.5 / 48
+        expected_return = 4 / 48
         total_curtailment = calculate_curtailment_percentage(
             scenario, resources=('solar', 'wind'))
         self.assertAlmostEqual(total_curtailment, expected_return)
@@ -163,11 +165,13 @@ class TestSummarizeCurtailmentByBus(unittest.TestCase):
     def test_summarize_curtailment_by_bus(self):
         grid = scenario.state.get_grid()
         expected_return = {
-            'solar': {1: 3.5},
-            'wind': {2: 0.5, 3: 2.5},
+            'solar': {1: 1, 2: 2.5},
+            'wind': {3: 0.5},
+            'wind_offshore': {4: 2.5},
             }
         bus_curtailment = summarize_curtailment_by_bus(mock_curtailment, grid)
         self.assertEqual(bus_curtailment, expected_return)
+
 
 class TestSummarizeCurtailmentByLocation(unittest.TestCase):
 
@@ -175,7 +179,8 @@ class TestSummarizeCurtailmentByLocation(unittest.TestCase):
         grid = scenario.state.get_grid()
         expected_return = {
             'solar': {(47.6, 122.3): 3.5},
-            'wind': {(37.8, 122.4): 3},
+            'wind': {(37.8, 122.4): 0.5},
+            'wind_offshore': {(37.8, 122.4): 2.5},
             }
         location_curtailment = summarize_curtailment_by_location(
             mock_curtailment, grid)

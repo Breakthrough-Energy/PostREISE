@@ -7,7 +7,11 @@ from powersimdata.scenario.analyze import Analyze
 
 
 # What is the name of the function in scenario.state to get the profiles?
-_resource_func = {'solar': 'get_solar', 'wind': 'get_wind'}
+_resource_func = {
+    'solar': 'get_solar',
+    'wind': 'get_wind',
+    'wind_offshore': 'get_wind',
+    }
 
 
 def _check_scenario(scenario):
@@ -72,36 +76,40 @@ def _check_curtailment_in_grid(curtailment, grid):
         raise ValueError(err_msg)
 
 
-def calculate_curtailment_time_series(scenario, resources=('solar', 'wind')):
+def calculate_curtailment_time_series(scenario, resources=None):
     """Calculate a time series of curtailment for a set of valid resources.
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param tuple/list/set resources: names of resources to analyze.
     :return: (*dict*) -- keys are resources, values are pandas.DataFrames
     indexed by (datetime, plant) where plant is only plants of matching type.
     """
+    if resources is None:
+        resources = ('solar', 'wind', 'wind_offshore')
     _check_scenario(scenario)
     _check_resources(resources)
     _check_resource_in_scenario(resources, scenario)
 
     # Get input dataframes from scenario object
     pg = scenario.state.get_pg()
-    rentype_genpotential = {
-        r: getattr(scenario.state, _resource_func[r])() for r in resources}
+    grid = scenario.state.get_grid()
+    profile_functions = {_resource_func[r] for r in resources}
+    relevant_profiles = pd.concat(
+        [getattr(scenario.state, p)() for p in profile_functions], axis=1)
 
     # Calculate differences for each resource
     curtailment = {}
-    for rentype, genpotential in rentype_genpotential.items():
-        ren_plants = list(genpotential.columns)
-        curtailment[rentype] = genpotential - pg[ren_plants]
+    for r in resources:
+        ren_plants = grid.plant.groupby('type').get_group(r).index
+        curtailment[r] = relevant_profiles[ren_plants] - pg[ren_plants]
 
     return curtailment
 
 
 def calculate_curtailment_percentage(scenario, resources=('solar', 'wind')):
-    """Calculate year-long average curtailment for selected resources.
+    """Calculate scenario-long average curtailment for selected resources.
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param tuple/list/set resources: names of resources to analyze.
-    :return: (*float*) -- Average curtailment fraction over the year.
+    :return: (*float*) -- Average curtailment fraction over the scenario.
     """
     _check_scenario(scenario)
     _check_resources(resources)
