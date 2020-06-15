@@ -46,9 +46,7 @@ def _flag(statistics, utilname, thresh, uflagname):
     return (statistics[utilname] >= thresh).astype(int).rename(uflagname)
 
 
-def generate_cong_stats(pf, grid_branch,
-                        util=None,
-                        thresh=None):
+def generate_cong_stats(pf, grid_branch, util=None, thresh=None):
     """Generates congestion/utilization statistics from powerflow data
         (WECC congestion reports' analyses are the inspiration
         for these analyses and are the source of the default parameters).
@@ -68,23 +66,21 @@ def generate_cong_stats(pf, grid_branch,
         util = [0.75, 0.9, 0.99]
     if thresh is None:
         thresh = [0.5, 0.2, 0.05]
-    print('Removing non line branches')
-    grid_branch = grid_branch[grid_branch.branch_device_type == 'Line']
+    print("Removing non line branches")
+    grid_branch = grid_branch[grid_branch.branch_device_type == "Line"]
     pf = pf.loc[:, grid_branch.index]
 
-    print('Removing lines that never are >75% utilized')
-    pf = pf.loc[:,
-                pf.abs().max().divide(grid_branch.rateA).replace(np.inf,
-                                                                 0) > 0.75]
+    print("Removing lines that never are >75% utilized")
+    pf = pf.loc[:, pf.abs().max().divide(grid_branch.rateA).replace(np.inf, 0) > 0.75]
     grid_branch = grid_branch.loc[pf.columns, :]
 
-    print('Getting utilization')
+    print("Getting utilization")
     utilization_df = get_utilization(grid_branch, pf)
 
     print("Counting hours")
     n_hours = len(utilization_df)
 
-    print('Getting fraction of hours above threshold')
+    print("Getting fraction of hours above threshold")
     per_util1 = _count_hours_gt_thresh(utilization_df, util[0]) / n_hours
     per_util2 = _count_hours_gt_thresh(utilization_df, util[1]) / n_hours
     per_util3 = _count_hours_gt_thresh(utilization_df, util[2]) / n_hours
@@ -96,28 +92,46 @@ def generate_cong_stats(pf, grid_branch,
     risk = (pf[utilization_df > util[1]].sum()).fillna(0)
 
     print("Combining branch and utilization info")
-    statistics = pd.concat([grid_branch['rateA'],
-                            grid_branch['branch_device_type'], per_util1,
-                            per_util2, per_util3, bind, risk], axis=1)
+    statistics = pd.concat(
+        [
+            grid_branch["rateA"],
+            grid_branch["branch_device_type"],
+            per_util1,
+            per_util2,
+            per_util3,
+            bind,
+            risk,
+        ],
+        axis=1,
+    )
 
-    statistics.loc[statistics.rateA == 0, ['rateA']] = np.nan
-    statistics.columns = ['capacity', 'branch_device_type', 'per_util1',
-                          'per_util2', 'per_util3', 'bind', 'risk']
+    statistics.loc[statistics.rateA == 0, ["rateA"]] = np.nan
+    statistics.columns = [
+        "capacity",
+        "branch_device_type",
+        "per_util1",
+        "per_util2",
+        "per_util3",
+        "bind",
+        "risk",
+    ]
 
-    vals = [['per_util1', thresh[0], 'uflag1'],
-            ['per_util2', thresh[1], 'uflag2'],
-            ['per_util3', thresh[2], 'uflag3']]
+    vals = [
+        ["per_util1", thresh[0], "uflag1"],
+        ["per_util2", thresh[1], "uflag2"],
+        ["per_util3", thresh[2], "uflag3"],
+    ]
 
     for x in vals:
-        statistics = pd.concat([statistics,
-                                _flag(statistics, x[0], x[1], x[2])], axis=1)
+        statistics = pd.concat(
+            [statistics, _flag(statistics, x[0], x[1], x[2])], axis=1
+        )
 
-    col_list = ['uflag1', 'uflag2', 'uflag3']
-    statistics['sumflag'] = statistics[col_list].sum(axis=1)
+    col_list = ["uflag1", "uflag2", "uflag3"]
+    statistics["sumflag"] = statistics[col_list].sum(axis=1)
 
-    print('Calculating distance and finalizing results')
-    distance = grid_branch.apply(great_circle_distance,
-                                 axis=1).rename('dist')
+    print("Calculating distance and finalizing results")
+    distance = grid_branch.apply(great_circle_distance, axis=1).rename("dist")
     statistics = pd.concat([statistics, distance], axis=1)
 
     return statistics

@@ -16,23 +16,24 @@ def map_demand_to_buses(grid, demand):
     """
 
     if not isinstance(grid, Grid):
-        raise TypeError('grid must be a Grid object')
+        raise TypeError("grid must be a Grid object")
     if not isinstance(demand, pd.DataFrame):
-        raise TypeError('demand must be a pandas DataFrame')
+        raise TypeError("demand must be a pandas DataFrame")
 
     bus = grid.bus
     zones = list(grid.id2zone.keys())
     bus_demands = {}
     for z in zones:
         # Calculate share of zone demand to each zone bus
-        zone_buses = bus[bus['zone_id'] == z]
-        load_sum = zone_buses['Pd'].sum()
-        load_ratio = zone_buses['Pd'] / load_sum
+        zone_buses = bus[bus["zone_id"] == z]
+        load_sum = zone_buses["Pd"].sum()
+        load_ratio = zone_buses["Pd"] / load_sum
         # Then distribute time-series demand to buses
         bus_demands[z] = pd.DataFrame(
             data=np.outer(demand[z].to_numpy(), load_ratio.to_numpy()),
             columns=load_ratio.index,
-            index=demand.index)
+            index=demand.index,
+        )
     bus_demand = pd.concat([bus_demands[z] for z in zones], axis=1)
     return bus_demand
 
@@ -45,9 +46,9 @@ def calculate_congestion_surplus(scenario):
     """
 
     if not isinstance(scenario, Scenario):
-        raise TypeError('scenario must be a Scenario object')
+        raise TypeError("scenario must be a Scenario object")
     if not isinstance(scenario.state, Analyze):
-        raise ValueError('scenario.state must be Analyze')
+        raise ValueError("scenario.state must be Analyze")
 
     demand = scenario.state.get_demand(original=False)
     grid = scenario.state.get_grid()

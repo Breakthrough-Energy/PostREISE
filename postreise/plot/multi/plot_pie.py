@@ -1,12 +1,18 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from postreise.plot.multi.constants import (RESOURCE_COLORS, RESOURCE_LABELS)
+from postreise.plot.multi.constants import RESOURCE_COLORS, RESOURCE_LABELS
 from postreise.plot.multi.plot_helpers import handle_plot_inputs
 
 
-def plot_pie(interconnect, time, scenario_ids=None, scenario_names=None, \
-    custom_data=None, min_percentage=0):
+def plot_pie(
+    interconnect,
+    time,
+    scenario_ids=None,
+    scenario_names=None,
+    custom_data=None,
+    min_percentage=0,
+):
     """Plots any number of scenarios as pie charts with
         two columns per scenario - defaults to generation and capacity
 
@@ -40,11 +46,12 @@ def plot_pie(interconnect, time, scenario_ids=None, scenario_names=None, \
     :type min_percentage: float, optional
     """
     zone_list, graph_data = handle_plot_inputs(
-        interconnect, time, scenario_ids, scenario_names, custom_data)
+        interconnect, time, scenario_ids, scenario_names, custom_data
+    )
     for zone in zone_list:
         ax_data_list = _construct_pie_ax_data(zone, graph_data, min_percentage)
         _construct_pie_visuals(zone, ax_data_list)
-    print(f'\nDone\n')
+    print(f"\nDone\n")
 
 
 def _construct_pie_ax_data(zone, scenarios, min_percentage):
@@ -67,18 +74,24 @@ def _construct_pie_ax_data(zone, scenarios, min_percentage):
     """
     ax_data_list = []
     for scenario in scenarios.values():
-        for side in ['gen', 'cap']:
+        for side in ["gen", "cap"]:
             ax_data, labels = _roll_up_small_pie_wedges(
-                scenario[side]['data'][zone], min_percentage)
+                scenario[side]["data"][zone], min_percentage
+            )
 
-            ax_data_list.append({
-                'title': '{0}\n{1}'.format(scenario['label'], \
-                    scenario[side]['label']),
-                'labels': labels,
-                'values': list(ax_data.values()),
-                'colors': [RESOURCE_COLORS[resource] for resource in \
-                    ax_data.keys()],
-                'unit': scenario[side]['unit']})
+            ax_data_list.append(
+                {
+                    "title": "{0}\n{1}".format(
+                        scenario["label"], scenario[side]["label"]
+                    ),
+                    "labels": labels,
+                    "values": list(ax_data.values()),
+                    "colors": [
+                        RESOURCE_COLORS[resource] for resource in ax_data.keys()
+                    ],
+                    "unit": scenario[side]["unit"],
+                }
+            )
     return ax_data_list
 
 
@@ -99,15 +112,16 @@ def _roll_up_small_pie_wedges(resource_data, min_percentage):
 
     small_categories = []
     other_category_value = 0
-    other_category_label = ''
+    other_category_label = ""
     for resource in resource_list:
-        percentage = round(resource_data[resource]/total_resources*100, 1)
+        percentage = round(resource_data[resource] / total_resources * 100, 1)
         if percentage == 0.0:
             resource_data.pop(resource)
         elif percentage <= min_percentage:
             small_categories.append(resource)
-            other_category_label += '{0} {1}%\n'.format(
-                RESOURCE_LABELS[resource], percentage)
+            other_category_label += "{0} {1}%\n".format(
+                RESOURCE_LABELS[resource], percentage
+            )
             other_category_value += resource_data[resource]
 
     if len(small_categories) > 1:
@@ -117,7 +131,7 @@ def _roll_up_small_pie_wedges(resource_data, min_percentage):
     labels = [RESOURCE_LABELS[resource] for resource in resource_data.keys()]
 
     if len(small_categories) > 1:
-        resource_data['other'] = other_category_value
+        resource_data["other"] = other_category_value
         labels.append(other_category_label)
 
     return resource_data, labels
@@ -132,25 +146,39 @@ def _construct_pie_visuals(zone, ax_data_list):
         for each axis of the plot
     :type ax_data_list: list(dict) [{title, labels, values, colors, unit}, ...]
     """
-    rows = int(len(ax_data_list)/2)
-    fig, axes = plt.subplots(rows, 2, figsize=(20, 12*rows))
+    rows = int(len(ax_data_list) / 2)
+    fig, axes = plt.subplots(rows, 2, figsize=(20, 12 * rows))
     if rows > 1:
         axes = np.concatenate(axes)
     plt.suptitle(zone, fontsize=36, verticalalignment="bottom")
 
     for ax_data, ax in zip(ax_data_list, axes):
-        df = pd.DataFrame({'': ax_data['values']}, index=ax_data['labels'])
-        df.plot(kind='pie', ax=ax, subplots=True, fontsize=18, \
-            autopct='%1.1f%%', startangle=180, pctdistance=.55, \
-            colors=ax_data['colors'], \
-            wedgeprops={'edgecolor': 'white', 'linewidth': 6})
-        ax.set_title(ax_data['title'], fontsize=30)
+        df = pd.DataFrame({"": ax_data["values"]}, index=ax_data["labels"])
+        df.plot(
+            kind="pie",
+            ax=ax,
+            subplots=True,
+            fontsize=18,
+            autopct="%1.1f%%",
+            startangle=180,
+            pctdistance=0.55,
+            colors=ax_data["colors"],
+            wedgeprops={"edgecolor": "white", "linewidth": 6},
+        )
+        ax.set_title(ax_data["title"], fontsize=30)
         ax.get_legend().remove()
-        ax.tick_params(axis='y', which='both', left=False)
-        ax.add_artist(plt.Circle((0, 0), 0.70, fc='white'))
-        ax.text(0, 0, '{0}\n{1}'.format(round(sum(ax_data['values']), 1), \
-            ax_data['unit']), fontsize=22, verticalalignment='center', \
-            horizontalalignment='center', weight="bold", color='lightgray')
+        ax.tick_params(axis="y", which="both", left=False)
+        ax.add_artist(plt.Circle((0, 0), 0.70, fc="white"))
+        ax.text(
+            0,
+            0,
+            "{0}\n{1}".format(round(sum(ax_data["values"]), 1), ax_data["unit"]),
+            fontsize=22,
+            verticalalignment="center",
+            horizontalalignment="center",
+            weight="bold",
+            color="lightgray",
+        )
 
     plt.tight_layout()
-    fig.subplots_adjust(hspace=-.2)
+    fig.subplots_adjust(hspace=-0.2)

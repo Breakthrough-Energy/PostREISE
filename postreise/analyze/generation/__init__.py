@@ -1,1 +1,1 @@
-__all__ = ['carbon', 'curtailment', 'summarize']
+__all__ = ["carbon", "curtailment", "summarize"]
