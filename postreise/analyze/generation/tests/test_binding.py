@@ -3,38 +3,40 @@ import unittest
 import pandas as pd
 
 from powersimdata.tests.mock_scenario import MockScenario
-from postreise.analyze.generation.binding import \
-    pmin_constraints, pmax_constraints, ramp_constraints, \
-    _check_scenario, _check_epsilon
+from postreise.analyze.generation.binding import (
+    pmin_constraints,
+    pmax_constraints,
+    ramp_constraints,
+    _check_scenario,
+    _check_epsilon,
+)
 
 
 class TestCheckScenario(unittest.TestCase):
-
     def test_good_scenario(self):
         mock_plant = {
-            'plant_id': ['A', 'B', 'C', 'D'],
-            'ramp_30': [2.5, 5, 10, 25],
-            }
-        mock_scenario = MockScenario({'plant': mock_plant})
+            "plant_id": ["A", "B", "C", "D"],
+            "ramp_30": [2.5, 5, 10, 25],
+        }
+        mock_scenario = MockScenario({"plant": mock_plant})
         _check_scenario(mock_scenario)
 
     def test_bad_scenario_type(self):
         with self.assertRaises(TypeError):
-            _check_scenario('307')
+            _check_scenario("307")
 
     def test_bad_scenario_state(self):
         mock_plant = {
-            'plant_id': ['A', 'B', 'C', 'D'],
-            'ramp_30': [2.5, 5, 10, 25],
-            }
-        mock_scenario = MockScenario({'plant': mock_plant})
-        mock_scenario.state = 'Create'
+            "plant_id": ["A", "B", "C", "D"],
+            "ramp_30": [2.5, 5, 10, 25],
+        }
+        mock_scenario = MockScenario({"plant": mock_plant})
+        mock_scenario.state = "Create"
         with self.assertRaises(ValueError):
             _check_scenario(mock_scenario)
 
 
 class TestCheckEpsilon(unittest.TestCase):
-
     def test_good_float_value(self):
         _check_epsilon(5e-4)
 
@@ -46,7 +48,7 @@ class TestCheckEpsilon(unittest.TestCase):
 
     def test_bad_type(self):
         with self.assertRaises(TypeError):
-            _check_epsilon('0.001')
+            _check_epsilon("0.001")
 
     def test_bad_value(self):
         with self.assertRaises(ValueError):
@@ -54,30 +56,33 @@ class TestCheckEpsilon(unittest.TestCase):
 
 
 class TestRampConstraints(unittest.TestCase):
-
     def setUp(self):
         mock_plant = {
-            'plant_id': ['A', 'B', 'C', 'D'],
-            'ramp_30': [2.5, 5, 10, 25],
+            "plant_id": ["A", "B", "C", "D"],
+            "ramp_30": [2.5, 5, 10, 25],
+        }
+        grid_attrs = {"plant": mock_plant}
+        mock_pg = pd.DataFrame(
+            {
+                "UTC": ["t1", "t2", "t3", "t4"],
+                "A": [100, 104, (99 + 1e-4), (104 + 1e-4 - 1e-7)],
+                "B": [50, 45, 50, 45],
+                "C": [20, 40, 60, 80],
+                "D": [200, 150, 100, 50],
             }
-        grid_attrs = {'plant': mock_plant}
-        mock_pg = pd.DataFrame({
-            'UTC': ['t1', 't2', 't3', 't4'],
-            'A': [100, 104, (99 + 1e-4), (104 + 1e-4 - 1e-7)],
-            'B': [50, 45, 50, 45],
-            'C': [20, 40, 60, 80],
-            'D': [200, 150, 100, 50],
-            })
-        mock_pg.set_index('UTC', inplace=True)
+        )
+        mock_pg.set_index("UTC", inplace=True)
         self.mock_scenario = MockScenario(grid_attrs, pg=mock_pg)
-        self.default_expected = pd.DataFrame({
-            'UTC': ['t1', 't2', 't3', 't4'],
-            'A': [False, False, True, True],
-            'B': [False, False, False, False],
-            'C': [False, True, True, True],
-            'D': [False, True, True, True],
-            })
-        self.default_expected.set_index('UTC', inplace=True)
+        self.default_expected = pd.DataFrame(
+            {
+                "UTC": ["t1", "t2", "t3", "t4"],
+                "A": [False, False, True, True],
+                "B": [False, False, False, False],
+                "C": [False, True, True, True],
+                "D": [False, True, True, True],
+            }
+        )
+        self.default_expected.set_index("UTC", inplace=True)
 
     def get_default_expected(self):
         return self.default_expected.copy()
@@ -97,42 +102,45 @@ class TestRampConstraints(unittest.TestCase):
         # One differece from test_ramp_constraints_default: ('A', 't3')
         binding_ramps = ramp_constraints(self.mock_scenario, epsilon=1e-6)
         expected = self.get_default_expected()
-        expected.loc['t3', 'A'] = False
+        expected.loc["t3", "A"] = False
         assert binding_ramps.equals(expected)
 
     def test_ramp_constraints_spec_epsilon3(self):
         # Two differeces from test_ramp_constraints_default: ('A', ['t3'/'t4'])
         binding_ramps = ramp_constraints(self.mock_scenario, epsilon=1e-9)
         expected = self.get_default_expected()
-        expected.loc[:, 'A'] = False
+        expected.loc[:, "A"] = False
         assert binding_ramps.equals(expected)
 
 
 class TestPminConstraints(unittest.TestCase):
-
     def setUp(self):
         mock_plant = {
-            'plant_id': ['A', 'B', 'C', 'D'],
-            'Pmin': [0, 10, 20, 30],
+            "plant_id": ["A", "B", "C", "D"],
+            "Pmin": [0, 10, 20, 30],
+        }
+        grid_attrs = {"plant": mock_plant}
+        mock_pg = pd.DataFrame(
+            {
+                "UTC": ["t1", "t2"],
+                "A": [0, 0],
+                "B": [(10 + 1e-4), 15],
+                "C": [25, (20 + 1e-7)],
+                "D": [35, 40],
             }
-        grid_attrs = {'plant': mock_plant}
-        mock_pg = pd.DataFrame({
-            'UTC': ['t1', 't2'],
-            'A': [0, 0],
-            'B': [(10 + 1e-4), 15],
-            'C': [25, (20 + 1e-7)],
-            'D': [35, 40],
-            })
-        mock_pg.set_index('UTC', inplace=True)
+        )
+        mock_pg.set_index("UTC", inplace=True)
         self.mock_scenario = MockScenario(grid_attrs, pg=mock_pg)
-        self.default_expected = pd.DataFrame({
-            'UTC': ['t1', 't2'],
-            'A': [True, True],
-            'B': [True, False],
-            'C': [False, True],
-            'D': [False, False],
-            })
-        self.default_expected.set_index('UTC', inplace=True)
+        self.default_expected = pd.DataFrame(
+            {
+                "UTC": ["t1", "t2"],
+                "A": [True, True],
+                "B": [True, False],
+                "C": [False, True],
+                "D": [False, False],
+            }
+        )
+        self.default_expected.set_index("UTC", inplace=True)
 
     def get_default_expected(self):
         return self.default_expected.copy()
@@ -150,42 +158,45 @@ class TestPminConstraints(unittest.TestCase):
     def test_pmin_constraints_default_spec_epsilon2(self):
         binding_pmins = pmin_constraints(self.mock_scenario, epsilon=1e-6)
         expected = self.get_default_expected()
-        expected.loc['t1', 'B'] = False
+        expected.loc["t1", "B"] = False
         assert binding_pmins.equals(expected)
 
     def test_pmin_constraints_default_spec_epsilon3(self):
         binding_pmins = pmin_constraints(self.mock_scenario, epsilon=1e-9)
         expected = self.get_default_expected()
-        expected.loc['t1', 'B'] = False
-        expected.loc['t2', 'C'] = False
+        expected.loc["t1", "B"] = False
+        expected.loc["t2", "C"] = False
         assert binding_pmins.equals(expected)
 
 
 class TestPmaxConstraints(unittest.TestCase):
-
     def setUp(self):
         mock_plant = {
-            'plant_id': ['A', 'B', 'C', 'D'],
-            'Pmax': [50, 75, 100, 200],
+            "plant_id": ["A", "B", "C", "D"],
+            "Pmax": [50, 75, 100, 200],
+        }
+        grid_attrs = {"plant": mock_plant}
+        mock_pg = pd.DataFrame(
+            {
+                "UTC": ["t1", "t2"],
+                "A": [50, 50],
+                "B": [(75 - 1e-4), 70],
+                "C": [90, (100 - 1e-7)],
+                "D": [150, 175],
             }
-        grid_attrs = {'plant': mock_plant}
-        mock_pg = pd.DataFrame({
-            'UTC': ['t1', 't2'],
-            'A': [50, 50],
-            'B': [(75 - 1e-4), 70],
-            'C': [90, (100 - 1e-7)],
-            'D': [150, 175],
-            })
-        mock_pg.set_index('UTC', inplace=True)
+        )
+        mock_pg.set_index("UTC", inplace=True)
         self.mock_scenario = MockScenario(grid_attrs, pg=mock_pg)
-        self.default_expected = pd.DataFrame({
-            'UTC': ['t1', 't2'],
-            'A': [True, True],
-            'B': [True, False],
-            'C': [False, True],
-            'D': [False, False],
-            })
-        self.default_expected.set_index('UTC', inplace=True)
+        self.default_expected = pd.DataFrame(
+            {
+                "UTC": ["t1", "t2"],
+                "A": [True, True],
+                "B": [True, False],
+                "C": [False, True],
+                "D": [False, False],
+            }
+        )
+        self.default_expected.set_index("UTC", inplace=True)
 
     def get_default_expected(self):
         return self.default_expected.copy()
@@ -203,12 +214,12 @@ class TestPmaxConstraints(unittest.TestCase):
     def test_pmax_constraints_default_sepc_epsilon2(self):
         binding_pmaxs = pmax_constraints(self.mock_scenario, epsilon=1e-6)
         expected = self.get_default_expected()
-        expected.loc['t1', 'B'] = False
+        expected.loc["t1", "B"] = False
         assert binding_pmaxs.equals(expected)
 
     def test_pmax_constraints_default_sepc_epsilon3(self):
         binding_pmaxs = pmax_constraints(self.mock_scenario, epsilon=1e-9)
         expected = self.get_default_expected()
-        expected.loc['t1', 'B'] = False
-        expected.loc['t2', 'C'] = False
+        expected.loc["t1", "B"] = False
+        expected.loc["t2", "C"] = False
         assert binding_pmaxs.equals(expected)

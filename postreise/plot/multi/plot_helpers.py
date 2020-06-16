@@ -2,14 +2,18 @@ import matplotlib.pyplot as plt
 from powersimdata.scenario.scenario import Scenario
 
 from postreise.plot.analyze_pg import AnalyzePG as apg
-from postreise.plot.multi.constants import (BASELINES, CA_BASELINES,
-                                            CA_TARGETS, DEMAND,
-                                            SCENARIO_RESOURCE_TYPES, TARGETS,
-                                            ZONES)
+from postreise.plot.multi.constants import (
+    BASELINES,
+    CA_BASELINES,
+    CA_TARGETS,
+    DEMAND,
+    SCENARIO_RESOURCE_TYPES,
+    TARGETS,
+    ZONES,
+)
 
 
-def handle_plot_inputs(interconnect, time, scenario_ids, scenario_names,
-                       custom_data):
+def handle_plot_inputs(interconnect, time, scenario_ids, scenario_names, custom_data):
     """Checks input validity for plotting code, fetches data if necessary
 
     :param interconnect: either 'Western' or 'Texas'
@@ -44,21 +48,23 @@ def handle_plot_inputs(interconnect, time, scenario_ids, scenario_names,
     if interconnect in ZONES.keys():
         zone_list = ZONES[interconnect]
     else:
-        raise ValueError('ERROR: zone must be one of Western or Texas')
+        raise ValueError("ERROR: zone must be one of Western or Texas")
     if scenario_ids is None:
         scenario_ids = []
-    if scenario_names is not None and \
-            len(scenario_names) != len(scenario_ids):
-        raise ValueError('ERROR: if scenario names are provided, \
-            number of scenario names must match number of scenario ids')
+    if scenario_names is not None and len(scenario_names) != len(scenario_ids):
+        raise ValueError(
+            "ERROR: if scenario names are provided, \
+            number of scenario names must match number of scenario ids"
+        )
     if custom_data is None:
         custom_data = {}
     if len(scenario_ids) + len(custom_data) <= 1:
-        raise ValueError("ERROR: must include at least two scenario ids \
-            and/or custom data")
+        raise ValueError(
+            "ERROR: must include at least two scenario ids \
+            and/or custom data"
+        )
 
-    scenario_data = _get_scenario_data(
-        time, scenario_ids, scenario_names, zone_list)
+    scenario_data = _get_scenario_data(time, scenario_ids, scenario_names, zone_list)
     graph_data = dict(scenario_data, **custom_data)
     return zone_list, graph_data
 
@@ -90,8 +96,7 @@ def handle_shortfall_inputs(is_match_CA, baselines, targets, demand):
     return baselines, targets, demand
 
 
-def make_gen_cap_custom_data(
-        interconnect, label, gen_data=None, cap_data=None):
+def make_gen_cap_custom_data(interconnect, label, gen_data=None, cap_data=None):
     """Helper function to create custom data formatted for plotting funcitons
         You will still need to wrap this in a dict to use it
         This lets us handle multiple custom scenarios
@@ -110,25 +115,15 @@ def make_gen_cap_custom_data(
     :rtype: dict
     """
     if interconnect not in ZONES.keys():
-        raise ValueError('ERROR: zone must be one of Western or Texas')
+        raise ValueError("ERROR: zone must be one of Western or Texas")
 
-    gen_data = gen_data if gen_data is not None \
-        else _make_empty_data(interconnect)
-    cap_data = cap_data if cap_data is not None \
-        else _make_empty_data(interconnect)
+    gen_data = gen_data if gen_data is not None else _make_empty_data(interconnect)
+    cap_data = cap_data if cap_data is not None else _make_empty_data(interconnect)
 
     return {
-        'label': label,
-        'gen': {
-            'label': 'Generation',
-            'unit': 'TWh',
-            'data': gen_data
-        },
-        'cap': {
-            'label': 'Capacity',
-            'unit': 'GW',
-            'data': cap_data
-        }
+        "label": label,
+        "gen": {"label": "Generation", "unit": "TWh", "data": gen_data},
+        "cap": {"label": "Capacity", "unit": "GW", "data": cap_data},
     }
 
 
@@ -140,8 +135,9 @@ def _make_empty_data(interconnect):
     :return: dict of {zone_name: {resource_type: 0, ...}, ...}
     :rtype: dict
     """
-    return {zone: {r: 0 for r in SCENARIO_RESOURCE_TYPES}
-            for zone in ZONES[interconnect]}
+    return {
+        zone: {r: 0 for r in SCENARIO_RESOURCE_TYPES} for zone in ZONES[interconnect]
+    }
 
 
 def unit_conversion(val, change):
@@ -156,7 +152,7 @@ def unit_conversion(val, change):
     :return: the new converted value
     :rtype: float
     """
-    return round(val / 1000**change, 2)
+    return round(val / 1000 ** change, 2)
 
 
 def _get_scenario_data(time, scenario_ids, scenario_names, zone_list):
@@ -186,8 +182,7 @@ def _get_scenario_data(time, scenario_ids, scenario_names, zone_list):
     scenario_data = dict()
     for i in range(len(scenario_ids)):
         sid = scenario_ids[i]
-        data_chart, scenario_name = _get_data_chart_from_scenario(
-            sid, time, zone_list)
+        data_chart, scenario_name = _get_data_chart_from_scenario(sid, time, zone_list)
         if scenario_names is not None:
             scenario_name = scenario_names[i]
         scenario_data[sid] = _format_scenario_data(data_chart, scenario_name)
@@ -214,13 +209,11 @@ def _get_data_chart_from_scenario(scenario_id, time, zone_list):
     TODO do this ourselves instead of using apg as a middle man
     """
     scenario = Scenario(scenario_id)
-    scenario_name = scenario.info['name']
-    data_chart = apg(scenario,
-                     time,
-                     zone_list,
-                     SCENARIO_RESOURCE_TYPES,
-                     'chart', normalize=False).get_data()
-    plt.close('all')
+    scenario_name = scenario.info["name"]
+    data_chart = apg(
+        scenario, time, zone_list, SCENARIO_RESOURCE_TYPES, "chart", normalize=False
+    ).get_data()
+    plt.close("all")
     return data_chart, scenario_name
 
 
@@ -242,17 +235,9 @@ def _format_scenario_data(data_chart, scenario_name):
             'resource_type': float value(s), ...}, ...}}}
     """
     formatted_data = {
-        'label': scenario_name,
-        'gen': {
-            'label': 'Generation',
-            'unit': 'TWh',
-            'data': {}
-        },
-        'cap': {
-            'label': 'Capacity',
-            'unit': 'GW',
-            'data': {}
-        }
+        "label": scenario_name,
+        "gen": {"label": "Generation", "unit": "TWh", "data": {}},
+        "cap": {"label": "Capacity", "unit": "GW", "data": {}},
     }
 
     gen_data = {}
@@ -261,14 +246,15 @@ def _format_scenario_data(data_chart, scenario_name):
         gen_data[zone] = {}
         cap_data[zone] = {}
 
-        for resource in data_chart[zone]['Generation'].to_dict().keys():
+        for resource in data_chart[zone]["Generation"].to_dict().keys():
             gen_data[zone][resource] = unit_conversion(
-                sum(data_chart[zone]['Generation'][resource]
-                    .to_dict().values()), 2)  # MWh to TWh
+                sum(data_chart[zone]["Generation"][resource].to_dict().values()), 2
+            )  # MWh to TWh
             cap_data[zone][resource] = unit_conversion(
-                data_chart[zone]['Capacity'][resource], 1)  # MW to GW
+                data_chart[zone]["Capacity"][resource], 1
+            )  # MW to GW
 
-    formatted_data['gen']['data'] = gen_data
-    formatted_data['cap']['data'] = cap_data
+    formatted_data["gen"]["data"] = gen_data
+    formatted_data["cap"]["data"] = cap_data
 
     return formatted_data

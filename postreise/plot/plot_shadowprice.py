@@ -27,14 +27,16 @@ def plot_shadowprice(scenario_id, hour, lmp_split_points=None):
     :raises ValueError: lmp_split_points must have 10 items or fewer
     """
     if lmp_split_points is not None and len(lmp_split_points) > 10:
-        raise ValueError('ERROR: lmp_split_points must have 10 items or fewer')
+        raise ValueError("ERROR: lmp_split_points must have 10 items or fewer")
 
     interconnect, bus, lmp, branch, cong = _get_shadowprice_data(scenario_id)
     lmp_split_points, bus_segments = _construct_bus_data(
-        bus, lmp, lmp_split_points, hour)
+        bus, lmp, lmp_split_points, hour
+    )
     branches_selected = _construct_branch_data(branch, cong, hour)
     _construct_shadowprice_visuals(
-        interconnect, lmp_split_points, bus_segments, branches_selected)
+        interconnect, lmp_split_points, bus_segments, branches_selected
+    )
 
 
 def _get_shadowprice_data(scenario_id):
@@ -48,8 +50,8 @@ def _get_shadowprice_data(scenario_id):
     """
     s = Scenario(scenario_id)
 
-    interconnect = s.info['interconnect']
-    interconnect = ' '.join(interconnect.split('_'))
+    interconnect = s.info["interconnect"]
+    interconnect = " ".join(interconnect.split("_"))
 
     s_grid = s.state.get_grid()
 
@@ -65,7 +67,8 @@ def _get_shadowprice_data(scenario_id):
     cong_abs = pd.DataFrame(
         np.maximum(congu.to_numpy(), congl.to_numpy()),
         columns=congu.columns,
-        index=congu.index)
+        index=congu.index,
+    )
 
     return interconnect, bus_map, s.state.get_lmp(), branch_map, cong_abs
 
@@ -90,17 +93,21 @@ def _construct_bus_data(bus_map, lmp, user_set_split_points, hour):
     # Add lmp to bus dataframe
     lmp_hour = lmp[lmp.index == hour]
     lmp_hour = lmp_hour.T
-    lmp_hour = lmp_hour.rename(columns={lmp_hour.columns[0]: 'lmp'})
+    lmp_hour = lmp_hour.rename(columns={lmp_hour.columns[0]: "lmp"})
     bus_map = pd.concat([bus_map, lmp_hour], axis=1)
 
-    lmp_split_points = user_set_split_points \
-        if user_set_split_points is not None \
+    lmp_split_points = (
+        user_set_split_points
+        if user_set_split_points is not None
         else _get_lmp_split_points(bus_map)
+    )
 
     bus_segments = []
     for i in range(len(lmp_split_points) - 1):
-        bus_segment = bus_map[(bus_map['lmp'] > lmp_split_points[i]) &
-                              (bus_map['lmp'] <= lmp_split_points[i + 1])]
+        bus_segment = bus_map[
+            (bus_map["lmp"] > lmp_split_points[i])
+            & (bus_map["lmp"] <= lmp_split_points[i + 1])
+        ]
         bus_segments.append(bus_segment)
 
     return lmp_split_points, bus_segments
@@ -117,8 +124,8 @@ def _get_lmp_split_points(bus_map):
     :return: the lmp vals we have chosen to split the bus data
     :rtype: list(float)
     """
-    min_lmp = round(bus_map['lmp'].min(), 2)
-    max_lmp = round(bus_map['lmp'].max(), 2)
+    min_lmp = round(bus_map["lmp"].min(), 2)
+    max_lmp = round(bus_map["lmp"].max(), 2)
 
     split_points = [min_lmp]
 
@@ -128,15 +135,14 @@ def _get_lmp_split_points(bus_map):
     if min_lmp < 1:
         split_points.append(1)
         # remove busses with lmp below 1
-        bus_map_pos = bus_map[(bus_map['lmp'] >= 1)]
+        bus_map_pos = bus_map[(bus_map["lmp"] >= 1)]
     else:
         bus_map_pos = bus_map
 
     # split remaining busses into equally sized groups
     num_splits = 9 - len(split_points)
     quantiles = [(i + 1) / (num_splits + 1) for i in range(num_splits)]
-    split_points += [round(bus_map_pos.lmp.quantile(val), 2)
-                     for val in quantiles]
+    split_points += [round(bus_map_pos.lmp.quantile(val), 2) for val in quantiles]
     return split_points + [max_lmp]
 
 
@@ -155,18 +161,20 @@ def _construct_branch_data(branch_map, cong, hour):
     # Add congestion to branch dataframe
     cong_hour = cong.iloc[cong.index == hour]
     cong_hour = cong_hour.T
-    cong_hour = cong_hour.rename(columns={cong_hour.columns[0]: 'medianval'})
+    cong_hour = cong_hour.rename(columns={cong_hour.columns[0]: "medianval"})
     branch_map = pd.concat([branch_map, cong_hour], axis=1)
 
     # select branches that have a binding constraint and are of type Line
-    branch_map = branch_map.loc[(branch_map['medianval'] > 1e-6) &
-                                (branch_map['branch_device_type'] == 'Line')]
+    branch_map = branch_map.loc[
+        (branch_map["medianval"] > 1e-6) & (branch_map["branch_device_type"] == "Line")
+    ]
 
     return branch_map
 
 
 def _construct_shadowprice_visuals(
-        interconnect, lmp_split_points, bus_segments, branch_data):
+    interconnect, lmp_split_points, bus_segments, branch_data
+):
     """Use bokeh to plot variation in lmp and shadow prices
 
     :param interconnect: the scenario interconnect
@@ -180,9 +188,14 @@ def _construct_shadowprice_visuals(
     """
 
     tools = "pan,wheel_zoom,reset,hover,save"
-    p = figure(title=f'{interconnect} Interconnect', tools=tools,
-               x_axis_location=None, y_axis_location=None, plot_width=800,
-               plot_height=800)
+    p = figure(
+        title=f"{interconnect} Interconnect",
+        tools=tools,
+        x_axis_location=None,
+        y_axis_location=None,
+        plot_width=800,
+        plot_height=800,
+    )
 
     # Add USA map
     p.add_tile(get_provider(Vendors.CARTODBPOSITRON))
@@ -191,32 +204,44 @@ def _construct_shadowprice_visuals(
     indices = list(range(len(bus_segments)))
     indices.reverse()  # We want the lowest prices on top
     for i in indices:
-        bus_cds = ColumnDataSource({'x': bus_segments[i]['x'],
-                                    'y': bus_segments[i]['y'],
-                                    'lmp': bus_segments[i]['lmp']})
-        p.circle('x', 'y', color=SHADOW_PRICE_COLORS[i], alpha=0.4, size=11,
-                 source=bus_cds)
+        bus_cds = ColumnDataSource(
+            {
+                "x": bus_segments[i]["x"],
+                "y": bus_segments[i]["y"],
+                "lmp": bus_segments[i]["lmp"],
+            }
+        )
+        p.circle(
+            "x", "y", color=SHADOW_PRICE_COLORS[i], alpha=0.4, size=11, source=bus_cds
+        )
 
     # Add branches
-    branch_cds = ColumnDataSource({
-        'xs': branch_data[['from_x', 'to_x']].values.tolist(),
-        'ys': branch_data[['from_y', 'to_y']].values.tolist(),
-        'medianval': branch_data.medianval})
+    branch_cds = ColumnDataSource(
+        {
+            "xs": branch_data[["from_x", "to_x"]].values.tolist(),
+            "ys": branch_data[["from_y", "to_y"]].values.tolist(),
+            "medianval": branch_data.medianval,
+        }
+    )
     # branch outline
-    p.multi_line('xs', 'ys', color='black', line_width=14, source=branch_cds)
+    p.multi_line("xs", "ys", color="black", line_width=14, source=branch_cds)
     # branch color
     palette = SHADOW_PRICE_COLORS[-5:]
-    mapper = linear_cmap(field_name='medianval', palette=palette, low=0,
-                         high=2000)
-    p.multi_line('xs', 'ys', color=mapper, line_width=9, source=branch_cds)
+    mapper = linear_cmap(field_name="medianval", palette=palette, low=0, high=2000)
+    p.multi_line("xs", "ys", color=mapper, line_width=9, source=branch_cds)
 
     # Add legends
     bus_legend = _construct_bus_legend(lmp_split_points)
-    branch_legend = ColorBar(color_mapper=mapper['transform'], width=16,
-                             location=(0, 0), title="SP ($/MWh)",
-                             title_text_font_size='8pt', title_standoff=8)
+    branch_legend = ColorBar(
+        color_mapper=mapper["transform"],
+        width=16,
+        location=(0, 0),
+        title="SP ($/MWh)",
+        title_text_font_size="8pt",
+        title_standoff=8,
+    )
 
-    p.add_layout(branch_legend, 'right')
+    p.add_layout(branch_legend, "right")
 
     output_notebook()
     show(row(bus_legend, p))
@@ -231,15 +256,26 @@ def _construct_bus_legend(lmp_split_points):
     :return: the legend showing lmp for each bus
     :rtype: bokeh.plotting.figure
     """
-    x_range = ['']
+    x_range = [""]
     bars, bar_len_sum, labels = _get_bus_legend_bars_and_labels(
-        lmp_split_points, x_range)
+        lmp_split_points, x_range
+    )
 
     # Make legend
-    p = figure(x_range=x_range, plot_height=800, plot_width=110,
-               toolbar_location=None, tools="")
-    p.vbar_stack(list(bars.keys())[1:], x='x_range', width=0.9,
-                 color=SHADOW_PRICE_COLORS[:(len(bars) - 1)], source=bars)
+    p = figure(
+        x_range=x_range,
+        plot_height=800,
+        plot_width=110,
+        toolbar_location=None,
+        tools="",
+    )
+    p.vbar_stack(
+        list(bars.keys())[1:],
+        x="x_range",
+        width=0.9,
+        color=SHADOW_PRICE_COLORS[: (len(bars) - 1)],
+        source=bars,
+    )
 
     p.y_range.start = -1
     p.x_range.range_padding = 0.1
@@ -249,8 +285,13 @@ def _construct_bus_legend(lmp_split_points):
     p.yaxis.ticker = list(labels.keys())
     p.yaxis.major_label_overrides = labels
 
-    p.text(x=[-0.05], y=[bar_len_sum*1.01], text=[f'LMP ($/MWh)'],
-           text_font_size='8pt', text_font_style='italic')
+    p.text(
+        x=[-0.05],
+        y=[bar_len_sum * 1.01],
+        text=[f"LMP ($/MWh)"],
+        text_font_size="8pt",
+        text_font_style="italic",
+    )
 
     return p
 
@@ -265,7 +306,7 @@ def _get_bus_legend_bars_and_labels(lmp_split_points, x_range):
     :return: bar lengths and labels for the bus legend
     :rtype: dict, float, dict
     """
-    bars = {'x_range': x_range}
+    bars = {"x_range": x_range}
     bar_length_sum = 0
     labels = {}  # { y-position: label_text, ... }
     for i in range(len(lmp_split_points)):

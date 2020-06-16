@@ -9,9 +9,9 @@ def sum_generation_by_type_zone(scenario):
     :raise Exception: if scenario is not a Scenario object in Analyze state.
     """
     if not isinstance(scenario, Scenario):
-        raise TypeError('scenario must be a Scenario object')
+        raise TypeError("scenario must be a Scenario object")
     if not isinstance(scenario.state, Analyze):
-        raise ValueError('scenario.state must be Analyze')
+        raise ValueError("scenario.state must be Analyze")
 
     pg = scenario.state.get_pg()
     grid = scenario.state.get_grid()
