@@ -2,7 +2,6 @@
 #   PostREISE/postreise/plot/demo: plot_lmp.ipynb
 
 import pandas as pd
-from bokeh.io import output_notebook, show
 from bokeh.layouts import row
 from bokeh.models import ColumnDataSource
 from bokeh.plotting import figure
@@ -19,21 +18,23 @@ del default_states_dict["AK"]
 default_states_list = list(default_states_dict.keys())
 
 
-def plot_lmp(s_grid, lmp, us_states_dat=us_states.data):
+def map_lmp(s_grid, lmp, us_states_dat=us_states.data):
     """ Plot average LMP by color coding buses
 
     :param s_grid: scenario grid
     :type s_grid: pandas.DataFrame
     :param lmp: lmps (locational marginal prices) calculated for the scenario
     :type lmp: pandas.DataFrame
+    :param file_name: name for output png file
+    :type file_name: str
     :param us_states_dat: us_states data file, imported from bokeh
     :type us_states_dat: dict
     """
 
     bus = project_bus(s_grid.bus)
-    lmp_split_points = list(range(0, 257, 1))
+    lmp_split_points = list(range(0, 256, 1))
     bus_segments = _construct_bus_data(bus, lmp, lmp_split_points)
-    _construct_shadowprice_visuals(lmp_split_points, bus_segments, us_states_dat)
+    return _construct_shadowprice_visuals(lmp_split_points, bus_segments, us_states_dat)
 
 
 def _construct_bus_data(bus_map, lmp, lmp_split_points):
@@ -54,28 +55,20 @@ def _construct_bus_data(bus_map, lmp, lmp_split_points):
 
     # min and max values for 'continuous' color scale, in $MW/h
     min_lmp_clamp = 20
-    max_lmp_clamp = 50
+    max_lmp_clamp = 45
 
     lmp_mean["lmp_norm"] = (
         (lmp_mean.lmp - min_lmp_clamp) / (max_lmp_clamp - min_lmp_clamp) * 256
     )
     bus_map = pd.concat([bus_map, lmp_mean], axis=1)
-    bus_map = group_lat_lon(bus_map)
+    bus_map_agg = group_lat_lon(bus_map)
 
     # set a min and a max so all values are assigned a color
-    bus_map.loc[(bus_map.lmp_norm <= 0), "lmp_norm"] = 0.01
-    bus_map.loc[(bus_map.lmp_norm > 256), "lmp_norm"] = 256
+    bus_map_agg.loc[(bus_map_agg.lmp_norm <= 0), "lmp_norm"] = 0.01
+    bus_map_agg.loc[(bus_map_agg.lmp_norm > 255), "lmp_norm"] = 255
+    bus_map_agg = pd.DataFrame(bus_map_agg)
 
-    bus_segments = []
-
-    for i in range(len(lmp_split_points) - 1):
-        bus_segment = bus_map[
-            (bus_map["lmp_norm"] > lmp_split_points[i])
-            & (bus_map["lmp_norm"] <= lmp_split_points[i + 1])
-        ]
-        bus_segments.append(bus_segment)
-
-    return bus_segments
+    return bus_map_agg
 
 
 def group_lat_lon(bus_map):
@@ -92,11 +85,11 @@ def group_lat_lon(bus_map):
     bus_map1.lat = bus_map1.lat.round(1)
     bus_map1.lon = bus_map1.lon.round(1)
 
-    bus_map1 = bus_map1.groupby(["lat", "lon"]).agg(
+    bus_map2 = bus_map1.groupby(["lat", "lon"]).agg(
         {"lmp_norm": "mean", "lmp": "mean", "x": "mean", "y": "mean"}
     )
 
-    return bus_map1
+    return bus_map2
 
 
 def _construct_shadowprice_visuals(lmp_split_points, bus_segments, us_states_dat):
@@ -112,6 +105,8 @@ def _construct_shadowprice_visuals(lmp_split_points, bus_segments, us_states_dat
     :type bus_segments: list(pandas.DataFrame)
     :param us_states_dat: us_states data file, imported from bokeh
     :type us_states_dat: dict
+    :param file_name: name for output png file
+    :type file_name: str
     """
 
     tools = "pan,wheel_zoom,reset,hover,save"
@@ -121,6 +116,7 @@ def _construct_shadowprice_visuals(lmp_split_points, bus_segments, us_states_dat
         y_axis_location=None,
         plot_width=800,
         plot_height=800,
+        output_backend="webgl",
     )
 
     # Add USA map
@@ -129,22 +125,17 @@ def _construct_shadowprice_visuals(lmp_split_points, bus_segments, us_states_dat
     a, b = get_borders(us_states_dat.copy())
     p.patches(a, b, fill_alpha=0.0, line_color="black", line_width=2)
     # Add colored circles for bus locations
-    indices = list(range(len(bus_segments)))
-    indices.reverse()  # We want the lowest prices on top
-    for i in indices:
-        bus_cds = ColumnDataSource(
-            {
-                "x": bus_segments[i]["x"],
-                "y": bus_segments[i]["y"],
-                "lmp": bus_segments[i]["lmp_norm"],
-            }
-        )
-        p.circle("x", "y", color=Turbo256[i], alpha=0.7, size=2, source=bus_cds)
+
+    bus_segments.lmp_norm = bus_segments.lmp_norm.astype(int)
+    bus_segments["col"] = bus_segments["lmp_norm"].apply(lambda x: Turbo256[x])
+    bus_cds = ColumnDataSource(
+        {"x": bus_segments["x"], "y": bus_segments["y"], "col": bus_segments["col"]}
+    )
+    p.circle("x", "y", color="col", size=2, source=bus_cds)
 
     # Add legend
     bus_legend = _construct_bus_legend(lmp_split_points)
-    output_notebook()
-    show(row(bus_legend, p))
+    return row(bus_legend, p)
 
 
 def _construct_bus_legend(lmp_split_points):
@@ -168,6 +159,7 @@ def _construct_bus_legend(lmp_split_points):
         plot_width=110,
         toolbar_location=None,
         tools="",
+        output_backend="webgl",
     )
     p.vbar_stack(
         list(bars.keys())[1:],
@@ -185,7 +177,7 @@ def _construct_bus_legend(lmp_split_points):
     p.yaxis.ticker = list(labels.keys())
     p.yaxis.major_label_overrides = labels
 
-    p.text(x=[-0.05], y=[bar_len_sum * 1.01], text=[f"$/MWh"], text_font_size="12pt")
+    p.text(x=[-0.05], y=[bar_len_sum * 1.01], text=[f" $/MWh"], text_font_size="12pt")
 
     return p
 
@@ -205,9 +197,9 @@ def _get_bus_legend_bars_and_labels(lmp_split_points, x_range):
     labels = {}  # { y-position: label_text, ... }
     for i in range(len(lmp_split_points) - 2):
         bar_length = 0
-        if i == 0 or i == len(lmp_split_points) - 2:
-            # For first and last bars, clamp bar length between 1 and 5
-            # to prevent extreme min and max vals from overwhelming the legend
+        if i == 0 or i == len(lmp_split_points) - 1:
+            # For first and last bars, clamp bar length
+            # to prevent extreme min, max vals from overwhelming the legend
             lmp_diff = lmp_split_points[i + 1] - lmp_split_points[i]
             bar_length = 1 if lmp_diff < 1 else 5 if lmp_diff > 5 else lmp_diff
         elif i != len(lmp_split_points) - 1:
@@ -217,7 +209,7 @@ def _get_bus_legend_bars_and_labels(lmp_split_points, x_range):
             bar_length = max(1, round(lmp_diff, 1))
 
         labels[round(bar_length_sum, -1)] = str(
-            round((lmp_split_points[i] * 30 / 256 + 20), 0)
+            round(((lmp_split_points[i] - 1) * (45 - 20) / 256 + 20), 0)
         )
         if i != len(lmp_split_points) - 1:
             bars[str(i)] = [bar_length]
