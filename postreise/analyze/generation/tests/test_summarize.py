@@ -1,10 +1,15 @@
 import unittest
-
+import pytest
 import pandas as pd
+import pathlib
 
 from powersimdata.tests.mock_scenario import MockScenario
 from postreise.analyze.tests.test_helpers import check_dataframe_matches
-from postreise.analyze.generation.summarize import sum_generation_by_type_zone
+from postreise.analyze.generation.summarize import (
+    sum_generation_by_type_zone,
+    process_sim_gen,
+    summarize_hist_gen,
+)
 
 # plant_id is the index
 mock_plant = {
@@ -41,3 +46,45 @@ class TestSumGenerationByTypeZone(unittest.TestCase):
         test_scenario.state = "Create"
         with self.assertRaises(ValueError):
             sum_generation_by_type_zone(test_scenario)
+
+
+@pytest.fixture
+def sim_gen_result():
+    def mock_get_generation(state, resource):
+        return len(state) + len(resource)
+
+    interconnect = ["Western"]
+    all_resources = ["ng", "hydro"]
+    return process_sim_gen(interconnect, all_resources, mock_get_generation)
+
+
+@pytest.fixture
+def hist_gen_raw():
+    raw_hist_gen_csv = "usa_hist_gen.csv"
+    path_to_csv = pathlib.Path(__file__).parent.joinpath(raw_hist_gen_csv)
+    hist_gen_raw = pd.read_csv(path_to_csv, index_col=0)
+    return hist_gen_raw
+
+
+def test_process_sim_gen_shape(sim_gen_result):
+    assert (13, 2) == sim_gen_result.shape
+    assert "all" in sim_gen_result.index
+    assert "Western" in sim_gen_result.index
+
+
+def test_process_sim_gen_values_scaled(sim_gen_result):
+    max_len = len("Western" + "hydro")
+    assert all(sim_gen_result.max() <= max_len / 1000)
+
+
+def test_summarize_hist_gen_include_areas(hist_gen_raw):
+    all_resources = ["wind", "hydro", "coal"]
+    actual_hist_gen = summarize_hist_gen(hist_gen_raw, all_resources)
+    for area in ("Western", "Eastern", "Texas", "Montana", "all"):
+        assert area in actual_hist_gen.index
+
+
+def test_summarize_hist_gen_shape(hist_gen_raw):
+    all_resources = ["wind", "hydro", "coal"]
+    actual_hist_gen = summarize_hist_gen(hist_gen_raw, all_resources)
+    assert (8, 3) == actual_hist_gen.shape
