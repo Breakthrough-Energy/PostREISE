@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
-from powersimdata.utility.constants import abv2state
 import warnings
 import numpy as np
+
+from powersimdata.utility.constants import abv2state
 
 
 class PlotSettings:

@@ -1,7 +1,8 @@
 from collections import defaultdict
 import pandas as pd
 import numpy as np
-from powersimdata.design import scenario_info
+
+from powersimdata.design.scenario_info import ScenarioInfo
 from powersimdata.scenario.scenario import Scenario
 from powersimdata.scenario.analyze import Analyze
 from powersimdata.utility.constants import interconnect2state, abv2state
