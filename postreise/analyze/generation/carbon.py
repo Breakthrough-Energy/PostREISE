@@ -183,10 +183,15 @@ def _check_gencost(gencost):
             raise ValueError(err_msg)
 
 
-def _check_time_series(df, label):
+def _check_time_series(df, label, tolerance=1e-3):
     """Checks that a time series dataframe is specified properly.
 
-    :param str label: Name of dataframe.
+    :param pandas.DataFrame df: dataframe to check.
+    :param str label: Name of dataframe (used for error messages).
+    :param float tolerance: tolerance value for checking non-negativity.
+    :raises TypeError: if df is not a dataframe or label is not a str.
+    :raises ValueError: if df does not have at least one row and one column, or
+        if it contains values that are more negative than the tolerance allows.
     """
     if not isinstance(label, str):
         raise TypeError("label must be a str")
@@ -199,5 +204,5 @@ def _check_time_series(df, label):
     if not df.shape[1] > 0:
         raise ValueError(label + " must have at least one column")
     # check to ensure that all values are non-negative
-    if np.sum((df < 0).to_numpy().ravel()) > 0:
+    if any((df < -1 * tolerance).to_numpy().ravel()):
         raise ValueError(label + " must be non-negative")
