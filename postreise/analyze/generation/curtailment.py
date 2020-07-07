@@ -70,8 +70,8 @@ def _check_curtailment_in_grid(curtailment, grid):
             raise TypeError("curtailment keys must be str")
         if not isinstance(v, pd.DataFrame):
             raise TypeError("curtailment values must be pandas.DataFrame")
-    gentypes_in_grid = grid.plant["type"].unique()
-    if list(curtailment.keys()) not in gentypes_in_grid:
+    gentypes_in_grid = set(grid.plant["type"].unique())
+    if not set(curtailment.keys()) <= gentypes_in_grid:
         err_msg = "Curtailment has types not present in grid.plant DataFrame."
         err_msg += " Curtailment: " + ", ".join(curtailment.keys())
         err_msg += ". Plant: " + ", ".join(gentypes_in_grid)
