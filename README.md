@@ -1,3 +1,6 @@
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+![Pytest](https://github.com/intvenlab/PostREISE/workflows/Run%20pytest/badge.svg)
+
 # PostREISE
 This package is dedicated to the analysis and plotting of the output data.
 
