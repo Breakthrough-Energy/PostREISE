@@ -118,23 +118,29 @@ def calculate_curtailment_percentage(scenario, resources=None):
     :return: (*float*) -- Average curtailment fraction over the scenario.
     """
     if resources is None:
-        resources = tuple(_resource_func.keys())
+        resources = list(_resource_func.keys())
     _check_scenario(scenario)
     _check_resources(resources)
     _check_resource_in_scenario(resources, scenario)
 
+    plant = scenario.state.get_grid().plant
     curtailment = calculate_curtailment_time_series(scenario, resources)
     rentype_total_curtailment = {r: curtailment[r].sum().sum() for r in resources}
 
-    rentype_total_potential = {
-        r: getattr(scenario.state, _resource_func[r])().sum().sum() for r in resources
-    }
+    # Build a set of the profile methods we will call
+    profile_methods = {_resource_func[r] for r in resources}
+    # Build one mega-profile dataframe that contains all profiles of interest
+    mega_profile = pd.concat([getattr(scenario.state, p)() for p in profile_methods])
+    # Calculate total energy for each resource
+    rentype_total_potential = mega_profile.groupby(plant.type, axis=1).sum().sum()
 
-    total_curtailment = sum(v for v in rentype_total_curtailment.values()) / sum(
-        v for v in rentype_total_potential.values()
+    # Calculate curtailment percentage by dividing total curtailment by total potential
+    curtailment_percentage = (
+        sum(v for v in rentype_total_curtailment.values())
+        / rentype_total_potential.loc[list(resources)].sum()
     )
 
-    return total_curtailment
+    return curtailment_percentage
 
 
 def summarize_curtailment_by_bus(curtailment, grid):
