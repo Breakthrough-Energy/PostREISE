@@ -9,6 +9,7 @@ from powersimdata.scenario.analyze import Analyze
 
 
 # What is the name of the function in scenario.state to get the profiles?
+# The set of keys to in dict defines the set of possible curtailment resources.
 _resource_func = {
     "solar": "get_solar",
     "wind": "get_wind",
@@ -81,12 +82,13 @@ def _check_curtailment_in_grid(curtailment, grid):
 def calculate_curtailment_time_series(scenario, resources=None):
     """Calculate a time series of curtailment for a set of valid resources.
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
-    :param tuple/list/set resources: names of resources to analyze.
+    :param tuple/list/set resources: names of resources to analyze. Default is
+        all resources which can be curtailed, defined in _resource_func.
     :return: (*dict*) -- keys are resources, values are pandas.DataFrames
     indexed by (datetime, plant) where plant is only plants of matching type.
     """
     if resources is None:
-        resources = ("solar", "wind", "wind_offshore")
+        resources = tuple(_resource_func.keys())
     _check_scenario(scenario)
     _check_resources(resources)
     _check_resource_in_scenario(resources, scenario)
@@ -108,17 +110,20 @@ def calculate_curtailment_time_series(scenario, resources=None):
     return curtailment
 
 
-def calculate_curtailment_percentage(scenario, resources=("solar", "wind")):
+def calculate_curtailment_percentage(scenario, resources=None):
     """Calculate scenario-long average curtailment for selected resources.
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
-    :param tuple/list/set resources: names of resources to analyze.
+    :param tuple/list/set resources: names of resources to analyze. Default is
+        all resources which can be curtailed, defined in _resource_func.
     :return: (*float*) -- Average curtailment fraction over the scenario.
     """
+    if resources is None:
+        resources = tuple(_resource_func.keys())
     _check_scenario(scenario)
     _check_resources(resources)
     _check_resource_in_scenario(resources, scenario)
 
-    curtailment = calculate_curtailment_time_series(scenario)
+    curtailment = calculate_curtailment_time_series(scenario, resources)
     rentype_total_curtailment = {r: curtailment[r].sum().sum() for r in resources}
 
     rentype_total_potential = {
