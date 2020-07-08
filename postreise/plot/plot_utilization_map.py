@@ -44,22 +44,22 @@ def map_risk_bind(risk_or_bind, congestion_stats, branch, us_states_dat=us_state
         {
             "xs": branch_map_all[["from_x", "to_x"]].values.tolist(),
             "ys": branch_map_all[["from_y", "to_y"]].values.tolist(),
-            "cap": branch_map_all["rateA"] / 1000 + 1,
+            "cap": branch_map_all["rateA"] / 1000 + 2,
         }
     )
     a, b = plot_carbon_map.get_borders(us_states_dat.copy())
     tools: str = "pan,wheel_zoom,reset,hover,save"
 
-    branch_congestion1 = branch_congestion[branch_congestion[risk_or_bind] > 0]
-    branch_congestion1.sort_values(by=[risk_or_bind])
-    branch_map = project_branch(branch_congestion1)
-    min_val = branch_congestion1[risk_or_bind].min()
-    max_val = branch_congestion1[risk_or_bind].max()
-    mapper1 = linear_cmap(
+    branch_congestion = branch_congestion[branch_congestion[risk_or_bind] > 0]
+    branch_congestion.sort_values(by=[risk_or_bind])
+    branch_map = project_branch(branch_congestion)
+    min_val = branch_congestion[risk_or_bind].min()
+    max_val = branch_congestion[risk_or_bind].max()
+    mapper = linear_cmap(
         field_name=risk_or_bind, palette=traffic_palette, low=min_val, high=max_val
     )
     color_bar = ColorBar(
-        color_mapper=mapper1["transform"], width=8, location=(0, 0), title=risk_or_bind
+        color_mapper=mapper["transform"], width=8, location=(0, 0), title=risk_or_bind
     )
     multi_line_source = ColumnDataSource(
         {
@@ -78,6 +78,7 @@ def map_risk_bind(risk_or_bind, congestion_stats, branch, us_states_dat=us_state
         y_axis_location=None,
         plot_width=800,
         plot_height=800,
+        output_backend="webgl",
     )
     p.add_layout(color_bar, "right")
     p.add_tile(get_provider(Vendors.CARTODBPOSITRON))

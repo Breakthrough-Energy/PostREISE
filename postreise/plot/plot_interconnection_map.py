@@ -35,7 +35,7 @@ def map_interconnections(grid, us_states_dat=us_states.data):
         {
             "xs": branch_west[["from_x", "to_x"]].values.tolist(),
             "ys": branch_west[["from_y", "to_y"]].values.tolist(),
-            "capacity": (branch_west.rateA) / (99999 * 2) * 45 + 0.1,
+            "capacity": (branch_west.rateA) * 0.000225 + 0.1,
         }
     )
 
@@ -43,7 +43,7 @@ def map_interconnections(grid, us_states_dat=us_states.data):
         {
             "xs": branch_east[["from_x", "to_x"]].values.tolist(),
             "ys": branch_east[["from_y", "to_y"]].values.tolist(),
-            "capacity": (branch_east.rateA) / (99999 * 2) * 45 + 0.1,
+            "capacity": (branch_east.rateA) * 0.000225 + 0.1,
         }
     )
 
@@ -51,7 +51,7 @@ def map_interconnections(grid, us_states_dat=us_states.data):
         {
             "xs": branch_tx[["from_x", "to_x"]].values.tolist(),
             "ys": branch_tx[["from_y", "to_y"]].values.tolist(),
-            "capacity": (branch_tx.rateA) / (99999 * 2) * 45 + 0.1,
+            "capacity": (branch_tx.rateA) * 0.000225 + 0.1,
         }
     )
 
@@ -59,7 +59,7 @@ def map_interconnections(grid, us_states_dat=us_states.data):
         {
             "xs": branch_mdc[["from_x", "to_x"]].values.tolist(),
             "ys": branch_mdc[["from_y", "to_y"]].values.tolist(),
-            "capacity": (branch_mdc.Pmax.astype(float)) / (9999 * 2) * 45 + 0.1,
+            "capacity": (branch_mdc.Pmax.astype(float)) * 0.000225 + 0.1,
         }
     )
 
