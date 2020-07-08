@@ -136,6 +136,13 @@ class TestCalculateCurtailmentPercentage(unittest.TestCase):
         )
         self.assertAlmostEqual(total_curtailment, expected_return)
 
+    def test_calculate_curtailment_percentage_wind_offshore(self):
+        expected_return = 2.5 / 16
+        total_curtailment = calculate_curtailment_percentage(
+            scenario, resources=("wind_offshore",)
+        )
+        self.assertAlmostEqual(total_curtailment, expected_return)
+
     def test_calculate_curtailment_percentage_default(self):
         expected_return = 6.5 / 48
         total_curtailment = calculate_curtailment_percentage(scenario)
