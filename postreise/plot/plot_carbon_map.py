@@ -49,7 +49,9 @@ def get_borders(us_states_dat, state_list=None):
     return a, b
 
 
-def plot_states(state_list, col_list, labels_list, us_states_dat=us_states.data):
+def plot_states(
+    state_list, col_list, labels_list, font_size, us_states_dat=us_states.data
+):
     """Plots US state borders and allows color coding by state,
         for example to represent different emissions goals.
 
@@ -97,7 +99,7 @@ def plot_states(state_list, col_list, labels_list, us_states_dat=us_states.data)
             y=(max(b1[0]) + min(b1[0])) / 2,
             x_units="data",
             y_units="data",
-            text_font_size="20pt",
+            text_font_size=font_size,
             text=labels_list[n],
             render_mode="css",
             border_line_color="black",
@@ -106,8 +108,7 @@ def plot_states(state_list, col_list, labels_list, us_states_dat=us_states.data)
             background_fill_alpha=0.8,
         )
         p.add_layout(citation)
-    output_notebook()
-    show(p)
+    return p
 
 
 def group_lat_lon(bus_map):
@@ -323,8 +324,7 @@ def map_carbon_emission_bar(
     )
     p_legend.add_layout(labels)
 
-    output_notebook()
-    show(row(p_legend, p))
+    return row(p_legend, p)
 
 
 def map_carbon_emission(
@@ -335,6 +335,7 @@ def map_carbon_emission(
     label_coal="Coal: tons",
     label_ng="NG: tons",
     us_states_dat=us_states.data,
+    size_factor=1,
 ):
     """Makes map of carbon emissions, color code by fuel type. Size/area
         indicates emissions.
@@ -357,8 +358,8 @@ def map_carbon_emission(
         {
             "x": bus_map["x"],
             "y": bus_map["y"],
-            "coal": (bus_map["coal"] / 1000) ** 0.5,
-            "ng": (bus_map["ng"] / 1000) ** 0.5,
+            "coal": (bus_map["coal"] / 1000 * size_factor) ** 0.5,
+            "ng": (bus_map["ng"] / 1000 * size_factor) ** 0.5,
         }
     )
 
@@ -371,6 +372,7 @@ def map_carbon_emission(
         y_axis_location=None,
         plot_width=800,
         plot_height=800,
+        output_backend="webgl",
     )
     p_legend = figure(
         x_axis_location=None,
@@ -380,6 +382,7 @@ def map_carbon_emission(
         plot_height=400,
         y_range=(0, 4),
         x_range=(0, 2),
+        output_backend="webgl",
     )
     p.add_tile(get_provider(Vendors.CARTODBPOSITRON_RETINA))
     # state borders
@@ -416,9 +419,9 @@ def map_carbon_emission(
         color=np.repeat([color_coal, color_ng], 3),
         alpha=0.25,
         size=[
-            (10000000 / 1000) ** 0.5,
-            (5000000 / 1000) ** 0.5,
-            (1000000 / 1000) ** 0.5,
+            (10000000 / 1000 * size_factor) ** 0.5,
+            (5000000 / 1000 * size_factor) ** 0.5,
+            (1000000 / 1000 * size_factor) ** 0.5,
         ]
         * 2,
     )
@@ -441,8 +444,7 @@ def map_carbon_emission(
     )
     p_legend.add_layout(labels)
 
-    output_notebook()
-    show(row(p_legend, p))
+    return row(p_legend, p)
 
 
 def map_carbon_emission_comparison(bus_info_and_emission_1, bus_info_and_emission_2):

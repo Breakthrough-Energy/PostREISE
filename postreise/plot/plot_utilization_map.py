@@ -1,9 +1,10 @@
 import pandas as pd
 from bokeh.models import ColumnDataSource, ColorBar
-from bokeh.plotting import figure, show
+from bokeh.plotting import figure
 from bokeh.sampledata import us_states
 from bokeh.tile_providers import get_provider, Vendors
 from bokeh.transform import linear_cmap
+import numpy as np
 
 from postreise.plot import plot_carbon_map
 from postreise.plot.projection_helpers import project_branch
@@ -24,9 +25,10 @@ traffic_palette = [
 ]
 
 
-def map_risk_bind(congestion_stats, branch, us_states_dat=us_states.data):
-    """Makes map showing risk and binding incidents on US states map.
+def map_risk_bind(risk_or_bind, congestion_stats, branch, us_states_dat=us_states.data):
+    """Makes map showing risk or binding incidents on US states map.
 
+    :param str risk_or_bind: specify plotting "risk" or "bind"
     :param pandas.DataFrame congestion_stats: data frame as returned by
         :func:`postreise.analyze.transmission.generate_cong_stats`.
     :param pandas.DataFrame branch: branch data frame.
@@ -42,58 +44,55 @@ def map_risk_bind(congestion_stats, branch, us_states_dat=us_states.data):
         {
             "xs": branch_map_all[["from_x", "to_x"]].values.tolist(),
             "ys": branch_map_all[["from_y", "to_y"]].values.tolist(),
-            "cap": branch_map_all["rateA"] / 1000 + 1,
+            "cap": branch_map_all["rateA"] / 1000 + 2,
         }
     )
     a, b = plot_carbon_map.get_borders(us_states_dat.copy())
     tools: str = "pan,wheel_zoom,reset,hover,save"
 
-    # make two plots for risk and bind respectively
-    for param in ["risk", "bind"]:
-        branch_congestion1 = branch_congestion[branch_congestion[param] > 0]
-        branch_congestion1.sort_values(by=[param])
-        branch_map = project_branch(branch_congestion1)
-        min_val = branch_congestion1[param].min()
-        max_val = branch_congestion1[param].max()
-        mapper1 = linear_cmap(
-            field_name=param, palette=traffic_palette, low=min_val, high=max_val
-        )
-        color_bar = ColorBar(
-            color_mapper=mapper1["transform"], width=8, location=(0, 0), title=param
-        )
-        multi_line_source = ColumnDataSource(
-            {
-                "xs": branch_map[["from_x", "to_x"]].values.tolist(),
-                "ys": branch_map[["from_y", "to_y"]].values.tolist(),
-                param: branch_map[param],
-                "cap": branch_map["capacity"] / 1000 + 2,
-            }
-        )
+    branch_congestion = branch_congestion[branch_congestion[risk_or_bind] > 0]
+    branch_congestion.sort_values(by=[risk_or_bind])
+    branch_map = project_branch(branch_congestion)
+    min_val = branch_congestion[risk_or_bind].min()
+    max_val = branch_congestion[risk_or_bind].max()
+    mapper = linear_cmap(
+        field_name=risk_or_bind, palette=traffic_palette, low=min_val, high=max_val
+    )
+    color_bar = ColorBar(
+        color_mapper=mapper["transform"], width=8, location=(0, 0), title=risk_or_bind
+    )
+    multi_line_source = ColumnDataSource(
+        {
+            "xs": branch_map[["from_x", "to_x"]].values.tolist(),
+            "ys": branch_map[["from_y", "to_y"]].values.tolist(),
+            risk_or_bind: branch_map[risk_or_bind],
+            "cap": branch_map["capacity"] / 1000 + 2,
+        }
+    )
 
-        # Set up figure
-        p = figure(
-            title=param,
-            tools=tools,
-            x_axis_location=None,
-            y_axis_location=None,
-            plot_width=800,
-            plot_height=800,
-        )
-        p.add_layout(color_bar, "right")
-        p.add_tile(get_provider(Vendors.CARTODBPOSITRON))
-        p.patches(a, b, fill_alpha=0.0, line_color="black", line_width=2)
-        p.multi_line(
-            "xs",
-            "ys",
-            color="gray",
-            line_width="cap",
-            source=multi_line_source_all,
-            alpha=0.5,
-        )
-        p.multi_line(
-            "xs", "ys", color=mapper1, line_width="cap", source=multi_line_source
-        )
-        show(p)
+    # Set up figure
+    p = figure(
+        title=risk_or_bind,
+        tools=tools,
+        x_axis_location=None,
+        y_axis_location=None,
+        plot_width=800,
+        plot_height=800,
+        output_backend="webgl",
+    )
+    p.add_layout(color_bar, "right")
+    p.add_tile(get_provider(Vendors.CARTODBPOSITRON))
+    p.patches(a, b, fill_alpha=0.0, line_color="black", line_width=2)
+    p.multi_line(
+        "xs",
+        "ys",
+        color="gray",
+        line_width="cap",
+        source=multi_line_source_all,
+        alpha=0.5,
+    )
+    p.multi_line("xs", "ys", color=mapper1, line_width="cap", source=multi_line_source)
+    return p
 
 
 def map_utilization(utilization_df, branch, us_states_dat=us_states.data):
@@ -137,6 +136,7 @@ def map_utilization(utilization_df, branch, us_states_dat=us_states.data):
 
     branch_map = project_branch(branch_utilization)
     branch_map = branch_map.sort_values(by=["median_utilization"])
+    branch_map = branch_map[~branch_map.isin([np.nan, np.inf, -np.inf]).any(1)]
 
     # state borders
     a, b = plot_carbon_map.get_borders(us_states_dat.copy())
@@ -160,9 +160,10 @@ def map_utilization(utilization_df, branch, us_states_dat=us_states.data):
         y_axis_location=None,
         plot_width=800,
         plot_height=800,
+        output_backend="webgl",
     )
     p.add_layout(color_bar, "right")
     p.add_tile(get_provider(Vendors.CARTODBPOSITRON))
     p.patches(a, b, fill_alpha=0.0, line_color="black", line_width=2)
     p.multi_line("xs", "ys", color=mapper1, line_width="cap", source=multi_line_source)
-    show(p)
+    return p
