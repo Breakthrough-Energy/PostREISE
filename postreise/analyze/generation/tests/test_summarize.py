@@ -4,10 +4,12 @@ import pandas as pd
 import pathlib
 
 from powersimdata.tests.mock_scenario import MockScenario
+from powersimdata.tests.mock_scenario_info import MockScenarioInfo
+from powersimdata.tests.mock_grid import MockGrid
 from postreise.analyze.tests.test_helpers import check_dataframe_matches
 from postreise.analyze.generation.summarize import (
     sum_generation_by_type_zone,
-    process_sim_gen,
+    summarize_by_state,
     summarize_hist_gen,
 )
 
@@ -49,13 +51,13 @@ class TestSumGenerationByTypeZone(unittest.TestCase):
 
 
 @pytest.fixture
-def sim_gen_result():
-    def mock_get_generation(state, resource):
-        return len(state) + len(resource)
-
+def sim_gen_result(monkeypatch):
+    mock_resource = lambda x: ["ng", "hydro", "wind"]
     interconnect = ["Western"]
-    all_resources = ["ng", "hydro"]
-    return process_sim_gen(interconnect, all_resources, mock_get_generation)
+    s_info = MockScenarioInfo()
+    s_info.grid.interconnect = interconnect
+    monkeypatch.setattr(s_info, "get_available_resource", mock_resource)
+    return summarize_by_state(s_info)
 
 
 @pytest.fixture
@@ -67,14 +69,13 @@ def hist_gen_raw():
 
 
 def test_process_sim_gen_shape(sim_gen_result):
-    assert (13, 2) == sim_gen_result.shape
+    assert (13, 3) == sim_gen_result.shape
     assert "all" in sim_gen_result.index
     assert "Western" in sim_gen_result.index
 
 
 def test_process_sim_gen_values_scaled(sim_gen_result):
-    max_len = len("Western" + "hydro")
-    assert all(sim_gen_result.max() <= max_len / 1000)
+    assert all(sim_gen_result == 42 / 1000)
 
 
 def test_summarize_hist_gen_include_areas(hist_gen_raw):

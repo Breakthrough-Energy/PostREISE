@@ -61,15 +61,6 @@ def _modified_state_list(interconnects):
     return state_list
 
 
-def get_generation(s_info):
-    def get_value_at(state, resource):
-        starttime = s_info.info["start_date"]
-        endtime = s_info.info["end_date"]
-        return s_info.get_generation(resource, state, starttime, endtime)
-
-    return get_value_at
-
-
 def summarize_by_state(scenario_info):
     """
     Get the generation of each resource from the scenario by state, including
@@ -77,23 +68,19 @@ def summarize_by_state(scenario_info):
     :param powersimdata.design.ScenarioInfo scenario_info: scenario info instance.
     :return: (*pandas.DataFrame*) -- total generation per resource, by state
     """
-    get_value_at = get_generation(scenario_info)
+
+    def get_generation(s_info, state, resource):
+        starttime = s_info.info["start_date"]
+        endtime = s_info.info["end_date"]
+        return s_info.get_generation(resource, state, starttime, endtime)
+
     all_resources = scenario_info.get_available_resource("all")
-    return process_sim_gen(scenario_info.grid.interconnect, all_resources, get_value_at)
 
-
-def process_sim_gen(interconnects, all_resources, get_value_at):
-    """
-    Given data from a ScenarioInfo instance, apply the get_value_at function
-    to each (state, resource) pair to populate the resulting dataframe. This
-    function is meant to contain the core logic of summarize_by_state and is
-    parameterized to simplify testing.
-    """
-    state_list = _modified_state_list(interconnects)
+    state_list = _modified_state_list(scenario_info.grid.interconnect)
     data = defaultdict(dict)
     for res in all_resources:
         for state in state_list:
-            data[res][state] = get_value_at(state, res)
+            data[res][state] = get_generation(scenario_info, state, res)
 
     sim_gen = pd.DataFrame(data)
     sim_gen /= 1000
