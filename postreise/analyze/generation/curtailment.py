@@ -9,6 +9,7 @@ from powersimdata.scenario.analyze import Analyze
 
 
 # What is the name of the function in scenario.state to get the profiles?
+# The set of keys to in dict defines the set of possible curtailment resources.
 _resource_func = {
     "solar": "get_solar",
     "wind": "get_wind",
@@ -70,8 +71,8 @@ def _check_curtailment_in_grid(curtailment, grid):
             raise TypeError("curtailment keys must be str")
         if not isinstance(v, pd.DataFrame):
             raise TypeError("curtailment values must be pandas.DataFrame")
-    gentypes_in_grid = grid.plant["type"].unique()
-    if list(curtailment.keys()) not in gentypes_in_grid:
+    gentypes_in_grid = set(grid.plant["type"].unique())
+    if not set(curtailment.keys()) <= gentypes_in_grid:
         err_msg = "Curtailment has types not present in grid.plant DataFrame."
         err_msg += " Curtailment: " + ", ".join(curtailment.keys())
         err_msg += ". Plant: " + ", ".join(gentypes_in_grid)
@@ -81,12 +82,13 @@ def _check_curtailment_in_grid(curtailment, grid):
 def calculate_curtailment_time_series(scenario, resources=None):
     """Calculate a time series of curtailment for a set of valid resources.
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
-    :param tuple/list/set resources: names of resources to analyze.
+    :param tuple/list/set resources: names of resources to analyze. Default is
+        all resources which can be curtailed, defined in _resource_func.
     :return: (*dict*) -- keys are resources, values are pandas.DataFrames
     indexed by (datetime, plant) where plant is only plants of matching type.
     """
     if resources is None:
-        resources = ("solar", "wind", "wind_offshore")
+        resources = tuple(_resource_func.keys())
     _check_scenario(scenario)
     _check_resources(resources)
     _check_resource_in_scenario(resources, scenario)
@@ -108,28 +110,37 @@ def calculate_curtailment_time_series(scenario, resources=None):
     return curtailment
 
 
-def calculate_curtailment_percentage(scenario, resources=("solar", "wind")):
+def calculate_curtailment_percentage(scenario, resources=None):
     """Calculate scenario-long average curtailment for selected resources.
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
-    :param tuple/list/set resources: names of resources to analyze.
+    :param tuple/list/set resources: names of resources to analyze. Default is
+        all resources which can be curtailed, defined in _resource_func.
     :return: (*float*) -- Average curtailment fraction over the scenario.
     """
+    if resources is None:
+        resources = list(_resource_func.keys())
     _check_scenario(scenario)
     _check_resources(resources)
     _check_resource_in_scenario(resources, scenario)
 
-    curtailment = calculate_curtailment_time_series(scenario)
+    plant = scenario.state.get_grid().plant
+    curtailment = calculate_curtailment_time_series(scenario, resources)
     rentype_total_curtailment = {r: curtailment[r].sum().sum() for r in resources}
 
-    rentype_total_potential = {
-        r: getattr(scenario.state, _resource_func[r])().sum().sum() for r in resources
-    }
+    # Build a set of the profile methods we will call
+    profile_methods = {_resource_func[r] for r in resources}
+    # Build one mega-profile dataframe that contains all profiles of interest
+    mega_profile = pd.concat([getattr(scenario.state, p)() for p in profile_methods])
+    # Calculate total energy for each resource
+    rentype_total_potential = mega_profile.groupby(plant.type, axis=1).sum().sum()
 
-    total_curtailment = sum(v for v in rentype_total_curtailment.values()) / sum(
-        v for v in rentype_total_potential.values()
+    # Calculate curtailment percentage by dividing total curtailment by total potential
+    curtailment_percentage = (
+        sum(v for v in rentype_total_curtailment.values())
+        / rentype_total_potential.loc[list(resources)].sum()
     )
 
-    return total_curtailment
+    return curtailment_percentage
 
 
 def summarize_curtailment_by_bus(curtailment, grid):
