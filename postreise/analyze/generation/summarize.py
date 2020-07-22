@@ -61,7 +61,7 @@ def _modified_state_list(interconnects):
     return state_list
 
 
-def summarize_by_state(scenario_info):
+def sum_generation_by_state(scenario_info):
     """
     Get the generation of each resource from the scenario by state, including
     totals for the given interconnects.
@@ -100,9 +100,8 @@ def _groupby_state(index):
 
 def summarize_hist_gen(hist_gen_raw, all_resources):
     """
-    Create new dataframe based on hist_gen_raw, summed over rows corresponding
-    to the same state, and adding additional rows for totals in each
-    interconnect.
+    Sum generation by state for the given resources from some scenario,
+    adding additional rows for totals in each interconnect.
     """
     western = [abv2state[s] for s in interconnect2state["Western"]]
     eastern = [abv2state[s] for s in interconnect2state["Eastern"]]

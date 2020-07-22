@@ -11,12 +11,6 @@ class PlotSettings:
     size_inches = (20, 10)
 
 
-def plot_generation_sim_vs_hist_all(sim_gen, hist_gen, s_info):
-    for state in sim_gen.index:
-        plot_generation_sim_vs_hist(sim_gen, hist_gen, s_info, state, showmax=False)
-        plot_generation_sim_vs_hist(sim_gen, hist_gen, s_info, state, showmax=True)
-
-
 def plot_generation_sim_vs_hist(sim_gen, hist_gen, s_info, state, showmax=True):
     """
     Plot simulated vs historical generation of each resource in the scenario
@@ -70,7 +64,7 @@ def plot_generation_sim_vs_hist(sim_gen, hist_gen, s_info, state, showmax=True):
         for rect in rects:
             height = rect.get_height()
             ax.annotate(
-                "{}".format(height),
+                str(height),
                 xy=(rect.get_x() + rect.get_width() / 2, height),
                 xytext=(0, 3),  # 3 points vertical offset
                 textcoords="offset points",

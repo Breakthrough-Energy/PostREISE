@@ -9,7 +9,7 @@ from powersimdata.tests.mock_grid import MockGrid
 from postreise.analyze.tests.test_helpers import check_dataframe_matches
 from postreise.analyze.generation.summarize import (
     sum_generation_by_type_zone,
-    summarize_by_state,
+    sum_generation_by_state,
     summarize_hist_gen,
 )
 
@@ -57,7 +57,7 @@ def sim_gen_result(monkeypatch):
     s_info = MockScenarioInfo()
     s_info.grid.interconnect = interconnect
     monkeypatch.setattr(s_info, "get_available_resource", mock_resource)
-    return summarize_by_state(s_info)
+    return sum_generation_by_state(s_info)
 
 
 @pytest.fixture
@@ -68,13 +68,13 @@ def hist_gen_raw():
     return hist_gen_raw
 
 
-def test_process_sim_gen_shape(sim_gen_result):
+def test_sum_generation_by_state_shape(sim_gen_result):
     assert (13, 3) == sim_gen_result.shape
     assert "all" in sim_gen_result.index
     assert "Western" in sim_gen_result.index
 
 
-def test_process_sim_gen_values_scaled(sim_gen_result):
+def test_sum_generation_by_state_values_scaled(sim_gen_result):
     assert all(sim_gen_result == 42 / 1000)
 
 
