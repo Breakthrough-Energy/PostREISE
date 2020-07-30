@@ -23,16 +23,15 @@ def plot_generation_sim_vs_hist(sim_gen, hist_gen, s_info, state, showmax=True):
     """
     labels = list(sim_gen.columns)
     all_resources = s_info.get_available_resource("all")
-    get_state = lambda: abv2state[state] if state in abv2state else state
 
     sim = [int(round(sim_gen.loc[state, res])) for res in all_resources]
-    hist = [int(round(hist_gen.loc[get_state(), res])) for res in all_resources]
+    hist = [int(round(hist_gen.loc[state, res])) for res in all_resources]
 
     def calc_max(gen_type):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             return int(
-                s_info.get_capacity(gen_type, get_state()) * len(s_info.pg.index) / 1000
+                s_info.get_capacity(gen_type, state) * len(s_info.pg.index) / 1000
             )
 
     max_gen = []
@@ -55,7 +54,7 @@ def plot_generation_sim_vs_hist(sim_gen, hist_gen, s_info, state, showmax=True):
 
     # Add some text for labels, title and custom x-axis tick labels, etc.
     ax.set_ylabel("GWh", fontsize=fontsize)
-    ax.set_title(get_state(), fontsize=fontsize)
+    ax.set_title(state, fontsize=fontsize)
     ax.set_xticks(x)
     ax.set_xticklabels(labels, fontsize=fontsize)
     ax.legend(fontsize=fontsize)

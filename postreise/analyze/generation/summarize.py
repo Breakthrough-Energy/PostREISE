@@ -49,29 +49,12 @@ def sum_generation_by_type_zone(scenario):
     return summed_gen_dataframe
 
 
-def _modified_state_list(interconnects):
-    """
-    Get the list of states in the given interconnects, but include larger areas
-    as well.
-    :param list interconnects: list of interconnects
-    :return: list -- list of states and interconnects
-    """
-    state_list = ["all"]
-    for ic in interconnects:
-        state_list += interconnect2state[ic]
-    if "Western" in interconnects:
-        state_list.append("Western")
-    if "Eastern" in interconnects:
-        state_list.append("Eastern")
-    return state_list
-
-
 def sum_generation_by_state(scenario):
     """
     Get the generation of each resource from the scenario by state, including
-    totals for the given interconnects.
+    totals for the given interconnects and for all states.
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
-    :return: (*pandas.DataFrame*) -- total generation per resource, by state
+    :return: (*pandas.DataFrame*) -- total generation per resource, by area.
     """
     # Start with energy by type & zone name
     energy_by_type_zoneid = sum_generation_by_type_zone(scenario)
@@ -91,6 +74,7 @@ def sum_generation_by_state(scenario):
     energy_by_type_state = pd.concat(
         [energy_by_type_state, energy_by_type_interconnect, energy_by_type], axis=1
     )
+    # Units in GWh
     energy_by_type_state /= 1000
     energy_by_type_state = energy_by_type_state.transpose()
 
@@ -101,6 +85,8 @@ def _groupby_state(index):
     """
     Use state as a dict key if index is a smaller region (e.g. Texas East),
     otherwise use the given index.
+    :param str index: Either a state name or region within a state
+    :return str: The corresponding state name
     """
     for state in ("Texas", "New Mexico", "Montana"):
         if state in index:
@@ -110,8 +96,11 @@ def _groupby_state(index):
 
 def summarize_hist_gen(hist_gen_raw, all_resources):
     """
-    Sum generation by state for the given resources from some scenario,
-    adding additional rows for totals in each interconnect.
+    Sum generation by state for the given resources from a scenario, adding
+    totals for interconnects and for all states.
+    :param (*pandas.DataFrame*) hist_gen_raw: historical generation data frame
+    :param (*list*) all_resources: list of resources from the scenario
+    :return (*pandas.DataFrame*): historical generation per resource
     """
     western = [abv2state[s] for s in interconnect2state["Western"]]
     eastern = [abv2state[s] for s in interconnect2state["Eastern"]]
