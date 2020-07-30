@@ -4,7 +4,6 @@ import pandas as pd
 import pathlib
 
 from powersimdata.tests.mock_scenario import MockScenario
-from powersimdata.tests.mock_scenario_info import MockScenarioInfo
 from powersimdata.tests.mock_grid import MockGrid
 from postreise.analyze.tests.test_helpers import check_dataframe_matches
 from postreise.analyze.generation.summarize import (
@@ -51,13 +50,17 @@ class TestSumGenerationByTypeZone(unittest.TestCase):
 
 
 @pytest.fixture
-def sim_gen_result(monkeypatch):
-    mock_resource = lambda x: ["ng", "hydro", "wind"]
-    interconnect = ["Western"]
-    s_info = MockScenarioInfo()
-    s_info.grid.interconnect = interconnect
-    monkeypatch.setattr(s_info, "get_available_resource", mock_resource)
-    return sum_generation_by_state(s_info)
+def sim_gen_result():
+    scenario = MockScenario(grid_attrs, pg=mock_pg)
+    scenario.state.grid.interconnect = ["Western"]
+    scenario.state.grid.plant.zone_id = [201, 202, 203, 204]
+    scenario.state.grid.id2zone = {
+        201: "Washington",
+        202: "Oregon",
+        203: "Northern California",
+        204: "Bay Area",
+    }
+    return sum_generation_by_state(scenario)
 
 
 @pytest.fixture
@@ -69,13 +72,21 @@ def hist_gen_raw():
 
 
 def test_sum_generation_by_state_shape(sim_gen_result):
-    assert (13, 3) == sim_gen_result.shape
+    assert (5, 3) == sim_gen_result.shape
     assert "all" in sim_gen_result.index
     assert "Western" in sim_gen_result.index
 
 
 def test_sum_generation_by_state_values_scaled(sim_gen_result):
-    assert all(sim_gen_result == 42 / 1000)
+    expected_return = pd.DataFrame(
+        {
+            "hydro": [0.023, 0, 0, 0.023, 0.023],
+            "solar": [0, 0, 0.01, 0.01, 0.01],
+            "wind": [0, 0.015, 0, 0.015, 0.015],
+        },
+        index=["California", "Oregon", "Washington", "Western", "all"],
+    )
+    check_dataframe_matches(sim_gen_result, expected_return)
 
 
 def test_summarize_hist_gen_include_areas(hist_gen_raw):

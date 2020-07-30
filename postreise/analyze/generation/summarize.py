@@ -5,7 +5,12 @@ import numpy as np
 from powersimdata.design.scenario_info import ScenarioInfo
 from powersimdata.scenario.scenario import Scenario
 from powersimdata.scenario.analyze import Analyze
-from powersimdata.utility.constants import interconnect2state, abv2state
+from powersimdata.utility.constants import (
+    interconnect2state,
+    abv2state,
+    loadzone2state,
+    loadzone2interconnect,
+)
 
 
 colname_map = {
@@ -61,30 +66,35 @@ def _modified_state_list(interconnects):
     return state_list
 
 
-def sum_generation_by_state(scenario_info):
+def sum_generation_by_state(scenario):
     """
     Get the generation of each resource from the scenario by state, including
     totals for the given interconnects.
-    :param powersimdata.design.ScenarioInfo scenario_info: scenario info instance.
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :return: (*pandas.DataFrame*) -- total generation per resource, by state
     """
+    # Start with energy by type & zone name
+    energy_by_type_zoneid = sum_generation_by_type_zone(scenario)
+    zoneid2zonename = scenario.state.get_grid().id2zone
+    energy_by_type_zonename = energy_by_type_zoneid.rename(zoneid2zonename, axis=1)
+    # Build lists to use for groupbys
+    zone_list = energy_by_type_zonename.columns
+    zone_states = [loadzone2state[zone] for zone in zone_list]
+    zone_interconnects = [loadzone2interconnect[zone] for zone in zone_list]
+    # Run groupbys to aggregate by larger regions
+    energy_by_type_state = energy_by_type_zonename.groupby(zone_states, axis=1).sum()
+    energy_by_type_interconnect = energy_by_type_zonename.groupby(
+        zone_interconnects, axis=1
+    ).sum()
+    energy_by_type = energy_by_type_state.sum(axis=1).to_frame(name="all")
+    # Combine groupbys and format for final output (GWh, index=zone, columns=types)
+    energy_by_type_state = pd.concat(
+        [energy_by_type_state, energy_by_type_interconnect, energy_by_type], axis=1
+    )
+    energy_by_type_state /= 1000
+    energy_by_type_state = energy_by_type_state.transpose()
 
-    def get_generation(s_info, state, resource):
-        starttime = s_info.info["start_date"]
-        endtime = s_info.info["end_date"]
-        return s_info.get_generation(resource, state, starttime, endtime)
-
-    all_resources = scenario_info.get_available_resource("all")
-
-    state_list = _modified_state_list(scenario_info.grid.interconnect)
-    data = defaultdict(dict)
-    for res in all_resources:
-        for state in state_list:
-            data[res][state] = get_generation(scenario_info, state, res)
-
-    sim_gen = pd.DataFrame(data)
-    sim_gen /= 1000
-    return sim_gen
+    return energy_by_type_state
 
 
 def _groupby_state(index):
