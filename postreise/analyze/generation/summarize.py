@@ -28,7 +28,7 @@ colname_map = {
 }
 
 
-def sum_generation_by_type_zone(scenario):
+def sum_generation_by_type_zone(scenario: Scenario) -> pd.DataFrame:
     """Sums generation for a Scenario in Analyze state by {type, zone}.
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :return: (*pandas.DataFrame*) -- total generation, indexed by {type, zone}.
@@ -49,7 +49,7 @@ def sum_generation_by_type_zone(scenario):
     return summed_gen_dataframe
 
 
-def sum_generation_by_state(scenario):
+def sum_generation_by_state(scenario: Scenario) -> pd.DataFrame:
     """
     Get the generation of each resource from the scenario by state, including
     totals for the given interconnects and for all states.
@@ -69,6 +69,8 @@ def sum_generation_by_state(scenario):
     energy_by_type_interconnect = energy_by_type_zonename.groupby(
         zone_interconnects, axis=1
     ).sum()
+    duplicates = set(energy_by_type_interconnect.columns) & set(zone_states)
+    energy_by_type_interconnect.drop(columns=duplicates, inplace=True)
     energy_by_type = energy_by_type_state.sum(axis=1).to_frame(name="all")
     # Combine groupbys and format for final output (GWh, index=zone, columns=types)
     energy_by_type_state = pd.concat(
@@ -81,7 +83,7 @@ def sum_generation_by_state(scenario):
     return energy_by_type_state
 
 
-def _groupby_state(index):
+def _groupby_state(index: str) -> str:
     """
     Use state as a dict key if index is a smaller region (e.g. Texas East),
     otherwise use the given index.
@@ -94,7 +96,7 @@ def _groupby_state(index):
     return index
 
 
-def summarize_hist_gen(hist_gen_raw, all_resources):
+def summarize_hist_gen(hist_gen_raw: pd.DataFrame, all_resources: list) -> pd.DataFrame:
     """
     Sum generation by state for the given resources from a scenario, adding
     totals for interconnects and for all states.
