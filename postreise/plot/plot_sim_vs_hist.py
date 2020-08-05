@@ -2,8 +2,6 @@ import matplotlib.pyplot as plt
 import warnings
 import numpy as np
 
-from powersimdata.utility.constants import abv2state
-
 
 class PlotSettings:
     width = 0.3  # width of bars
