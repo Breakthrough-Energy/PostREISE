@@ -7,6 +7,7 @@ __all__ = [
     "plot_energy_carbon_stack",
     "plot_lmp",
     "plot_shadowprice",
+    "plot_sim_vs_hist",
     "plot_tornado",
     "plot_utilization_map",
     "projection_helpers",
