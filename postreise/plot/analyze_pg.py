@@ -102,6 +102,7 @@ class AnalyzePG:
             "Texas": "US/Central",
             "West": "US/Central",
             "Eastern": "US/Eastern",
+            "USA": "US/Central",
         }
 
         # Fuel type to label for used in plots
@@ -113,7 +114,8 @@ class AnalyzePG:
             "hydro": "Hydro",
             "ng": "Natural Gas",
             "solar": "Solar",
-            "wind": "Wind",
+            "wind": "Wind Onshore",
+            "wind_offshore": "Wind_offshore",
             "biomass": "Biomass",
             "other": "Other",
             "storage": "Storage Discharging",
@@ -178,6 +180,8 @@ class AnalyzePG:
             possible += ["Texas"]
         if "Eastern" in self.interconnect:
             possible += ["Eastern"]
+        if self.interconnect == ["Eastern", "Western", "Texas"]:
+            possible += ["USA"]
         for z in zones:
             if z not in possible:
                 print("%s is incorrect. Possible zones are: %s" % (z, possible))
@@ -459,7 +463,7 @@ class AnalyzePG:
             self.data.append(self._get_stacked(z))
 
     def _get_stacked(self, zone):
-        """Calculates time series of PG and demand in one zone. 
+        """Calculates time series of PG and demand in one zone.
 
         :param str zone: zone to consider.
         :return: (*pandas.DataFrame*) --  data frame of PG and load for selected
@@ -527,7 +531,11 @@ class AnalyzePG:
                 {"net_demand": demand["demand"]}, index=demand.index
             )
 
-            for (t, key) in [("solar", "sc"), ("wind", "wc")]:
+            for (t, key) in [
+                ("solar", "sc"),
+                ("wind", "wonc"),
+                ("wind_offshore", "woffc"),
+            ]:
                 if t in type2label.keys():
                     pg_t = self._get_pg(zone, [t])[0].sum(axis=1)
                     net_demand["net_demand"] = net_demand["net_demand"] - pg_t
@@ -552,14 +560,17 @@ class AnalyzePG:
                 type2label["sc"] = "Solar Curtailment"
                 type2color.append("#e8eb34")
             if "wind" in type2label.keys():
-                type2label["wc"] = "Wind Curtailment"
+                type2label["wonc"] = "Wind Onshore Curtailment"
                 type2color.append("#b6fc03")
+            if "wind_offshore" in type2label.keys():
+                type2label["woffc"] = "Wind Offhore Curtailment"
+                type2color.append("turquoise")
 
             ax = (
                 pg_stack[list(type2label.keys())]
                 .tz_localize(None)
                 .rename(columns=type2label)
-                .plot.area(color=type2color, alpha=0.7, ax=ax)
+                .plot.area(color=type2color, linewidth=0, alpha=0.7, ax=ax)
             )
 
             demand.tz_localize(None).plot(color="red", lw=4, ax=ax)
@@ -1087,6 +1098,10 @@ class AnalyzePG:
             load_zone_id = list(range(203, 208))
         elif zone == "Eastern":
             load_zone_id = list(range(1, 53))
+        elif zone == "USA":
+            load_zone_id = (
+                list(range(1, 53)) + list(range(201, 217)) + list(range(301, 309))
+            )
         else:
             load_zone_id = [self.grid.zone2id[zone]]
 
@@ -1197,7 +1212,10 @@ class AnalyzePG:
             print("No %s plants in %s" % (resource, zone))
             return None
 
-        profile = eval("self." + resource).tz_localize("utc")
+        if resource == "wind_offshore":
+            profile = self.wind.tz_localize("utc")
+        else:
+            profile = eval("self." + resource).tz_localize("utc")
 
         return (
             self._convert_tz(profile[plant_id])
@@ -1221,7 +1239,7 @@ class AnalyzePG:
 
         :return: (*dict*) -- the formatting of the data depends on the selected
             analysis.
-            
+
         .. note::
             * *'stacked'*:
                 1D dictionary. Keys are zones and associated value is a data
@@ -1237,7 +1255,7 @@ class AnalyzePG:
                 2D dictionary. First key is zone and associated value is a
                 dictionary, which has resources as keys and a data frame for
                 value.
- 
+
         """
         data = None
         if self.kind == "stacked":
