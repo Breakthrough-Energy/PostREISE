@@ -62,9 +62,8 @@ def map_interconnections(grid, hvdc_width=1, us_states_dat=us_states.data):
         {
             "xs": branch_mdc[["from_x", "to_x"]].values.tolist(),
             "ys": branch_mdc[["from_y", "to_y"]].values.tolist(),
-            "capacity":
-                branch_mdc.Pmax.astype(float) * line_width_const *
-                hvdc_width + 0.1,
+            "capacity": branch_mdc.Pmax.astype(float) * line_width_const * hvdc_width
+            + 0.1,
             "cap": branch_mdc.Pmax.astype(float),
         }
     )
@@ -89,8 +88,7 @@ def map_interconnections(grid, hvdc_width=1, us_states_dat=us_states.data):
     leg_xs = [-1.084288e07] * 4
     leg_ys = [4.639031e06] * 4
 
-    for (colr, leg, x, y) in zip(
-            leg_clr, leg_lab, leg_xs, leg_ys):
+    for (colr, leg, x, y) in zip(leg_clr, leg_lab, leg_xs, leg_ys):
         p.line(x, y, color=colr, width=5, legend=leg)
 
     # background tiles
@@ -100,23 +98,17 @@ def map_interconnections(grid, hvdc_width=1, us_states_dat=us_states.data):
     p.patches(a, b, fill_alpha=0.0, line_color="black", line_width=2)
 
     # branches
-    source_list = [multi_line_source,
-                   multi_line_source2,
-                   multi_line_source3]
+    source_list = [multi_line_source, multi_line_source2, multi_line_source3]
 
     for (colr, source) in zip(leg_clr[0:3], source_list):
-        p.multi_line("xs", "ys", color=colr, line_width="capacity", source=source
-                     )
+        p.multi_line("xs", "ys", color=colr, line_width="capacity", source=source)
 
     lines = p.multi_line(
         "xs", "ys", color="green", line_width="capacity", source=multi_line_source4
     )
     p.legend.location = "bottom_right"
 
-    hover = HoverTool(tooltips=[
-        ("HVDC capacity MW", "@cap"), ],
-        renderers=[lines]
-    )
+    hover = HoverTool(tooltips=[("HVDC capacity MW", "@cap"),], renderers=[lines])
     p.add_tools(hover)
 
     return p
