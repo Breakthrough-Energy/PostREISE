@@ -83,7 +83,7 @@ def map_interconnections(grid, hvdc_width=1, us_states_dat=us_states.data):
     )
 
     # for legend, hidden lines
-    leg_clr = ['#d8428d', '#0c84e2', '#6D3376' , '#012f56' ]
+    leg_clr = ["#d8428d", "#0c84e2", "#6D3376", "#012f56"]
     leg_lab = ["Western", "Eastern", "ERCOT", "HVDC"]
     leg_xs = [-1.084288e07] * 4
     leg_ys = [4.639031e06] * 4
@@ -104,7 +104,7 @@ def map_interconnections(grid, hvdc_width=1, us_states_dat=us_states.data):
         p.multi_line("xs", "ys", color=colr, line_width="capacity", source=source)
 
     lines = p.multi_line(
-        "xs", "ys", color='#012f56', line_width="capacity", source=multi_line_source4
+        "xs", "ys", color="#012f56", line_width="capacity", source=multi_line_source4
     )
     p.legend.location = "bottom_right"
 
