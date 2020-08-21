@@ -2,10 +2,9 @@ from collections import defaultdict
 import pandas as pd
 import numpy as np
 
-from powersimdata.design.scenario_info import ScenarioInfo
 from powersimdata.scenario.scenario import Scenario
 from powersimdata.scenario.analyze import Analyze
-from powersimdata.network.usa_tamu.constants import (
+from powersimdata.network.usa_tamu.constants.zones import (
     interconnect2state,
     abv2state,
     loadzone2state,
