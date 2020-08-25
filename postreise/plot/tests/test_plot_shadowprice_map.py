@@ -2,7 +2,7 @@ import random
 
 import pandas as pd
 
-from postreise.plot.plot_shadowprice import (
+from postreise.plot.plot_shadowprice_map import (
     _construct_branch_data,
     _construct_bus_data,
     _get_bus_legend_bars_and_labels,
