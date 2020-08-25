@@ -6,6 +6,7 @@ import numpy as np
 
 from postreise.analyze.generation.carbon import generate_carbon_stats
 from powersimdata.scenario.scenario import Scenario
+from powersimdata.network.usa_tamu.constants.plants import type2color
 
 
 # Define common classifications
@@ -74,10 +75,6 @@ def plot_n_scenarios(*args):
     width = 0.5
     line_alpha = 0.25
     line_offsets = np.array((0.25, 0.75))
-    # Grab the biggest dictionary of colors
-    type2color_lengths = [len(grid[id].type2color) for id in scenario_numbers]
-    biggest_type2color = type2color_lengths.index(max(type2color_lengths))
-    resource_colors = grid[scenario_numbers[biggest_type2color]].type2color
 
     # Strart plotting
     fig = plt.figure(figsize=(10, 8))
@@ -86,8 +83,9 @@ def plot_n_scenarios(*args):
     patches = {}
     bottom = np.zeros(num_bars)
     for i, f in enumerate(fuels):
-        color = resource_colors[f]
-        patches[i] = plt.bar(ind, fuel_series[f], width, bottom=bottom, color=color)
+        patches[i] = plt.bar(
+            ind, fuel_series[f], width, bottom=bottom, color=type2color[f]
+        )
         bottom += fuel_series[f]
     # Plot lines
     for i, fuel in enumerate(carbon_fuels):

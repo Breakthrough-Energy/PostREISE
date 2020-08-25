@@ -2,9 +2,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-
 import matplotlib.dates as mdates
 from pandas.plotting import scatter_matrix
+
+from powersimdata.network.usa_tamu.constants.plants import type2color, type2label
+
 
 plt.ioff()
 
@@ -105,22 +107,6 @@ class AnalyzePG:
             "USA": "US/Central",
         }
 
-        # Fuel type to label for used in plots
-        self.type2label = {
-            "nuclear": "Nuclear",
-            "geothermal": "Geothermal",
-            "coal": "Coal",
-            "dfo": "Fuel Oil",
-            "hydro": "Hydro",
-            "ng": "Natural Gas",
-            "solar": "Solar",
-            "wind": "Wind Onshore",
-            "wind_offshore": "Wind_offshore",
-            "biomass": "Biomass",
-            "other": "Other",
-            "storage": "Storage Discharging",
-        }
-
         # Check parameters
         self._check_dates(time[0], time[1])
         self._check_zones(zones)
@@ -194,10 +180,10 @@ class AnalyzePG:
         :raise Exception: if resource(s) are invalid.
         """
         for r in resources:
-            if r not in self.type2label.keys():
+            if r not in type2label.keys():
                 print(
                     "%s is incorrect. Possible resources are: %s"
-                    % (r, self.type2label.keys())
+                    % (r, type2label.keys())
                 )
                 raise Exception("Invalid resource(s)")
 
@@ -392,31 +378,31 @@ class AnalyzePG:
                         right_index=True,
                     )
 
-            type2label = self.type2label.copy()
+            t2l = type2label.copy()
             for t in self.grid.id2type.values():
                 if t not in pg_groups.columns:
-                    del type2label[t]
+                    del t2l[t]
 
             ax[0] = (
-                pg_groups[list(type2label.keys())]
-                .rename(index=type2label)
+                pg_groups[list(t2l.keys())]
+                .rename(index=t2l)
                 .sum()
                 .plot(
                     ax=ax[0],
                     kind="barh",
                     alpha=0.7,
-                    color=[self.grid.type2color[r] for r in type2label.keys()],
+                    color=[type2color[r] for r in t2l.keys()],
                 )
             )
 
             ax[1] = (
-                capacity[list(type2label.keys())]
-                .rename(index=type2label)
+                capacity[list(t2l.keys())]
+                .rename(index=t2l)
                 .plot(
                     ax=ax[1],
                     kind="barh",
                     alpha=0.7,
-                    color=[self.grid.type2color[r] for r in type2label.keys()],
+                    color=[type2color[r] for r in t2l.keys()],
                 )
             )
 
@@ -497,15 +483,13 @@ class AnalyzePG:
                         pg_storage.tz_localize(None)
                         .sum(axis=1)
                         .rename("batteries")
-                        .plot(
-                            color=self.grid.type2color["storage"], lw=4, ax=ax_storage
-                        )
+                        .plot(color=type2color["storage"], lw=4, ax=ax_storage)
                     )
                     ax_storage.fill_between(
                         pg_storage.tz_localize(None).index.values,
                         0,
                         pg_storage.tz_localize(None).sum(axis=1).values,
-                        color=self.grid.type2color["storage"],
+                        color=type2color["storage"],
                         alpha=0.5,
                     )
 
@@ -521,10 +505,10 @@ class AnalyzePG:
                 fig = plt.figure(figsize=(20, 10))
                 ax = fig.gca()
 
-            type2label = self.type2label.copy()
+            t2l = type2label.copy()
             for t in self.grid.id2type.values():
                 if t not in pg_stack.columns:
-                    del type2label[t]
+                    del t2l[t]
 
             demand = self._get_demand(zone)
             net_demand = pd.DataFrame(
@@ -536,7 +520,7 @@ class AnalyzePG:
                 ("wind", "wonc"),
                 ("wind_offshore", "woffc"),
             ]:
-                if t in type2label.keys():
+                if t in t2l.keys():
                     pg_t = self._get_pg(zone, [t])[0].sum(axis=1)
                     net_demand["net_demand"] = net_demand["net_demand"] - pg_t
                     curtailment_t = (
@@ -555,22 +539,22 @@ class AnalyzePG:
                 net_demand = net_demand.divide(1000, axis="index")
                 ax.set_ylabel("Generation (GW)", fontsize=22)
 
-            type2color = [self.grid.type2color[r] for r in type2label.keys()]
-            if "solar" in type2label.keys():
-                type2label["sc"] = "Solar Curtailment"
-                type2color.append("#e8eb34")
-            if "wind" in type2label.keys():
-                type2label["wonc"] = "Wind Onshore Curtailment"
-                type2color.append("#b6fc03")
-            if "wind_offshore" in type2label.keys():
-                type2label["woffc"] = "Wind Offhore Curtailment"
-                type2color.append("turquoise")
+            t2c = [type2color[r] for r in t2l.keys()]
+            if "solar" in t2l.keys():
+                t2l["sc"] = "Solar Curtailment"
+                t2c.append("#e8eb34")
+            if "wind" in t2l.keys():
+                t2l["wonc"] = "Wind Onshore Curtailment"
+                t2c.append("#b6fc03")
+            if "wind_offshore" in t2l.keys():
+                t2l["woffc"] = "Wind Offhore Curtailment"
+                t2c.append("turquoise")
 
             ax = (
-                pg_stack[list(type2label.keys())]
+                pg_stack[list(t2l.keys())]
                 .tz_localize(None)
-                .rename(columns=type2label)
-                .plot.area(color=type2color, linewidth=0, alpha=0.7, ax=ax)
+                .rename(columns=t2l)
+                .plot.area(color=t2c, linewidth=0, alpha=0.7, ax=ax)
             )
 
             demand.tz_localize(None).plot(color="red", lw=4, ax=ax)
@@ -755,9 +739,7 @@ class AnalyzePG:
                 ax=ax_twin,
                 lw=4,
                 alpha=0.7,
-                style={
-                    "%s energy available" % resource: self.grid.type2color[resource]
-                },
+                style={"%s energy available" % resource: type2color[resource]},
             )
 
             data["demand"].tz_localize(None).plot(
@@ -858,7 +840,7 @@ class AnalyzePG:
 
                 lws = [5, 3, 3, 3]
                 lss = ["-", "--", "--", "--"]
-                colors = [self.grid.type2color[resource]]
+                colors = [type2color[resource]]
                 if resource == "solar":
                     colors += ["red", "orangered", "darkorange"]
                 elif resource == "wind":

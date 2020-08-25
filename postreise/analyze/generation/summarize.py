@@ -10,21 +10,7 @@ from powersimdata.network.usa_tamu.constants.zones import (
     loadzone2state,
     loadzone2interconnect,
 )
-
-
-colname_map = {
-    "Coal": "coal",
-    "DFO": "dfo",
-    "Geo-thermal": "geothermal",
-    "Hydro": "hydro",
-    "Natural Gas": "ng",
-    "Nuclear": "nuclear",
-    "Solar": "solar",
-    "Wind": "wind",
-    "Storage": "storage",
-    "Biomass": "biomass",
-    "Other": "other",
-}
+from powersimdata.network.usa_tamu.constants.plants import label2type
 
 
 def sum_generation_by_type_zone(scenario: Scenario) -> pd.DataFrame:
@@ -106,12 +92,10 @@ def summarize_hist_gen(hist_gen_raw: pd.DataFrame, all_resources: list) -> pd.Da
     western = [abv2state[s] for s in interconnect2state["Western"]]
     eastern = [abv2state[s] for s in interconnect2state["Eastern"]]
 
-    filtered_colnames = [
-        k for k in colname_map.keys() if colname_map[k] in all_resources
-    ]
+    filtered_colnames = [k for k in label2type.keys() if label2type[k] in all_resources]
     result = hist_gen_raw.copy()
     result = result.loc[:, filtered_colnames]
-    result.rename(columns=colname_map, inplace=True)
+    result.rename(columns=label2type, inplace=True)
     result = result.groupby(by=_groupby_state).aggregate(np.sum)
     result.loc["Western"] = result[result.index.isin(western)].sum()
     result.loc["Eastern"] = result[result.index.isin(eastern)].sum()
