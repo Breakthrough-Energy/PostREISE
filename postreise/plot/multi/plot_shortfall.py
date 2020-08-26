@@ -253,7 +253,7 @@ def _construct_shortfall_data_for_western(
 
 
 def _get_total_generated_renewables(zone, resource_data, is_match_CA):
-    """ Calculates the sum of all the renewable energy generated in a zone
+    """Calculates the sum of all the renewable energy generated in a zone
 
     :param zone: the zone name
     :type zone: string

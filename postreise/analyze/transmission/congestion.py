@@ -40,7 +40,7 @@ def map_demand_to_buses(grid, demand):
 
 def calculate_congestion_surplus(scenario):
     """Calculates hourly congestion surplus.
-    
+
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :return: (*pandas.DataFrame*) -- congestion surplus.
     """
