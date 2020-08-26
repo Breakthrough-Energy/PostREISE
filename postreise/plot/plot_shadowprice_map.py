@@ -13,7 +13,7 @@ from postreise.plot.projection_helpers import project_branch, project_bus
 
 
 def plot_shadowprice(scenario_id, hour, lmp_split_points=None):
-    """Make map lmp variation and shadow prices
+    """Makes map lmp variation and shadow prices
 
     :param scenario_id: the id of the scenario to gather data from
     :type scenario_id: string
@@ -40,7 +40,7 @@ def plot_shadowprice(scenario_id, hour, lmp_split_points=None):
 
 
 def _get_shadowprice_data(scenario_id):
-    """Get data necessary for plotting shadowprice
+    """Gets data necessary for plotting shadowprice
 
     :param scenario_id: the id of the scenario to gather data from
     :type scenario_id: string
@@ -114,7 +114,7 @@ def _construct_bus_data(bus_map, lmp, user_set_split_points, hour):
 
 
 def _get_lmp_split_points(bus_map):
-    """Determine up to ten points to split the bus data (inc. min and max lmp).
+    """Determines up to ten points to split the bus data (inc. min and max lmp).
         Always split on lmp -1 and 1 if possible
         Split the rest of the buses into groups
         with an equal number of members
@@ -248,7 +248,7 @@ def _construct_shadowprice_visuals(
 
 
 def _construct_bus_legend(lmp_split_points):
-    """Construct the legend for lmp at each bus
+    """Constructs the legend for lmp at each bus
 
     :param lmp_split_points: the lmp values we have chosen to
         split the bus data
@@ -297,7 +297,7 @@ def _construct_bus_legend(lmp_split_points):
 
 
 def _get_bus_legend_bars_and_labels(lmp_split_points, x_range):
-    """get the bar lengths and labels for the bus legend
+    """Gets the bar lengths and labels for the bus legend
 
     :param lmp_split_points: the lmp vs we have chosen to split the bus data
     :type lmp_split_points: list(float)

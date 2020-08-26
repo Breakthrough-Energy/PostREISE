@@ -1,5 +1,5 @@
 # This plotting module has a corresponding demo notebook in
-#   PostREISE/postreise/plot/demo: plot_lmp.ipynb
+#   PostREISE/postreise/plot/demo: plot_lmp_map.ipynb
 
 import pandas as pd
 from bokeh.layouts import row
@@ -19,7 +19,7 @@ default_states_list = list(default_states_dict.keys())
 
 
 def map_lmp(s_grid, lmp, us_states_dat=us_states.data):
-    """ Plot average LMP by color coding buses
+    """Plots average LMP by color coding buses
 
     :param s_grid: scenario grid
     :type s_grid: pandas.DataFrame
@@ -93,7 +93,7 @@ def group_lat_lon(bus_map):
 
 
 def _construct_shadowprice_visuals(lmp_split_points, bus_segments, us_states_dat):
-    """Use bokeh to plot formatted data. Make map showing congestion,
+    """Uses bokeh to plot formatted data. Make map showing congestion,
         with green dot for transformer winding, blue dot transformer,
         and lines for congested branches with varying color and thickness
         indicating degree of congestion
@@ -139,7 +139,7 @@ def _construct_shadowprice_visuals(lmp_split_points, bus_segments, us_states_dat
 
 
 def _construct_bus_legend(lmp_split_points):
-    """Construct the legend for lmp at each bus
+    """Constructs the legend for lmp at each bus
 
     :param lmp_split_points: the lmp values we have chosen to
         split the bus data
@@ -183,7 +183,7 @@ def _construct_bus_legend(lmp_split_points):
 
 
 def _get_bus_legend_bars_and_labels(lmp_split_points, x_range):
-    """get the bar lengths and labels for the bus legend
+    """Gets the bar lengths and labels for the bus legend
 
     :param lmp_split_points: the lmp vs we have chosen to split the bus data
     :type lmp_split_points: list(float)
