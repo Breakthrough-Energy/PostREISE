@@ -4,7 +4,6 @@ from pytest import approx
 
 from powersimdata.tests.mock_scenario import MockScenario
 from postreise.analyze.generation.capacity_value import (
-    check_scenario_resources_hours,
     calculate_NLDC,
     calculate_net_load_peak,
 )
@@ -104,6 +103,8 @@ mock_pg = pd.DataFrame(
 scenario = MockScenario(
     grid_attrs={"plant": mock_plant}, demand=mock_demand, pg=mock_pg
 )
+scenario.info["start_date"] = "2016-01-01 00:00:00"
+scenario.info["end_date"] = "2016-01-01 10:00:00"
 
 
 def test_NLDC_calculation_wind_str():
@@ -123,7 +124,7 @@ def test_NLDC_calculation_wind_list():
 
 
 def test_NLDC_calculation_wind_5_hour():
-    assert calculate_NLDC(scenario, "wind", hours=5) == approx(3343)
+    assert calculate_NLDC(scenario, {"wind"}, hours=5) == approx(3343)
 
 
 def test_NLDC_calculation_solar():
@@ -166,39 +167,39 @@ def test_calculate_net_load_peak_solar_wind_5():
 
 def test_failure_scenario_type():
     with pytest.raises(TypeError):
-        check_scenario_resources_hours("scenario", ["solar", "wind"], hours=10)
+        calculate_net_load_peak("scenario", ["solar", "wind"], hours=10)
 
 
-def test_failure_resources_type():
+def test_failure_resources_type_dict():
     with pytest.raises(TypeError):
-        check_scenario_resources_hours(scenario, {"solar": "wind"}, hours=10)
+        calculate_net_load_peak(scenario, {"solar": "wind"}, hours=10)
 
 
 def test_failure_hours_type():
     with pytest.raises(TypeError):
-        check_scenario_resources_hours(scenario, ["solar", "wind"], hours=10.0)
+        calculate_net_load_peak(scenario, ["solar", "wind"], hours=10.0)
 
 
 def test_failure_no_resources_present():
     with pytest.raises(ValueError):
-        check_scenario_resources_hours(scenario, ["geothermal"], hours=10)
+        calculate_net_load_peak(scenario, ["geothermal"], hours=10)
 
 
 def test_failure_one_resource_not_present():
     with pytest.raises(ValueError):
-        check_scenario_resources_hours(scenario, ["wind", "geothermal"], 10)
+        calculate_net_load_peak(scenario, ["wind", "geothermal"], 10)
 
 
 def test_failure_no_resources():
     with pytest.raises(ValueError):
-        check_scenario_resources_hours(scenario, [], 10)
+        calculate_net_load_peak(scenario, [], 10)
 
 
 def test_failure_zero_hours():
     with pytest.raises(ValueError):
-        check_scenario_resources_hours(scenario, ["solar"], hours=0)
+        calculate_net_load_peak(scenario, ["solar"], hours=0)
 
 
 def test_failure_too_many_hours():
     with pytest.raises(ValueError):
-        check_scenario_resources_hours(scenario, ["solar"], hours=100)
+        calculate_net_load_peak(scenario, ["solar"], hours=100)
