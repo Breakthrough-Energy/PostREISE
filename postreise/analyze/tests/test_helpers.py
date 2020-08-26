@@ -25,7 +25,12 @@ mock_bus = {
 }
 
 mock_pg = pd.DataFrame(
-    {"A": [1, 2, 3, 4], "B": [1, 2, 4, 8], "C": [1, 1, 2, 3], "D": [1, 3, 5, 7],}
+    {
+        "A": [1, 2, 3, 4],
+        "B": [1, 2, 4, 8],
+        "C": [1, 1, 2, 3],
+        "D": [1, 3, 5, 7],
+    }
 )
 
 grid_attrs = {"plant": mock_plant, "bus": mock_bus}
@@ -48,21 +53,34 @@ class TestSummarizePlantToBus(unittest.TestCase):
 
     def test_summarize_default(self):
         expected_return = pd.DataFrame(
-            {1: [2, 4, 7, 12], 2: [1, 1, 2, 3], 3: [1, 3, 5, 7],}
+            {
+                1: [2, 4, 7, 12],
+                2: [1, 1, 2, 3],
+                3: [1, 3, 5, 7],
+            }
         )
         bus_data = summarize_plant_to_bus(mock_pg, self.grid)
         check_dataframe_matches(bus_data, expected_return)
 
     def test_summarize_all_buses_false(self):
         expected_return = pd.DataFrame(
-            {1: [2, 4, 7, 12], 2: [1, 1, 2, 3], 3: [1, 3, 5, 7],}
+            {
+                1: [2, 4, 7, 12],
+                2: [1, 1, 2, 3],
+                3: [1, 3, 5, 7],
+            }
         )
         bus_data = summarize_plant_to_bus(mock_pg, self.grid, all_buses=False)
         check_dataframe_matches(bus_data, expected_return)
 
     def test_summarize_all_buses_true(self):
         expected_return = pd.DataFrame(
-            {1: [2, 4, 7, 12], 2: [1, 1, 2, 3], 3: [1, 3, 5, 7], 4: [0, 0, 0, 0],}
+            {
+                1: [2, 4, 7, 12],
+                2: [1, 1, 2, 3],
+                3: [1, 3, 5, 7],
+                4: [0, 0, 0, 0],
+            }
         )
         bus_data = summarize_plant_to_bus(mock_pg, self.grid, all_buses=True)
         check_dataframe_matches(bus_data, expected_return)
@@ -85,7 +103,10 @@ class TestSummarizePlantToLocation(unittest.TestCase):
 
     def test_summarize_location(self):
         expected_return = pd.DataFrame(
-            {(47.6, 122.3): [2, 4, 7, 12], (37.8, 122.4): [2, 4, 7, 10],}
+            {
+                (47.6, 122.3): [2, 4, 7, 12],
+                (37.8, 122.4): [2, 4, 7, 10],
+            }
         )
         loc_data = summarize_plant_to_location(mock_pg, self.grid)
         self._check_dataframe_matches(loc_data, expected_return)

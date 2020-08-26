@@ -63,7 +63,18 @@ class TestClassifyInterstateIntrastate(unittest.TestCase):
         self.check_expected(upgrades, expected_interstate, expected_intrastate)
 
     def test_classify_interstate_intrastate_several(self):
-        mock_ct = {"branch": {"branch_id": {1: 2, 2: 3, 3: 1.5, 4: 4, 5: 1.1, 8: 10,}}}
+        mock_ct = {
+            "branch": {
+                "branch_id": {
+                    1: 2,
+                    2: 3,
+                    3: 1.5,
+                    4: 4,
+                    5: 1.1,
+                    8: 10,
+                }
+            }
+        }
         expected_interstate = {3, 8}
         expected_intrastate = {1, 2, 4, 5}
 

@@ -49,7 +49,7 @@ def calculate_NLDC(scenario, resources, hours=100):
     """Calculate the capacity value of a class of resources by comparing the
     mean of the top N hour of absolute demand to the mean of the top N hours of
     net demand. NLDC = 'Net Load Duration Curve'.
-    
+
     :param powersimdata.scenario.scenario.Scenario scenario: analyzed scenario.
     :param (str/list/tuple/set) resources: one or more resources to analyze.
     :param int hours: number of hours to analyze.

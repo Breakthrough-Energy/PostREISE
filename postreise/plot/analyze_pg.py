@@ -55,9 +55,7 @@ class AnalyzePG:
     """
 
     def __init__(self, scenario, time, zones, resources, kind, normalize=False, seed=0):
-        """Constructor.
-
-        """
+        """Constructor."""
         plt.close("all")
 
         # Note: Data is downloaded even if not needed

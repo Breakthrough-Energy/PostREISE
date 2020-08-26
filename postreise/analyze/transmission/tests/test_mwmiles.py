@@ -25,7 +25,7 @@ class TestCalculateMWMiles(unittest.TestCase):
 
     def _check_expected_values(self, mw_miles, expected_mw_miles):
         """Check for proper structure and that values match expected.
-        
+
         :param dict mw_miles: dict of upgrade metrics.
         :param dict expected_mw_miles: dict of expected upgrade metrics.
         """

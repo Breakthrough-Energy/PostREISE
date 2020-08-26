@@ -108,7 +108,12 @@ def map_interconnections(grid, hvdc_width=1, us_states_dat=us_states.data):
     )
     p.legend.location = "bottom_right"
 
-    hover = HoverTool(tooltips=[("HVDC capacity MW", "@cap"),], renderers=[lines])
+    hover = HoverTool(
+        tooltips=[
+            ("HVDC capacity MW", "@cap"),
+        ],
+        renderers=[lines],
+    )
     p.add_tools(hover)
 
     return p
