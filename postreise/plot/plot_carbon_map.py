@@ -7,7 +7,7 @@ from bokeh.models import ColumnDataSource, LabelSet, Label
 from bokeh.layouts import row
 from bokeh.sampledata import us_states
 from postreise.plot.projection_helpers import project_bus
-from pyproj import Proj, transform
+from pyproj import Transformer
 
 # make default states list
 default_states_dict = us_states.data.copy()
@@ -26,27 +26,20 @@ def get_borders(us_states_dat, state_list=None):
     # separate latitude and longitude points for the borders of the states.
     if state_list is None:
         state_list = default_states_list
+    num_states = len(state_list)
     us_states_dat = dict((k, us_states_dat[k]) for k in state_list)
-    state_xs = [us_states_dat[code]["lons"] for code in us_states_dat]
-    state_ys = [us_states_dat[code]["lats"] for code in us_states_dat]
+    state_lats = [us_states_dat[code]["lats"] for code in us_states_dat]
+    state_lons = [us_states_dat[code]["lons"] for code in us_states_dat]
     # transform/re-project coordinates for Bokeh
-    prj_wgs = Proj(init="epsg:4326")
-    prj_itm = Proj(init="EPSG:3857")
-    a1 = []
-    b1 = []
-    a = []
-    b = []
-    for j in range(0, len(state_xs)):
-        for i in range(0, len(state_xs[j])):
-            a_a, b_b = transform(prj_wgs, prj_itm, state_xs[j][i], state_ys[j][i])
-            a1.append(a_a)
-            b1.append(b_b)
-        a.append(a1)
-        b.append(b1)
-        a1 = []
-        b1 = []
+    transformer = Transformer.from_crs("epsg:4326", "epsg:3857")
+    all_state_xs = []
+    all_state_ys = []
+    for j in range(num_states):
+        state_xs, state_ys = transformer.transform(state_lats[j], state_lons[j])
+        all_state_xs.append(state_xs)
+        all_state_ys.append(state_ys)
 
-    return a, b
+    return all_state_xs, all_state_ys
 
 
 def plot_states(
