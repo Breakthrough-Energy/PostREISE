@@ -4,6 +4,6 @@ matplotlib==3.2.1
 numpy==1.18.5
 pandas==1.0.4
 -e ../PowerSimData
-pyproj==1.9.6
+pyproj==2.6.1.post1
 pytest==5.4.3
 seaborn==0.10.1
