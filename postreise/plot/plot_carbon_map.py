@@ -27,9 +27,9 @@ def get_borders(us_states_dat, state_list=None):
     if state_list is None:
         state_list = default_states_list
     num_states = len(state_list)
-    us_states_dat = dict((k, us_states_dat[k]) for k in state_list)
-    state_lats = [us_states_dat[code]["lats"] for code in us_states_dat]
-    state_lons = [us_states_dat[code]["lons"] for code in us_states_dat]
+    us_states_dat = [us_states_dat[k] for k in state_list]
+    state_lats = [state["lats"] for state in us_states_dat]
+    state_lons = [state["lons"] for state in us_states_dat]
     # transform/re-project coordinates for Bokeh
     transformer = Transformer.from_crs("epsg:4326", "epsg:3857")
     all_state_xs = []
