@@ -11,18 +11,17 @@ from powersimdata.network.usa_tamu.constants.zones import (
     loadzone2interconnect,
 )
 from powersimdata.network.usa_tamu.constants.plants import label2type
+from postreise.analyze.check import _check_scenario_is_in_analyze_state
 
 
 def sum_generation_by_type_zone(scenario: Scenario) -> pd.DataFrame:
-    """Sums generation for a Scenario in Analyze state by {type, zone}.
+    """Sum generation for a Scenario in Analyze state by {type, zone}.
+
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :return: (*pandas.DataFrame*) -- total generation, indexed by {type, zone}.
     :raise Exception: if scenario is not a Scenario object in Analyze state.
     """
-    if not isinstance(scenario, Scenario):
-        raise TypeError("scenario must be a Scenario object")
-    if not isinstance(scenario.state, Analyze):
-        raise ValueError("scenario.state must be Analyze")
+    _check_scenario_is_in_analyze_state(scenario)
 
     pg = scenario.state.get_pg()
     grid = scenario.state.get_grid()
@@ -35,9 +34,9 @@ def sum_generation_by_type_zone(scenario: Scenario) -> pd.DataFrame:
 
 
 def sum_generation_by_state(scenario: Scenario) -> pd.DataFrame:
-    """
-    Get the generation of each resource from the scenario by state, including
+    """Get the generation of each resource from the scenario by state, including
     totals for the given interconnects and for all states.
+
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :return: (*pandas.DataFrame*) -- total generation per resource, by area.
     """
@@ -69,9 +68,9 @@ def sum_generation_by_state(scenario: Scenario) -> pd.DataFrame:
 
 
 def _groupby_state(index: str) -> str:
-    """
-    Use state as a dict key if index is a smaller region (e.g. Texas East),
+    """Use state as a dict key if index is a smaller region (e.g. Texas East),
     otherwise use the given index.
+
     :param str index: Either a state name or region within a state
     :return str: The corresponding state name
     """
@@ -82,9 +81,9 @@ def _groupby_state(index: str) -> str:
 
 
 def summarize_hist_gen(hist_gen_raw: pd.DataFrame, all_resources: list) -> pd.DataFrame:
-    """
-    Sum generation by state for the given resources from a scenario, adding
+    """Sum generation by state for the given resources from a scenario, adding
     totals for interconnects and for all states.
+
     :param (*pandas.DataFrame*) hist_gen_raw: historical generation data frame
     :param (*list*) all_resources: list of resources from the scenario
     :return (*pandas.DataFrame*): historical generation per resource

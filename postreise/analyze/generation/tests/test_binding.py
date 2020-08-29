@@ -7,9 +7,8 @@ from postreise.analyze.generation.binding import (
     pmin_constraints,
     pmax_constraints,
     ramp_constraints,
-    _check_scenario,
-    _check_epsilon,
 )
+from postreise.analyze.check import _check_scenario_is_in_analyze_state, _check_epsilon
 
 
 class TestCheckScenario(unittest.TestCase):
@@ -19,11 +18,11 @@ class TestCheckScenario(unittest.TestCase):
             "ramp_30": [2.5, 5, 10, 25],
         }
         mock_scenario = MockScenario({"plant": mock_plant})
-        _check_scenario(mock_scenario)
+        _check_scenario_is_in_analyze_state(mock_scenario)
 
     def test_bad_scenario_type(self):
         with self.assertRaises(TypeError):
-            _check_scenario("307")
+            _check_scenario_is_in_analyze_state("307")
 
     def test_bad_scenario_state(self):
         mock_plant = {
@@ -33,7 +32,7 @@ class TestCheckScenario(unittest.TestCase):
         mock_scenario = MockScenario({"plant": mock_plant})
         mock_scenario.state = "Create"
         with self.assertRaises(ValueError):
-            _check_scenario(mock_scenario)
+            _check_scenario_is_in_analyze_state(mock_scenario)
 
 
 class TestCheckEpsilon(unittest.TestCase):

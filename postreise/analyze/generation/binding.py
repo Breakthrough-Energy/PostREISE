@@ -1,29 +1,4 @@
-from powersimdata.scenario.scenario import Scenario
-from powersimdata.scenario.analyze import Analyze
-
-
-def _check_scenario(scenario):
-    """Private function used only for type-checking for public functions.
-    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
-    :raises TypeError: if scenario is not a Scenario object.
-    :raises ValueError: if scenario is not in Analyze state.
-    """
-    if not isinstance(scenario, Scenario):
-        raise TypeError("scenario must be a Scenario object")
-    if not isinstance(scenario.state, Analyze):
-        raise ValueError("scenario.state must be Analyze")
-
-
-def _check_epsilon(epsilon):
-    """Private function used only for type-checking for public functions.
-    :param float/int epsilon: precision for binding constraints.
-    :raises TypeError: if epsilon is not a float or an int.
-    :raises ValueError: if epsilon is negative.
-    """
-    if not isinstance(epsilon, (float, int)):
-        raise TypeError("epsilon must be numeric")
-    if epsilon < 0:
-        raise ValueError("epsilon must be non-negative")
+from postreise.analyze.check import _check_scenario_is_in_analyze_state, _check_epsilon
 
 
 def pmin_constraints(scenario, epsilon=1e-3):
@@ -31,9 +6,9 @@ def pmin_constraints(scenario, epsilon=1e-3):
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param float epsilon: allowable 'fuzz' for whether constraint is binding.
-    :return: (*pandas.DataFrame*) -- Boolean dataframe of same shape as PG.
+    :return: (*pandas.DataFrame*) -- Boolean data frame of same shape as PG.
     """
-    _check_scenario(scenario)
+    _check_scenario_is_in_analyze_state(scenario)
     _check_epsilon(epsilon)
 
     pg = scenario.state.get_pg()
@@ -49,9 +24,9 @@ def pmax_constraints(scenario, epsilon=1e-3):
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param float epsilon: allowable 'fuzz' for whether constraint is binding.
-    :return: (*pandas.DataFrame*) -- Boolean dataframe of same shape as PG.
+    :return: (*pandas.DataFrame*) -- Boolean data frame of same shape as PG.
     """
-    _check_scenario(scenario)
+    _check_scenario_is_in_analyze_state(scenario)
     _check_epsilon(epsilon)
 
     pg = scenario.state.get_pg()
@@ -70,7 +45,7 @@ def ramp_constraints(scenario, epsilon=1e-3):
     :param float epsilon: allowable 'fuzz' for whether constraint is binding.
     :return: (*pandas.DataFrame*) -- Boolean dataframe of same shape as PG.
     """
-    _check_scenario(scenario)
+    _check_scenario_is_in_analyze_state(scenario)
     _check_epsilon(epsilon)
 
     pg = scenario.state.get_pg()
