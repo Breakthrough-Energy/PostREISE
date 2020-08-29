@@ -8,8 +8,30 @@ from postreise.analyze.check import (
 )
 
 
+def get_resources_in_grid(grid):
+    """Get resources in grid.
+
+    :param powersimdata.input.grid.Grid grid: a Grid instance.
+    :return: (*set*) -- all resources in grid.
+    """
+    _check_grid(grid)
+    resources = set(grid.plant["type"].unique())
+    return resources
+
+
+def get_active_resources_in_grid(grid):
+    """Get active resources in grid.
+
+    :param powersimdata.input.grid.Grid grid: a Grid instance.
+    :return: (*set*) -- active resources in grid.
+    """
+    _check_grid(grid)
+    active_resources = set(grid.plant.loc[grid.plant["Pmax"] > 0].type.unique())
+    return active_resources
+
+
 def summarize_plant_to_bus(df, grid, all_buses=False):
-    """Take a plant-column dataframe and sum to a bus-column dataframe.
+    """Take a plant-column data frame and sum to a bus-column data frame.
 
     :param pandas.DataFrame df: dataframe, columns are plant id in Grid.
     :param powersimdata.input.grid.Grid grid: Grid instance.
@@ -32,7 +54,7 @@ def summarize_plant_to_bus(df, grid, all_buses=False):
 
 
 def summarize_plant_to_location(df, grid):
-    """Take a plant-column dataframe and sum to a location-column dataframe.
+    """Take a plant-column data frame and sum to a location-column data frame.
 
     :param pandas.DataFrame df: dataframe, columns are plant id in Grid.
     :param powersimdata.input.grid.Grid grid: Grid instance.
