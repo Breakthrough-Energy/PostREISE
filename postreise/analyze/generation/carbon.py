@@ -10,6 +10,7 @@ from postreise.analyze.check import (
     _check_time_series,
 )
 from powersimdata.network.usa_tamu.constants.plants import (
+    carbon_resources,
     carbon_per_mwh,
     carbon_per_mmbtu,
 )
@@ -73,20 +74,19 @@ def summarize_carbon_by_bus(carbon, plant):
     # sum by generator
     plant_totals = carbon.sum()
     # set up output data structure
-    fossil_fuels = {"coal", "dfo", "ng"}
     plant_buses = plant["bus_id"].unique()
-    bus_totals_by_type = {f: {b: 0 for b in plant_buses} for f in fossil_fuels}
+    bus_totals_by_type = {f: {b: 0 for b in plant_buses} for f in carbon_resources}
     # sum by fuel by bus
     for p in plant_totals.index:
         plant_type = plant.loc[p, "type"]
-        if plant_type not in fossil_fuels:
+        if plant_type not in carbon_resources:
             continue
         plant_bus = plant.loc[p, "bus_id"]
         bus_totals_by_type[plant_type][plant_bus] += plant_totals.loc[p]
     # filter out buses whose carbon is zero
     bus_totals_by_type = {
-        f: {b: v for b, v in bus_totals_by_type[f].items() if v > 0}
-        for f in fossil_fuels
+        r: {b: v for b, v in bus_totals_by_type[r].items() if v > 0}
+        for r in carbon_resources
     }
 
     return bus_totals_by_type
