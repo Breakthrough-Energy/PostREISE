@@ -1,10 +1,13 @@
 import unittest
+import pytest
 
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import pandas as pd
 
 from powersimdata.tests.mock_grid import MockGrid
 from postreise.analyze.helpers import (
+    get_resources_in_grid,
+    get_active_resources_in_grid,
     summarize_plant_to_bus,
     summarize_plant_to_location,
 )
@@ -15,6 +18,8 @@ mock_plant = {
     "bus_id": [1, 1, 2, 3],
     "lat": [47.6, 47.6, 37.8, 37.8],
     "lon": [122.3, 122.3, 122.4, 122.4],
+    "type": ["coal", "ng", "coal", "solar"],
+    "Pmax": [0, 300, 0, 50],
 }
 
 # bus_id is the index
@@ -110,3 +115,15 @@ class TestSummarizePlantToLocation(unittest.TestCase):
         )
         loc_data = summarize_plant_to_location(mock_pg, self.grid)
         self._check_dataframe_matches(loc_data, expected_return)
+
+
+def test_get_resources_in_grid():
+    grid = MockGrid(grid_attrs)
+    resources = get_resources_in_grid(grid)
+    assert resources == {"ng", "coal", "solar"}
+
+
+def test_get_active_resources_in_grid():
+    grid = MockGrid(grid_attrs)
+    resources = get_active_resources_in_grid(grid)
+    assert resources == {"ng", "solar"}
