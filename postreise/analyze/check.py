@@ -203,9 +203,10 @@ def _check_date(date):
         )
 
 
-def _check_date_range(scenario, start, end):
+def _check_date_range_in_scenario(scenario, start, end):
     """Check if start time and endtime define a valid time range of the given scenario.
 
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param pandas.Timestamp/numpy.datetime64/datetime.datetime start: start date.
     :param pandas.Timestamp/numpy.datetime64/datetime end: end date.
     :raises ValueError: if the date range is invalid.

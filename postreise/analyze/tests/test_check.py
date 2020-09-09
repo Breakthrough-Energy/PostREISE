@@ -15,7 +15,7 @@ from postreise.analyze.check import (
     _check_plants_are_in_grid,
     _check_number_hours_to_analyze,
     _check_date,
-    _check_date_range,
+    _check_date_range_in_scenario,
     _check_epsilon,
     _check_gencost,
     _check_time_series,
@@ -264,7 +264,7 @@ def test_check_date():
     _check_date(pd.Timestamp(2016, 2, 1))
 
 
-def test_check_date_range_argument_value():
+def test_check_date_range_in_scenario_argument_value():
     arg = (
         (scenario, pd.Timestamp(2016, 1, 5), pd.Timestamp(2016, 1, 2)),
         (scenario, pd.Timestamp(2016, 1, 2), pd.Timestamp(2016, 1, 2)),
@@ -273,11 +273,13 @@ def test_check_date_range_argument_value():
     )
     for a in arg:
         with pytest.raises(ValueError):
-            _check_date_range(a[0], a[1], a[2])
+            _check_date_range_in_scenario(a[0], a[1], a[2])
 
 
-def test_check_date_range():
-    _check_date_range(scenario, pd.Timestamp(2016, 1, 2), pd.Timestamp(2016, 1, 7))
+def test_check_date_range_in_scenario():
+    _check_date_range_in_scenario(
+        scenario, pd.Timestamp(2016, 1, 2), pd.Timestamp(2016, 1, 7)
+    )
 
 
 def test_check_epsilon_argument_type():
