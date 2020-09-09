@@ -42,18 +42,19 @@ def get_borders(us_states_dat, state_list=None):
     return all_state_xs, all_state_ys
 
 
-def plot_states(
-    state_list, col_list, labels_list, font_size, us_states_dat=us_states.data
-):
+def plot_states(state_list, col_list, labels_list, font_size, us_states_dat=None):
     """Plots US state borders and allows color coding by state,
         for example to represent different emissions goals.
 
     :param labels_list: list of labels for us states.
     :param state_list: list of us states to color code.
     :param col_list: list of colors associated with states in state_list.
-    :param dict us_states_dat: us_states data file, imported from bokeh.
+    :param dict us_states_dat: if None default to us_states data file, imported from bokeh.
     :return:  -- map of us states with option to color by value.
     """
+    if us_states_dat is None:
+        us_states_dat = us_states.data
+
     # warn if inputs diff lengths
     if len(state_list) != len(col_list):
         print("warning: state_list and col_list must be same length")
@@ -164,13 +165,13 @@ def map_carbon_emission_bar(
     scenario_name,
     color_coal="black",
     color_ng="purple",
-    us_states_dat=us_states.data,
+    us_states_dat=None,
     size_factor=1.0,
 ):
     """Makes map of carbon emissions, color code by fuel type. Size/area
         indicates emissions.
 
-    :param dict us_states_dat: us_states data file, imported from bokeh
+    :param dict us_states_dat: if None default to us_states data file, imported from bokeh
     :param pandas.DataFrame bus_info_and_emission: info and
         emission of buses by :func:`combine_bus_info_and_emission`.
     :param str scenario_name: name of scenario for labeling.
@@ -178,6 +179,9 @@ def map_carbon_emission_bar(
     :param str color_ng: color assigned for natural gas
     :param float size_factor: height scale for bars
     """
+
+    if us_states_dat is None:
+        us_states_dat = us_states.data
 
     bus_map = project_bus(bus_info_and_emission)
     bus_map = group_zone(bus_map)
@@ -327,7 +331,7 @@ def map_carbon_emission(
     color_ng="purple",
     label_coal="Coal: tons",
     label_ng="NG: tons",
-    us_states_dat=us_states.data,
+    us_states_dat=None,
     size_factor=1,
 ):
     """Makes map of carbon emissions, color code by fuel type. Size/area
@@ -340,8 +344,11 @@ def map_carbon_emission(
     :param str color_ng: color assigned for ng, default to purple.
     :param str label_coal: label for legend associated with coal.
     :param str label_ng: label for legend associated with ng.
-    :param dict us_states_dat: us_states data file, imported from bokeh
+    :param dict us_states_dat: if None default to us_states data file, imported from bokeh
     """
+    if us_states_dat is None:
+        us_states_dat = us_states.data
+
     bus_map = project_bus(bus_info_and_emission)
     bus_map = group_lat_lon(bus_map)
 

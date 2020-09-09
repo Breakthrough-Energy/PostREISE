@@ -53,11 +53,9 @@ def plot_shortfall(
         all zones collaborate to meet goals. Affects results for interconnect,
         defaults to None
     :type has_collaborative_scenarios: list(string), optional
-    :param baselines: baseline renewables generation for each zone,
-    defaults to None
+    :param baselines: baseline renewables generation for each zone, defaults to None
     :type baselines: dict {zone: float generation in TWh}, optional
-    :param targets: target renewables renewable generation for each zone,
-    defaults to None
+    :param targets: target renewables renewable generation for each zone, defaults to None
     :type targets: dict {zone: float generation in TWh}, optional
     :param demand: total demand for each zone, defaults to None
     :type demand: dict {zone: float generation in TWh}, optional

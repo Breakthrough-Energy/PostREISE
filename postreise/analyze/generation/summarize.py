@@ -71,7 +71,7 @@ def _groupby_state(index: str) -> str:
     otherwise use the given index.
 
     :param str index: either a state name or region within a state
-    :return str: the corresponding state name
+    :return: (*str*) the corresponding state name
     """
     for state in ("Texas", "New Mexico", "Montana"):
         if state in index:
@@ -83,9 +83,9 @@ def summarize_hist_gen(hist_gen_raw: pd.DataFrame, all_resources: list) -> pd.Da
     """Sum generation by state for the given resources from a scenario, adding
     totals for interconnects and for all states.
 
-    :param (*pandas.DataFrame*) hist_gen_raw: historical generation data frame
-    :param (*list*) all_resources: list of resources from the scenario
-    :return (*pandas.DataFrame*): historical generation per resource
+    :param pandas.DataFrame hist_gen_raw: historical generation data frame
+    :param list all_resources: list of resources from the scenario
+    :return: (*pandas.DataFrame*) historical generation per resource
     """
     western = [abv2state[s] for s in interconnect2state["Western"]]
     eastern = [abv2state[s] for s in interconnect2state["Eastern"]]
