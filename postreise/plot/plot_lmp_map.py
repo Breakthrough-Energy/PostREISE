@@ -18,7 +18,7 @@ del default_states_dict["AK"]
 default_states_list = list(default_states_dict.keys())
 
 
-def map_lmp(s_grid, lmp, us_states_dat=us_states.data):
+def map_lmp(s_grid, lmp, us_states_dat=None):
     """Plots average LMP by color coding buses
 
     :param s_grid: scenario grid
@@ -27,9 +27,11 @@ def map_lmp(s_grid, lmp, us_states_dat=us_states.data):
     :type lmp: pandas.DataFrame
     :param file_name: name for output png file
     :type file_name: str
-    :param us_states_dat: us_states data file, imported from bokeh
+    :param us_states_dat: if None default to us_states data file, imported from bokeh
     :type us_states_dat: dict
     """
+    if us_states_dat is None:
+        us_states_dat = us_states.data
 
     bus = project_bus(s_grid.bus)
     lmp_split_points = list(range(0, 256, 1))

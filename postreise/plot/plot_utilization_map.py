@@ -25,16 +25,19 @@ traffic_palette = [
 ]
 
 
-def map_risk_bind(risk_or_bind, congestion_stats, branch, us_states_dat=us_states.data):
+def map_risk_bind(risk_or_bind, congestion_stats, branch, us_states_dat=None):
     """Makes map showing risk or binding incidents on US states map.
 
     :param str risk_or_bind: specify plotting "risk" or "bind"
     :param pandas.DataFrame congestion_stats: data frame as returned by
         :func:`postreise.analyze.transmission.generate_cong_stats`.
     :param pandas.DataFrame branch: branch data frame.
-    :param dict us_states_dat: us_states data file, imported from bokeh.
+    :param dict us_states_dat: if None default to us_states data file, imported from bokeh.
     :return:  -- map of lines with risk and bind incidents color coded
     """
+    if us_states_dat is None:
+        us_states_dat = us_states.data
+
     # projection steps for mapping
     branch_congestion = pd.concat(
         [branch.loc[congestion_stats.index], congestion_stats], axis=1
@@ -95,16 +98,18 @@ def map_risk_bind(risk_or_bind, congestion_stats, branch, us_states_dat=us_state
     return p
 
 
-def map_utilization(utilization_df, branch, us_states_dat=us_states.data):
+def map_utilization(utilization_df, branch, us_states_dat=None):
     """Makes map showing utilization. Utilization input can either be medians
     only, or can be normalized utilization dataframe
 
-    :param us_states_dat: us_states data file, imported from bokeh.
+    :param us_states_dat: if None default to us_states data file, imported from bokeh.
     :param pandas.DataFrame utilization_df: utilization returned by
         :func:`postreise.analyze.transmission.utilization.get_utilization`
     :param pandas.DataFrame branch: branch data frame.
     :return:  -- map of lines with median utilization color coded
     """
+    if us_states_dat is None:
+        us_states_dat = us_states.data
 
     branch_utilization = pd.concat(
         [

@@ -5,6 +5,7 @@ import pandas as pd
 def plot_tornado(title, data, sorted=False):
     """
     Plots a tornado graph (horizontal bar with both positive and neg values)
+
     :param str title: Title of the plot
     :param dict data: dictionary of data to be plotted
     :param bool sorted: whether the values should be sorted smallest to largest

@@ -6,14 +6,17 @@ from postreise.plot import plot_carbon_map
 from bokeh.tile_providers import get_provider, Vendors
 
 
-def map_interconnections(grid, hvdc_width=1, us_states_dat=us_states.data):
+def map_interconnections(grid, hvdc_width=1, us_states_dat=None):
     """Maps transmission lines color coded by interconnection
 
     :param grid: grid object
-    :param dict us_states_dat: us_states data file, imported from bokeh.
+    :param dict us_states_dat: if None default to us_states data file, imported from bokeh.
     :param float hvdc_width: adjust width of HVDC lines on map
     :return:  -- map of transmission
     """
+    if us_states_dat is None:
+        us_states_dat = us_states.data
+
     # projection steps for mapping
     branch = grid.branch
     branch_bus = grid.bus

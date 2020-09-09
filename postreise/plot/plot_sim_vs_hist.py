@@ -13,6 +13,7 @@ def plot_generation_sim_vs_hist(sim_gen, hist_gen, s_info, state, showmax=True):
     """
     Plot simulated vs historical generation of each resource in the scenario
     for the given state. Optionally include max generation.
+
     :param pandas.DataFrame sim_gen: simulated generation dataframe
     :param pandas.DataFrame hist_gen: historical generation dataframe
     :param powersimdata.design.ScenarioInfo s_info: scenario info instance.

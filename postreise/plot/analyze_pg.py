@@ -37,12 +37,12 @@ class AnalyzePG:
             calculates time series of power generated and demand in one zone.
         * *'comp'*:
             calculates time series of power generated for one resource in
-                multiple zones.
+            multiple zones.
         * *'curtailment'*:
             calculates time series of curtailment for one resource in one zone.
         * *'correlation'*:
             calculates correlation coefficients of power generated between
-                multiple zones for one resource.
+            multiple zones for one resource.
         * *'chart'*:
             calculates proportion of resources and generation in one zone.
         * *'variability'*:
