@@ -16,6 +16,7 @@ from postreise.analyze.check import (
     _check_number_hours_to_analyze,
     _check_date,
     _check_date_range_in_scenario,
+    _check_date_range_in_time_series,
     _check_epsilon,
     _check_gencost,
     _check_time_series,
@@ -105,6 +106,26 @@ def test_check_data_frame():
     _check_data_frame(
         pd.DataFrame({"California": [1, 2, 3], "Texas": [4, 5, 6]}), "pandas.DataFrame"
     )
+
+
+def test_check_time_series_argument_value():
+    ts = pd.DataFrame({"demand": [200, 100, 10, 75, 150]})
+    with pytest.raises(ValueError):
+        _check_time_series(ts, "demand")
+
+
+def test_check_time_series():
+    ts = pd.DataFrame(
+        {"demand": [200, 100, 10, 75, 150]},
+        index=pd.date_range("2018-01-01", periods=5, freq="H"),
+    )
+    _check_time_series(ts, "demand")
+
+    ts = pd.Series(
+        [200, 100, 10, 75, 150],
+        index=pd.date_range("2018-01-01", periods=5, freq="H"),
+    )
+    _check_time_series(ts, "demand")
 
 
 def test_check_grid_argument_type():
@@ -267,7 +288,6 @@ def test_check_date():
 def test_check_date_range_in_scenario_argument_value():
     arg = (
         (scenario, pd.Timestamp(2016, 1, 5), pd.Timestamp(2016, 1, 2)),
-        (scenario, pd.Timestamp(2016, 1, 2), pd.Timestamp(2016, 1, 2)),
         (scenario, pd.Timestamp(2015, 12, 1), pd.Timestamp(2016, 1, 8)),
         (scenario, pd.Timestamp(2016, 1, 2), pd.Timestamp(2016, 2, 15)),
     )
@@ -280,6 +300,26 @@ def test_check_date_range_in_scenario():
     _check_date_range_in_scenario(
         scenario, pd.Timestamp(2016, 1, 2), pd.Timestamp(2016, 1, 7)
     )
+
+
+def test_check_date_range_in_time_series_argument_value():
+    data = {
+        "A": np.random.randint(0, high=1000, size=366 * 24),
+        "B": np.random.randn(366 * 24),
+    }
+
+    ts = pd.DataFrame(
+        data, index=pd.date_range("2016-01-01", periods=366 * 24, freq="H")
+    )
+
+    arg = (
+        (ts, pd.Timestamp(2016, 5, 5), pd.Timestamp(2016, 3, 28)),
+        (ts, pd.Timestamp(2015, 12, 1), pd.Timestamp(2016, 8, 8)),
+        (ts, pd.Timestamp(2016, 3, 2), pd.Timestamp(2017, 2, 15)),
+    )
+    for a in arg:
+        with pytest.raises(ValueError):
+            _check_date_range_in_time_series(a[0], a[1], a[2])
 
 
 def test_check_epsilon_argument_type():
@@ -328,23 +368,6 @@ def test_check_gencost_argument_value():
 def test_check_gencost():
     gencost = grid.gencost["after"]
     _check_gencost(gencost)
-
-
-def test_check_time_series_argument_value():
-    ts = pd.DataFrame(
-        {"demand": [200, -100, 10, 75, 150]},
-        index=pd.date_range("2018-01-01", periods=5, freq="H"),
-    )
-    with pytest.raises(ValueError):
-        _check_time_series(ts, "demand")
-
-
-def test_check_time_series():
-    ts = pd.DataFrame(
-        {"demand": [200, 100, 10, 75, 150]},
-        index=pd.date_range("2018-01-01", periods=5, freq="H"),
-    )
-    _check_time_series(ts, "demand")
 
 
 def test_check_curtailment_argument_type():
