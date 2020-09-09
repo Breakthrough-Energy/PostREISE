@@ -19,7 +19,6 @@ def sum_generation_by_type_zone(scenario: Scenario) -> pd.DataFrame:
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :return: (*pandas.DataFrame*) -- total generation, indexed by {type, zone}.
-    :raise Exception: if scenario is not a Scenario object in Analyze state.
     """
     _check_scenario_is_in_analyze_state(scenario)
 
@@ -71,8 +70,8 @@ def _groupby_state(index: str) -> str:
     """Use state as a dict key if index is a smaller region (e.g. Texas East),
     otherwise use the given index.
 
-    :param str index: Either a state name or region within a state
-    :return str: The corresponding state name
+    :param str index: either a state name or region within a state
+    :return str: the corresponding state name
     """
     for state in ("Texas", "New Mexico", "Montana"):
         if state in index:

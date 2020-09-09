@@ -1,3 +1,4 @@
+import datetime
 import numpy as np
 import pandas as pd
 
@@ -7,6 +8,13 @@ from powersimdata.input.grid import Grid
 from powersimdata.network.usa_tamu.constants.plants import (
     all_resources,
     renewable_resources,
+)
+from powersimdata.network.usa_tamu.constants.zones import (
+    loadzone,
+    state2loadzone,
+    abv2loadzone,
+    interconnect2loadzone,
+    abv2state,
 )
 
 
@@ -21,7 +29,7 @@ def _check_data_frame(df, label):
     if not isinstance(label, str):
         raise TypeError("label must be a str")
     if not isinstance(df, pd.DataFrame):
-        raise TypeError(label + " must be a pandas data frame")
+        raise TypeError(label + " must be a pandas.DataFrame object")
     if not df.shape[0] > 0:
         raise ValueError(label + " must have at least one row")
     if not df.shape[1] > 0:
@@ -35,7 +43,7 @@ def _check_grid(grid):
     :raises TypeError: if input is not a Grid instance.
     """
     if not isinstance(grid, Grid):
-        raise TypeError("grid must be a Grid object")
+        raise TypeError("grid must be a powersimdata.input.grid.Grid object")
 
 
 def _check_scenario_is_in_analyze_state(scenario):
@@ -46,15 +54,53 @@ def _check_scenario_is_in_analyze_state(scenario):
     :raises ValueError: if Scenario object is not in analyze state.
     """
     if not isinstance(scenario, Scenario):
-        raise TypeError("scenario must be a Scenario object")
+        raise TypeError(f"scenario must be a {Scenario} object")
     if not isinstance(scenario.state, Analyze):
         raise ValueError("scenario must in analyze state")
+
+
+def _check_areas_and_format(areas):
+    """Ensure that areas are valid. Duplicates are removed and state abbreviations are
+    converted to their actual name.
+
+    :param str/list/tuple/set areas: areas(s) to check. Could be load zone name(s),
+        state name(s)/abbreviation(s) or interconnect(s).
+    :raises TypeError: if areas is not a list/tuple/set of str.
+    :raises ValueError: if areas is empty or not valid.
+    :return: (*set*) -- areas as a set.
+    """
+    if isinstance(areas, str):
+        areas = {areas}
+    elif isinstance(areas, (list, set, tuple)):
+        if not all([isinstance(z, str) for z in areas]):
+            raise TypeError("all areas must be str")
+        areas = set(areas)
+    else:
+        raise TypeError("areas must be a str or a list/tuple/set of str")
+    if len(areas) == 0:
+        raise ValueError("areas must be non-empty")
+    all_areas = (
+        loadzone
+        | set(abv2loadzone.keys())
+        | set(state2loadzone.keys())
+        | set(interconnect2loadzone.keys())
+    )
+    if not areas <= all_areas:
+        diff = areas - all_areas
+        raise ValueError("invalid area(s): %s" % " | ".join(diff))
+
+    abv_in_areas = [z for z in areas if z in abv2state.keys()]
+    for a in abv_in_areas:
+        areas.remove(a)
+        areas.add(abv2state[a])
+
+    return areas
 
 
 def _check_resources_and_format(resources):
     """Ensure that resources are valid and convert variable to a set.
 
-    :param str/list/tuple/set resources: resource(s) to analyze.
+    :param str/list/tuple/set resources: resource(s) to check.
     :raises TypeError: if resources is not a list/tuple/set of str.
     :raises ValueError: if resources is empty or not valid.
     :return: (*set*) -- resources as a set.
@@ -79,8 +125,8 @@ def _check_resources_are_renewable_and_format(resources):
     """Ensure that resources are valid renewable resources and convert variable to
     a set.
 
-    :param list/tuple/set resources: resource(s) to analyze.
-    :raises ValueError: if resources iare not renewables.
+    :param str/list/tuple/set resources: resource(s) to analyze.
+    :raises ValueError: if resources are not renewables.
     return: (*set*) -- resources as a set
     """
     resources = _check_resources_and_format(resources)
@@ -94,7 +140,7 @@ def _check_resources_are_in_grid(resources, grid):
     """Ensure that resource(s) is represented in at least one generator in the grid
     used for the scenario.
 
-    :param set resources: resource(s) to analyze.
+    :param str/list/tuple/set resources: resource(s) to analyze.
     :param powersimdata.input.grid.Grid grid: a Grid instance.
     :raises ValueError: if resources is not used in scenario.
     """
@@ -102,23 +148,27 @@ def _check_resources_are_in_grid(resources, grid):
     valid_resources = set(grid.plant["type"].unique())
     if not resources <= valid_resources:
         diff = resources - valid_resources
-        raise ValueError("%s not in in scenario" % " | ".join(diff))
+        raise ValueError("%s not in in grid" % " | ".join(diff))
 
 
 def _check_plants_are_in_grid(plant_id, grid):
     """Ensure that list of plant id are in grid.
 
-    :param list plant_id: list of plant_id.
+    :param list/tuple/set plant_id: list of plant_id.
     :param powersimdata.input.grid.Grid grid: Grid instance.
-    :raises TypeError: if plant_id is not a list and grid is not a Grid object.
+    :raises TypeError: if plant_id is not a list of int or str and grid is not a Grid
+        object.
     :raises ValueError: if plant id is not in network.
     """
     _check_grid(grid)
-    if not isinstance(plant_id, list):
-        raise TypeError("plant_id must be a list")
+    if not (
+        isinstance(plant_id, (list, tuple, set))
+        and all([isinstance(p, (int, str)) for p in plant_id])
+    ):
+        raise TypeError("plant_id must be a a list/tuple/set of int or str")
     if not isinstance(grid, Grid):
         raise TypeError("grid must be powersimdata.input.grid.Grid object")
-    if not set(plant_id) <= set(grid.plant.index):
+    if not set([str(p) for p in plant_id]) <= set([str(i) for i in grid.plant.index]):
         raise ValueError("plant_id must be subset of plant index")
 
 
@@ -139,6 +189,35 @@ def _check_number_hours_to_analyze(scenario, hours):
         raise ValueError("hours must be positive")
     if hours > (end_date - start_date).total_seconds() / 3600 + 1:
         raise ValueError("hours must not be greater than simulation length")
+
+
+def _check_date(date):
+    """Check date is valid.
+
+    :param pandas.Timestamp/numpy.datetime64/datetime.datetime date: timestamp.
+    :raises TypeError: if date is improperly formatted.
+    """
+    if not isinstance(date, (pd.Timestamp, np.datetime64, datetime.datetime)):
+        raise TypeError(
+            "date must be a pandas.Timestamp, a numpy.datetime64 or a datetime.datetime object"
+        )
+
+
+def _check_date_range(scenario, start, end):
+    """Check if start time and endtime define a valid time range of the given scenario.
+
+    :param pandas.Timestamp/numpy.datetime64/datetime.datetime start: start date.
+    :param pandas.Timestamp/numpy.datetime64/datetime end: end date.
+    :raises ValueError: if the date range is invalid.
+    """
+    _check_scenario_is_in_analyze_state(scenario)
+    _check_date(start)
+    _check_date(end)
+    scenario_start = pd.Timestamp(scenario.info["start_date"])
+    scenario_end = pd.Timestamp(scenario.info["end_date"])
+
+    if not scenario_start <= start < end <= scenario_end:
+        raise ValueError("Must have scenario_start <= start <= end <= scenario_end")
 
 
 def _check_epsilon(epsilon):
@@ -165,10 +244,10 @@ def _check_gencost(gencost):
     """
 
     # check for nonempty dataframe
-    if not isinstance(gencost, pd.DataFrame):
-        raise TypeError("gencost must be a pandas data frame")
-    if not gencost.shape[0] > 0:
-        raise ValueError("gencost must have at least one row")
+    if isinstance(gencost, pd.DataFrame):
+        _check_data_frame(gencost, "gencost")
+    else:
+        raise TypeError("gencost must be a pandas.DataFrame object")
 
     # check for proper columns
     required_columns = ("type", "n")
@@ -197,8 +276,7 @@ def _check_gencost(gencost):
     coef_columns = ["c" + str(i) for i in range(n)]
     for c in coef_columns:
         if c not in gencost.columns:
-            err_msg = "gencost of order {0} must have column {1}".format(n, c)
-            raise ValueError(err_msg)
+            raise ValueError("gencost of order {0} must have column {1}".format(n, c))
 
 
 def _check_time_series(ts, label, tolerance=1e-3):
@@ -221,7 +299,7 @@ def _check_curtailment(curtailment, grid):
 
     :param dict curtailment: curtailment data.
     :param powersimdata.input.grid.Grid grid: a Grid object.
-    :raises TypeError: if curtailment is not a dict and it values are not data frames.
+    :raises TypeError: if curtailment is not a dict and values are not data frames.
     """
     if not isinstance(curtailment, dict):
         raise TypeError("curtailment must be a dict")
