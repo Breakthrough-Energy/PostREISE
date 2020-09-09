@@ -1,9 +1,8 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-![Pytest](https://github.com/intvenlab/PostREISE/workflows/Run%20pytest/badge.svg)
+![Pytest](https://github.com/Breakthrough-Energy/PostREISE/workflows/Run%20pytest/badge.svg)
 
 # PostREISE
 This package is dedicated to the analysis and plotting of the output data.
-
 
 
 ## 1. Setup/Install
@@ -48,6 +47,7 @@ where `scenario` is a powersimdata.scenario.scenario.Scenario instance.
 #### II. Classify Upgrades
 The upgraded branches can also be classified into either interstate or
 intrastate branches by calling:
+
 ```
 postreise.analyze.transmission.statelines.classify_interstate_intrastate(scenario)
 ```
@@ -55,6 +55,7 @@ where `scenario` is a powersimdata.scenario.scenario.Scenario instance.
 
 ### D. Carbon Analysis
 The hourly CO<sub>2</sub> emissions from a scenario may be analyzed by calling
+
 ```
 postreise.analyze.generation.carbon.generate_carbon_stats(scenario)
 ```
@@ -93,15 +94,18 @@ or by location (substation) with:
 postreise.analyze.generation.curtailment.summarize_curtailment_by_bus(curtailment, grid)
 ```
 or
+
 ```
 postreise.analyze.generation.curtailment.summarize_curtailment_by_location(curtailment, grid)
 ```
+
 where `curtailment` is a pandas.DataFrame as returned by
 `calculate_curtailment_time_series` and `grid` is a
 powersimdata.input.grid.Grid instance.
 
 #### III. Calculating Annual Curtailment Percentage
 An annual average curtailment value can be found for all wind/solar plants with
+
 ```
 postreise.analyze.generation.curtailment.calculate_curtailment_percentage(scenario)
 ```
@@ -114,7 +118,6 @@ or
 ```
 postreise.analyze.generation.curtailment.calculate_curtailment_percentage(scenario, resources={'solar'})
 ```
-
 
 
 ## 3. Plot
@@ -140,15 +143,11 @@ values cleanly.
 
 Check out the notebooks within the [demo][plot_notebooks] folder.
 
-The `postreise.plot.analyze_set` module accomplishes a similar job for a set of
-scenarios. This is illustrated [here][collection].
+[plot_notebooks]: https://github.com/Breakthrough-Energy/PostREISE/blob/develop/postreise/plot/demo/
+[utilization]: https://github.com/Breakthrough-Energy/PostREISE/tree/develop/postreise/analyze/transmission/demo/utilization_demo.ipynb
+[shadowprice]: https://github.com/Breakthrough-Energy/PostREISE/tree/develop/postreise/plot/demo/plot_shadowprice_demo.ipynb
 
-[plot_notebooks]: https://github.com/intvenlab/PostREISE/blob/develop/postreise/plot/demo/
-[collection]: https://github.com/intvenlab/PostREISE/blob/develop/postreise/plot/demo/collection.ipynb
-[utilization]: https://github.com/intvenlab/PostREISE/tree/develop/postreise/analyze/transmission/demo/utilization_demo.ipynb
-[shadowprice]: https://github.com/intvenlab/PostREISE/tree/develop/postreise/plot/demo/plot_shadowprice_demo.ipynb
-
-The `carbon_plot` module is used to plot carbon emissions on a map.
+The `plot_carbon_map` module is used to plot carbon emissions on a map.
 There are two ways it can be used:
 * Map carbon emissions per bus, size scaled to emissions quantity (tons) and 
 color coded by fuel type.
@@ -156,8 +155,8 @@ color coded by fuel type.
 Comparison map color codes by increase vs. decrease from first to second 
 scenario analyzed.
 
-The `carbon_barchart` module is used to make barcharts comparing carbon 
+The `plot_carbon_bar` module is used to make barcharts comparing carbon 
 emissions of two scenarios.
 
-The `carbon_plothelper.py` module contains helper functions such as 
+The `projection_helpers.py` module contains helper functions such as 
 re-projection, necessary for mapping.
