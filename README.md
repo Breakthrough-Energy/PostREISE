@@ -33,27 +33,7 @@ postreise.analyze.transmission.congestion.calculate_congestion_surplus(scenario)
 where `scenario` is a powersimdata.scenario.scenario.Scenario object in Analyze
 state.
 
-### C. Analysis of Transmission Upgrades
-
-#### I. Cumulative Upgrade Quantity
-Using the change table of a scenario, the number of upgrades lines/transformers
-and their cumulative upgraded capacity (for transformers) and cumulative
-upgraded megawatt-miles (for lines) can be calculated with:
-```
-postreise.analyze.transmission.mwmiles.calculate_mw_miles(scenario)
-```
-where `scenario` is a powersimdata.scenario.scenario.Scenario instance.
-
-#### II. Classify Upgrades
-The upgraded branches can also be classified into either interstate or
-intrastate branches by calling:
-
-```
-postreise.analyze.transmission.statelines.classify_interstate_intrastate(scenario)
-```
-where `scenario` is a powersimdata.scenario.scenario.Scenario instance.
-
-### D. Carbon Analysis
+### C. Carbon Analysis
 The hourly CO<sub>2</sub> emissions from a scenario may be analyzed by calling
 
 ```
@@ -69,7 +49,7 @@ postreise.analyze.generation.carbon.summarize_carbon_by_bus(carbon, plant)
 where `carbon` is a pandas.DataFrame as returned by `generate_carbon_stats` and
 `grid` is a powersimdata.input.grid.Grid instance.
 
-### E. Curtailment Analysis
+### D. Curtailment Analysis
 The level of curtailment for a Scenario may be calculated in several ways.
 
 #### I. Calculating Time Series
