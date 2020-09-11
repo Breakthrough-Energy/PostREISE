@@ -52,6 +52,8 @@ mock_curtailment_data = pd.DataFrame(
         "D": [0, 0, 1, 1.5],
     }
 )
+mock_curtailment_data["UTC"] = pd.date_range(start="2016-01-01", periods=4, freq="H")
+mock_curtailment_data.set_index("UTC", inplace=True)
 
 mock_curtailment = {
     "solar": mock_curtailment_data[["A", "B"]],

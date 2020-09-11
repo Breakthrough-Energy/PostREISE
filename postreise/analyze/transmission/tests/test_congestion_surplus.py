@@ -43,7 +43,10 @@ class TestCalculateCongestionSurplus(unittest.TestCase):
             df.set_index("UTC", inplace=True)
         mock_scenario = MockScenario(grid_attrs, demand=demand, lmp=lmp, pg=pg)
 
-        expected_return = pd.Series(data=[787.5], index=["t1"])
+        expected_return = pd.Series(
+            data=[787.5],
+            index=pd.date_range(start="2016-01-01", periods=1, freq="H"),
+        )
         expected_return.rename_axis("UTC")
 
         surplus = calculate_congestion_surplus(mock_scenario)
@@ -74,7 +77,10 @@ class TestCalculateCongestionSurplus(unittest.TestCase):
             df.set_index("UTC", inplace=True)
         mock_scenario = MockScenario(grid_attrs, demand=demand, lmp=lmp, pg=pg)
 
-        expected_return = pd.Series(data=[787.5, 0, 0], index=time_indices)
+        expected_return = pd.Series(
+            data=[787.5, 0, 0],
+            index=pd.date_range(start="2016-01-01", periods=3, freq="H"),
+        )
         expected_return.rename_axis("UTC")
 
         surplus = calculate_congestion_surplus(mock_scenario)
