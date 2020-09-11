@@ -153,7 +153,8 @@ class TestCarbonSummarization(unittest.TestCase):
             {
                 plant_id: [(i + 1) * p for p in range(self.period_num)]
                 for i, plant_id in enumerate(mock_plant["plant_id"])
-            }
+            },
+            index=pd.date_range(start="2016-01-01", periods=self.period_num, freq="H"),
         )
         self.plant = pd.DataFrame(mock_plant)
         self.plant.set_index("plant_id", inplace=True)
