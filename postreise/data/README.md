@@ -21,3 +21,11 @@
 
 2016_NREL_Mid_Case_Western_Generation_TWh.csv
 * Source URL: https://openei.org/apps/reeds/#
+
+2016_Historical_USA_TAMU_Generation_GWh.csv
+* Source URL: https://www.eia.gov/electricity/data/eia923/
+* Original data have been aggregated to derive the generation in TAMU load zones.
+
+2016_Historical_USA_TAMU_Capacity_MW.csv
+* Source URL: https://www.eia.gov/electricity/data/eia860/
+* Original data have been aggregated to derive generator's capacity in TAMU load zones.
