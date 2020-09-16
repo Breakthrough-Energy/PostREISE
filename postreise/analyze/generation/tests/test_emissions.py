@@ -159,7 +159,7 @@ class TestEmissionsSummarization(unittest.TestCase):
         self.plant = pd.DataFrame(mock_plant)
         self.plant.set_index("plant_id", inplace=True)
 
-    def test_carbon_summarization(self):
+    def test_emissions_summarization(self):
         # setup
         pg = self.pg
         plant = self.plant

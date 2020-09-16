@@ -13,11 +13,13 @@ from powersimdata.network.usa_tamu.constants.plants import (
     carbon_resources,
     carbon_per_mwh,
     carbon_per_mmbtu,
+    nox_per_mwh,
+    so2_per_mwh,
 )
 
 
-def generate_carbon_stats(scenario, method="simple"):
-    """Generate carbon statistics from the input generation data. Method
+def generate_emissions_stats(scenario, method="simple"):
+    """Generate emissions statistics from the input generation data. Method
     descriptions: 'simple' uses a fixed ratio of CO2 to MWh, 'always-on' uses
     generator heat-rate curves including non-zero intercepts, 'decommit' uses
     generator heat-rate curves but de-commits generators if they are off
@@ -25,7 +27,7 @@ def generate_carbon_stats(scenario, method="simple"):
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param str method: selected method to handle no-load fuel consumption.
-    :return: (*pandas.DataFrame*) -- carbon data frame.
+    :return: (*pandas.DataFrame*) -- emissions data frame.
     """
     _check_scenario_is_in_analyze_state(scenario)
 
@@ -33,16 +35,16 @@ def generate_carbon_stats(scenario, method="simple"):
     if not isinstance(method, str):
         raise TypeError("method must be a str")
     if method not in allowed_methods:
-        raise ValueError("Unknown method for generate_carbon_stats()")
+        raise ValueError("Unknown method for generate_emissions_stats()")
 
     pg = scenario.state.get_pg()
     grid = scenario.state.get_grid()
-    carbon = pd.DataFrame(np.zeros_like(pg), index=pg.index, columns=pg.columns)
+    emissions = pd.DataFrame(np.zeros_like(pg), index=pg.index, columns=pg.columns)
 
     if method == "simple":
         for fuel, val in carbon_per_mwh.items():
             indices = (grid.plant["type"] == fuel).to_numpy()
-            carbon.loc[:, indices] = pg.loc[:, indices] * val / 1000
+            emissions.loc[:, indices] = pg.loc[:, indices] * val / 1000
     elif method in ("decommit", "always-on"):
         decommit = True if method == "decommit" else False
 
@@ -54,27 +56,27 @@ def generate_carbon_stats(scenario, method="simple"):
             heat[:, indices] = (
                 costs[:, indices] / grid.plant["GenFuelCost"].values[indices]
             )
-            carbon.loc[:, indices] = heat[:, indices] * val * 44 / 12 / 1000
+            emissions.loc[:, indices] = heat[:, indices] * val * 44 / 12 / 1000
     else:
         raise Exception("I should not be able to get here")
 
-    return carbon
+    return emissions
 
 
-def summarize_carbon_by_bus(carbon, plant):
-    """Summarize time series carbon dataframe by type and bus.
+def summarize_emissions_by_bus(emissions, plant):
+    """Summarize time series emissions dataframe by type and bus.
 
-    :param pandas.DataFrame carbon: Hourly carbon by generator.
+    :param pandas.DataFrame emissions: Hourly emissions by generator.
     :param pandas.DataFrame plant: Generator specification table.
-    :return: (*dict*) -- Annual carbon emissions by fuel and bus.
+    :return: (*dict*) -- Annual emissions by fuel and bus.
     """
 
-    _check_time_series(carbon, "carbon")
-    if (carbon < -1e-3).any(axis=None):
-        raise ValueError("carbon must be non-negative")
+    _check_time_series(emissions, "emissions")
+    if (emissions < -1e-3).any(axis=None):
+        raise ValueError("emissions must be non-negative")
 
     # sum by generator
-    plant_totals = carbon.sum()
+    plant_totals = emissions.sum()
     # set up output data structure
     plant_buses = plant["bus_id"].unique()
     bus_totals_by_type = {f: {b: 0 for b in plant_buses} for f in carbon_resources}
@@ -85,7 +87,7 @@ def summarize_carbon_by_bus(carbon, plant):
             continue
         plant_bus = plant.loc[p, "bus_id"]
         bus_totals_by_type[plant_type][plant_bus] += plant_totals.loc[p]
-    # filter out buses whose carbon is zero
+    # filter out buses whose emissions are zero
     bus_totals_by_type = {
         r: {b: v for b, v in bus_totals_by_type[r].items() if v > 0}
         for r in carbon_resources
