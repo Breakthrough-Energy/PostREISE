@@ -1,3 +1,4 @@
+import pytest
 import unittest
 
 import numpy as np
@@ -46,6 +47,86 @@ mock_gencost = {
     "c0": [100, 200, 300, 400, 500],
     "interconnect": ["Western"] * 5,
 }
+
+
+def test_calculate_nox_simple():
+    mock_pg = pd.DataFrame(
+        {
+            plant_id: [(i + 1) * p for p in range(4)]
+            for i, plant_id in enumerate(mock_plant["plant_id"])
+        }
+    )
+    scenario = MockScenario(
+        grid_attrs={"plant": mock_plant, "gencost_before": mock_gencost},
+        pg=mock_pg,
+    )
+    expected_values = np.array(
+        [
+            [0, 0, 0, 0, 0],
+            [0, 0, 0.000537, 0.002632, 0.007685],
+            [0, 0, 0.001074, 0.005264, 0.015370],
+            [0, 0, 0.001611, 0.007896, 0.023055],
+        ]
+    )
+    nox = generate_emissions_stats(scenario, pollutant="nox", method="simple")
+    assert_array_almost_equal(
+        expected_values, nox.to_numpy(), err_msg="Values do not match expected"
+    )
+
+
+def test_calculate_nox_disallowed_method():
+    mock_pg = pd.DataFrame(
+        {
+            plant_id: [(i + 1) * p for p in range(4)]
+            for i, plant_id in enumerate(mock_plant["plant_id"])
+        }
+    )
+    scenario = MockScenario(
+        grid_attrs={"plant": mock_plant, "gencost_before": mock_gencost},
+        pg=mock_pg,
+    )
+    with pytest.raises(ValueError):
+        nox = generate_emissions_stats(scenario, pollutant="nox", method="decommit")
+
+
+def test_calculate_so2_simple():
+    mock_pg = pd.DataFrame(
+        {
+            plant_id: [(i + 1) * p for p in range(4)]
+            for i, plant_id in enumerate(mock_plant["plant_id"])
+        }
+    )
+    scenario = MockScenario(
+        grid_attrs={"plant": mock_plant, "gencost_before": mock_gencost},
+        pg=mock_pg,
+    )
+    expected_values = np.array(
+        [
+            [0, 0, 0, 0, 0],
+            [0, 0, 3.0000e-05, 3.8600e-03, 1.0945e-02],
+            [0, 0, 6.0000e-05, 7.7200e-03, 2.1890e-02],
+            [0, 0, 9.0000e-05, 1.1580e-02, 3.2835e-02],
+        ]
+    )
+    nox = generate_emissions_stats(scenario, pollutant="so2", method="simple")
+    assert_array_almost_equal(
+        expected_values, nox.to_numpy(), err_msg="Values do not match expected"
+    )
+
+
+def test_calculate_so2_disallowed_method():
+    mock_pg = pd.DataFrame(
+        {
+            plant_id: [(i + 1) * p for p in range(4)]
+            for i, plant_id in enumerate(mock_plant["plant_id"])
+        }
+    )
+    scenario = MockScenario(
+        grid_attrs={"plant": mock_plant, "gencost_before": mock_gencost},
+        pg=mock_pg,
+    )
+    with pytest.raises(ValueError):
+        nox = generate_emissions_stats(scenario, pollutant="so2", method="always-on")
 
 
 class TestCarbonCalculation(unittest.TestCase):
