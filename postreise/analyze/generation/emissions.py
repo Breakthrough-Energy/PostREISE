@@ -18,7 +18,7 @@ from powersimdata.network.usa_tamu.constants.plants import (
 )
 
 
-def generate_emissions_stats(scenario, method="simple"):
+def generate_emissions_stats(scenario, pollutant="carbon", method="simple"):
     """Generate emissions statistics from the input generation data. Method
     descriptions: 'simple' uses a fixed ratio of CO2 to MWh, 'always-on' uses
     generator heat-rate curves including non-zero intercepts, 'decommit' uses
@@ -26,23 +26,37 @@ def generate_emissions_stats(scenario, method="simple"):
     (detected by pg < 1 MW).
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
+    :param str pollutant: pollutant to analyze.
     :param str method: selected method to handle no-load fuel consumption.
     :return: (*pandas.DataFrame*) -- emissions data frame.
     """
     _check_scenario_is_in_analyze_state(scenario)
 
-    allowed_methods = ("simple", "always-on", "decommit")
+    allowed_methods = {
+        "carbon": {"simple", "always-on", "decommit"},
+        "nox": {"simple"},
+        "so2": {"simple"},
+    }
+    emissions_per_mwh = {
+        "carbon": carbon_per_mwh,
+        "nox": nox_per_mwh,
+        "so2": so2_per_mwh,
+    }
+
+    if pollutant not in allowed_methods.keys():
+        raise ValueError("Unknown pollutant for generate_emissions_stats()")
     if not isinstance(method, str):
         raise TypeError("method must be a str")
-    if method not in allowed_methods:
-        raise ValueError("Unknown method for generate_emissions_stats()")
+    if method not in allowed_methods[pollutant]:
+        err_msg = f"method for {pollutant} must be one of: {allowed_methods[pollutant]}"
+        raise ValueError(err_msg)
 
     pg = scenario.state.get_pg()
     grid = scenario.state.get_grid()
     emissions = pd.DataFrame(np.zeros_like(pg), index=pg.index, columns=pg.columns)
 
     if method == "simple":
-        for fuel, val in carbon_per_mwh.items():
+        for fuel, val in emissions_per_mwh[pollutant].items():
             indices = (grid.plant["type"] == fuel).to_numpy()
             emissions.loc[:, indices] = pg.loc[:, indices] * val / 1000
     elif method in ("decommit", "always-on"):
