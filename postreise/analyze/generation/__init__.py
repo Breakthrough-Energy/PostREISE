@@ -1,1 +1,1 @@
-__all__ = ["binding", "capacity_value", "carbon", "curtailment", "summarize"]
+__all__ = ["binding", "capacity_value", "curtailment", "emissions", "summarize"]

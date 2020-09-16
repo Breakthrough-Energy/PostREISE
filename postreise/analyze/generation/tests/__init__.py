@@ -1,1 +1,1 @@
-__all__ = ["test_carbon", "test_curtailment", "test_summarize"]
+__all__ = ["test_emissions", "test_curtailment", "test_summarize"]

@@ -5,9 +5,9 @@ from numpy.testing import assert_array_almost_equal
 import pandas as pd
 
 from powersimdata.tests.mock_scenario import MockScenario
-from postreise.analyze.generation.carbon import (
-    generate_carbon_stats,
-    summarize_carbon_by_bus,
+from postreise.analyze.generation.emissions import (
+    generate_emissions_stats,
+    summarize_emissions_by_bus,
 )
 
 # plant_id is the index
@@ -92,7 +92,7 @@ class TestCarbonCalculation(unittest.TestCase):
 
     def test_carbon_calc_always_on(self):
 
-        carbon = generate_carbon_stats(self.scenario, method="always-on")
+        carbon = generate_emissions_stats(self.scenario, method="always-on")
         self._test_carbon_structure(carbon)
 
         # check specific values
@@ -110,7 +110,7 @@ class TestCarbonCalculation(unittest.TestCase):
 
     def test_carbon_calc_decommit(self):
 
-        carbon = generate_carbon_stats(self.scenario, method="decommit")
+        carbon = generate_emissions_stats(self.scenario, method="decommit")
         self._test_carbon_structure(carbon)
 
         # check specific values
@@ -128,7 +128,7 @@ class TestCarbonCalculation(unittest.TestCase):
 
     def test_carbon_calc_simple(self):
 
-        carbon = generate_carbon_stats(self.scenario, method="simple")
+        carbon = generate_emissions_stats(self.scenario, method="simple")
         self._test_carbon_structure(carbon)
 
         # check specific values
@@ -145,7 +145,7 @@ class TestCarbonCalculation(unittest.TestCase):
         )
 
 
-class TestCarbonSummarization(unittest.TestCase):
+class TestEmissionsSummarization(unittest.TestCase):
     def setUp(self):
         self.period_num = 3
         self.fossil_fuels = {"coal", "dfo", "ng"}
@@ -178,12 +178,12 @@ class TestCarbonSummarization(unittest.TestCase):
         }
 
         # calculation
-        summation = summarize_carbon_by_bus(input_carbon, plant)
+        summation = summarize_emissions_by_bus(input_carbon, plant)
 
         # checks
-        err_msg = "summarize_carbon_by_bus didn't return a dict"
+        err_msg = "summarize_emissions_by_bus didn't return a dict"
         self.assertTrue(isinstance(summation, dict), err_msg)
-        err_msg = "summarize_carbon_by_bus didn't return the right dict keys"
+        err_msg = "summarize_emissions_by_bus didn't return the right dict keys"
         self.assertEqual(set(summation.keys()), self.fossil_fuels, err_msg)
         for k in expected_sum.keys():
             err_msg = "summation not correct for fuel " + k
