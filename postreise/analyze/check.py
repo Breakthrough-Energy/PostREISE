@@ -23,7 +23,7 @@ def _check_data_frame(df, label):
 
     :param pandas.DataFrame df: a data frame.
     :param str label: name of data frame (used for error messages).
-    :raises TypeError: if input is not a data frame.
+    :raises TypeError: if df is not a data frame or label is not a str.
     :raises ValueError: if data frame is empty.
     """
     if not isinstance(label, str):
@@ -34,6 +34,24 @@ def _check_data_frame(df, label):
         raise ValueError(label + " must have at least one row")
     if not df.shape[1] > 0:
         raise ValueError(label + " must have at least one column")
+
+
+def _check_time_series(ts, label):
+    """Check that a time series is specified properly.
+
+    :param pandas.DataFrame/pandas.Series ts: time series to check.
+    :param str label: name of time series (used for error messages).
+    :raises TypeError: if ts is not a data frame/time series or label is not a str.
+    :raises ValueError: if indices are not timestamps.
+    """
+    if not isinstance(label, str):
+        raise TypeError("label must be a str")
+    if not isinstance(ts, (pd.DataFrame, pd.Series)):
+        raise TypeError(label + " must be a pandas.DataFrame or pandas.Series object")
+    if not ts.shape[0] > 0:
+        raise ValueError(label + " must have at least one row")
+    if not isinstance(ts.index, pd.DatetimeIndex):
+        raise ValueError(label + " must be a time series")
 
 
 def _check_grid(grid):
@@ -203,11 +221,12 @@ def _check_date(date):
         )
 
 
-def _check_date_range(scenario, start, end):
-    """Check if start time and endtime define a valid time range of the given scenario.
+def _check_date_range_in_scenario(scenario, start, end):
+    """Check if start time and end time define a valid time range of the given scenario.
 
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param pandas.Timestamp/numpy.datetime64/datetime.datetime start: start date.
-    :param pandas.Timestamp/numpy.datetime64/datetime end: end date.
+    :param pandas.Timestamp/numpy.datetime64/datetime.datetime end: end date.
     :raises ValueError: if the date range is invalid.
     """
     _check_scenario_is_in_analyze_state(scenario)
@@ -216,8 +235,26 @@ def _check_date_range(scenario, start, end):
     scenario_start = pd.Timestamp(scenario.info["start_date"])
     scenario_end = pd.Timestamp(scenario.info["end_date"])
 
-    if not scenario_start <= start < end <= scenario_end:
+    if not scenario_start <= start <= end <= scenario_end:
         raise ValueError("Must have scenario_start <= start <= end <= scenario_end")
+
+
+def _check_date_range_in_time_series(ts, start, end):
+    """Check if start time and end time define a valid time range of the time series.
+
+    :param pandas.DataFrame/pandas.Series ts: a time series with timestamp as indices.
+    :param pandas.Timestamp/numpy.datetime64/datetime.datetime start: start date.
+    :param pandas.Timestamp/numpy.datetime64/datetime.datetime end: end date.
+    :raises ValueError: if the date range is invalid.
+    """
+    _check_time_series(ts, "time series")
+    _check_date(start)
+    _check_date(end)
+
+    if not ts.index[0] <= start <= end <= ts.index[-1]:
+        raise ValueError(
+            "Must have time_series_start <= start <= end <= time_series_end"
+        )
 
 
 def _check_epsilon(epsilon):
@@ -267,7 +304,6 @@ def _check_gencost(gencost):
     # check that this order is an integer > 0
     n = gencost["n"].iloc[0]
     if not isinstance(n, (int, np.integer)):
-        print(type(n))
         raise TypeError("polynomial degree must be specified as an int")
     if n < 1:
         raise ValueError("polynomial must be at least of order 1 (constant)")
@@ -277,20 +313,6 @@ def _check_gencost(gencost):
     for c in coef_columns:
         if c not in gencost.columns:
             raise ValueError("gencost of order {0} must have column {1}".format(n, c))
-
-
-def _check_time_series(ts, label, tolerance=1e-3):
-    """Check that a time series is specified properly.
-
-    :param pandas.DataFrame ts: time series to check.
-    :param str label: name of data frame (used for error messages).
-    :param float tolerance: tolerance value for checking non-negativity.
-    :raises ValueError: it time series contains values that are more negative than the
-        tolerance allows.
-    """
-    _check_data_frame(ts, label)
-    if any((ts < -1 * tolerance).to_numpy().ravel()):
-        raise ValueError(label + " must be non-negative")
 
 
 def _check_curtailment(curtailment, grid):

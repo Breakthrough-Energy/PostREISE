@@ -70,6 +70,8 @@ def summarize_carbon_by_bus(carbon, plant):
     """
 
     _check_time_series(carbon, "carbon")
+    if (carbon < -1e-3).any(axis=None):
+        raise ValueError("carbon must be non-negative")
 
     # sum by generator
     plant_totals = carbon.sum()
@@ -106,6 +108,8 @@ def calc_costs(pg, gencost, decommit=False):
 
     _check_gencost(gencost)
     _check_time_series(pg, "PG")
+    if (pg < -1e-3).any(axis=None):
+        raise ValueError("PG must be non-negative")
 
     # get ordered polynomial coefficients in columns, discarding non-coeff data
     # coefs = gencost.values.T[-2:3:-1,:]
