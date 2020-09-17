@@ -1,5 +1,4 @@
 import pytest
-import unittest
 
 import numpy as np
 from numpy.testing import assert_array_almost_equal
@@ -11,170 +10,81 @@ from postreise.analyze.generation.emissions import (
     summarize_emissions_by_bus,
 )
 
-# plant_id is the index
-mock_plant = {
-    "plant_id": [101, 102, 103, 104, 105],
-    "bus_id": [1001, 1002, 1003, 1004, 1005],
-    "type": ["solar", "wind", "ng", "coal", "dfo"],
-    "GenFuelCost": [0, 0, 3.3, 4.4, 5.5],
-}
 
-# branch_id is the index
-mock_branch = {
-    "branch_id": [11, 12, 13, 14, 15],
-    "from_zone_id": [1, 2, 3, 1, 3],
-    "to_zone_id": [1, 3, 2, 2, 3],
-    "rateA": [10, 20, 30, 40, 50],
-    "x": [0.1, 0.2, 0.3, 0.4, 0.5],
-}
-
-# dcline_id is the index
-mock_dcline = {
-    "dcline_id": [101, 102, 103, 104, 105],
-    "status": [1, 1, 1, 1, 1],
-    "Pmax": [100, 200, 300, 400, 500],
-}
-
-# plant_id is the index
-mock_gencost = {
-    "plant_id": [101, 102, 103, 104, 105],
-    "type": [2] * 5,
-    "startup": [0] * 5,
-    "shutdown": [0] * 5,
-    "n": [3] * 5,
-    "c2": [1, 2, 3, 4, 5],
-    "c1": [10, 20, 30, 40, 50],
-    "c0": [100, 200, 300, 400, 500],
-    "interconnect": ["Western"] * 5,
-}
+@pytest.fixture
+def mock_plant():
+    # plant_id is the index
+    return {
+        "plant_id": [101, 102, 103, 104, 105],
+        "bus_id": [1001, 1002, 1003, 1004, 1005],
+        "type": ["solar", "wind", "ng", "coal", "dfo"],
+        "GenFuelCost": [0, 0, 3.3, 4.4, 5.5],
+    }
 
 
-def test_calculate_nox_simple():
-    mock_pg = pd.DataFrame(
+@pytest.fixture
+def mock_gencost():
+    # plant_id is the index
+    return {
+        "plant_id": [101, 102, 103, 104, 105],
+        "type": [2] * 5,
+        "startup": [0] * 5,
+        "shutdown": [0] * 5,
+        "n": [3] * 5,
+        "c2": [1, 2, 3, 4, 5],
+        "c1": [10, 20, 30, 40, 50],
+        "c0": [100, 200, 300, 400, 500],
+        "interconnect": ["Western"] * 5,
+    }
+
+
+@pytest.fixture
+def mock_pg(mock_plant):
+    return pd.DataFrame(
         {
             plant_id: [(i + 1) * p for p in range(4)]
             for i, plant_id in enumerate(mock_plant["plant_id"])
-        }
+        },
+        index=pd.date_range("2019-01-01", periods=4, freq="H"),
     )
-    scenario = MockScenario(
+
+
+@pytest.fixture
+def scenario(mock_plant, mock_gencost, mock_pg):
+    return MockScenario(
         grid_attrs={"plant": mock_plant, "gencost_before": mock_gencost},
         pg=mock_pg,
     )
-    expected_values = np.array(
-        [
-            [0, 0, 0, 0, 0],
-            [0, 0, 0.000537, 0.002632, 0.007685],
-            [0, 0, 0.001074, 0.005264, 0.015370],
-            [0, 0, 0.001611, 0.007896, 0.023055],
-        ]
-    )
-    nox = generate_emissions_stats(scenario, pollutant="nox", method="simple")
-    assert_array_almost_equal(
-        expected_values, nox.to_numpy(), err_msg="Values do not match expected"
-    )
 
 
-def test_calculate_nox_disallowed_method():
-    mock_pg = pd.DataFrame(
-        {
-            plant_id: [(i + 1) * p for p in range(4)]
-            for i, plant_id in enumerate(mock_plant["plant_id"])
-        }
-    )
-    scenario = MockScenario(
-        grid_attrs={"plant": mock_plant, "gencost_before": mock_gencost},
-        pg=mock_pg,
-    )
-    with pytest.raises(ValueError):
-        nox = generate_emissions_stats(scenario, pollutant="nox", method="decommit")
+def _test_emissions_structure(emissions, mock_plant, pg):
+    plant = pd.DataFrame(mock_plant)
+    plant.set_index("plant_id", inplace=True)
+
+    # check data frame structure
+    err_msg = "generate_emissions_stats should return a data frame"
+    assert isinstance(emissions, pd.DataFrame), err_msg
+    for a, b in zip(pg.index.to_numpy(), emissions.index.to_numpy()):
+        assert a == b, "emissions and pg should have same index"
+    for a, b in zip(pg.columns.to_numpy(), emissions.columns.to_numpy()):
+        assert a == b, "emissions and pg should have same columns"
+
+    # sanity check values
+    emissions_from_wind = plant[plant.type == "wind"].index.values
+    err_msg = "Wind farm does not emit emissions"
+    assert emissions[emissions_from_wind[0]].sum() == 0, err_msg
+    emissions_from_solar = plant[plant.type == "solar"].index.values
+    err_msg = "Solar plant does not emit emissions"
+    assert emissions[emissions_from_solar[0]].sum() == 0, err_msg
+    negative_emissions_count = np.sum((emissions < 0).to_numpy().ravel())
+    assert negative_emissions_count == 0, "No plant should emit negative emissions"
 
 
-def test_calculate_so2_simple():
-    mock_pg = pd.DataFrame(
-        {
-            plant_id: [(i + 1) * p for p in range(4)]
-            for i, plant_id in enumerate(mock_plant["plant_id"])
-        }
-    )
-    scenario = MockScenario(
-        grid_attrs={"plant": mock_plant, "gencost_before": mock_gencost},
-        pg=mock_pg,
-    )
-    expected_values = np.array(
-        [
-            [0, 0, 0, 0, 0],
-            [0, 0, 3.0000e-05, 3.8600e-03, 1.0945e-02],
-            [0, 0, 6.0000e-05, 7.7200e-03, 2.1890e-02],
-            [0, 0, 9.0000e-05, 1.1580e-02, 3.2835e-02],
-        ]
-    )
-    nox = generate_emissions_stats(scenario, pollutant="so2", method="simple")
-    assert_array_almost_equal(
-        expected_values, nox.to_numpy(), err_msg="Values do not match expected"
-    )
+class TestCarbonCalculation:
+    def test_carbon_calc_always_on(self, scenario, mock_plant):
 
-
-def test_calculate_so2_disallowed_method():
-    mock_pg = pd.DataFrame(
-        {
-            plant_id: [(i + 1) * p for p in range(4)]
-            for i, plant_id in enumerate(mock_plant["plant_id"])
-        }
-    )
-    scenario = MockScenario(
-        grid_attrs={"plant": mock_plant, "gencost_before": mock_gencost},
-        pg=mock_pg,
-    )
-    with pytest.raises(ValueError):
-        nox = generate_emissions_stats(scenario, pollutant="so2", method="always-on")
-
-
-class TestCarbonCalculation(unittest.TestCase):
-    def setUp(self):
-        def _test_carbon_structure(carbon):
-            pg = self.pg
-            plant = self.grid.plant
-
-            # check data frame structure
-            err_msg = "generate_carbon_stats should return a data frame"
-            self.assertTrue(isinstance(carbon, pd.DataFrame), err_msg)
-            err_msg = "carbon and pg should have same index"
-            for a, b in zip(pg.index.to_numpy(), carbon.index.to_numpy()):
-                self.assertEqual(a, b, err_msg)
-            err_msg = "carbon and pg should have same columns"
-            for a, b in zip(pg.columns.to_numpy(), carbon.columns.to_numpy()):
-                self.assertEqual(a, b, err_msg)
-
-            # sanity check values
-            carbon_from_wind = plant[plant.type == "wind"].index.values
-            err_msg = "Wind farm does not emit carbon"
-            self.assertEqual(carbon[carbon_from_wind[0]].sum(), 0, err_msg)
-            carbon_from_solar = plant[plant.type == "solar"].index.values
-            err_msg = "Solar plant does not emit carbon"
-            self.assertEqual(carbon[carbon_from_solar[0]].sum(), 0, err_msg)
-            negative_carbon_count = np.sum((carbon < 0).to_numpy().ravel())
-            err_msg = "No plant should emit negative carbon"
-            self.assertEqual(negative_carbon_count, 0, err_msg)
-
-        self._test_carbon_structure = _test_carbon_structure
-        self.period_num = 4
-        self.mock_pg = pd.DataFrame(
-            {
-                plant_id: [(i + 1) * p for p in range(self.period_num)]
-                for i, plant_id in enumerate(mock_plant["plant_id"])
-            }
-        )
-        self.scenario = MockScenario(
-            grid_attrs={"plant": mock_plant, "gencost_before": mock_gencost},
-            pg=self.mock_pg,
-        )
-        self.pg = self.scenario.state.get_pg()
-        self.grid = self.scenario.state.get_grid()
-
-    def test_carbon_calc_always_on(self):
-
-        carbon = generate_emissions_stats(self.scenario, method="always-on")
-        self._test_carbon_structure(carbon)
+        carbon = generate_emissions_stats(scenario, method="always-on")
+        _test_emissions_structure(carbon, mock_plant, scenario.state.get_pg())
 
         # check specific values
         expected_values = np.array(
@@ -189,10 +99,10 @@ class TestCarbonCalculation(unittest.TestCase):
             expected_values, carbon.to_numpy(), err_msg="Values do not match expected"
         )
 
-    def test_carbon_calc_decommit(self):
+    def test_carbon_calc_decommit(self, scenario, mock_plant):
 
-        carbon = generate_emissions_stats(self.scenario, method="decommit")
-        self._test_carbon_structure(carbon)
+        carbon = generate_emissions_stats(scenario, method="decommit")
+        _test_emissions_structure(carbon, mock_plant, scenario.state.get_pg())
 
         # check specific values
         expected_values = np.array(
@@ -207,10 +117,10 @@ class TestCarbonCalculation(unittest.TestCase):
             expected_values, carbon.to_numpy(), err_msg="Values do not match expected"
         )
 
-    def test_carbon_calc_simple(self):
+    def test_carbon_calc_simple(self, scenario, mock_plant):
 
-        carbon = generate_emissions_stats(self.scenario, method="simple")
-        self._test_carbon_structure(carbon)
+        carbon = generate_emissions_stats(scenario, method="simple")
+        _test_emissions_structure(carbon, mock_plant, scenario.state.get_pg())
 
         # check specific values
         expected_values = np.array(
@@ -226,24 +136,52 @@ class TestCarbonCalculation(unittest.TestCase):
         )
 
 
-class TestEmissionsSummarization(unittest.TestCase):
-    def setUp(self):
-        self.period_num = 3
-        self.fossil_fuels = {"coal", "dfo", "ng"}
-        self.pg = pd.DataFrame(
-            {
-                plant_id: [(i + 1) * p for p in range(self.period_num)]
-                for i, plant_id in enumerate(mock_plant["plant_id"])
-            },
-            index=pd.date_range(start="2016-01-01", periods=self.period_num, freq="H"),
+class TestNOxCalculation:
+    def test_calculate_nox_simple(self, scenario):
+        expected_values = np.array(
+            [
+                [0, 0, 0, 0, 0],
+                [0, 0, 0.000537, 0.002632, 0.007685],
+                [0, 0, 0.001074, 0.005264, 0.015370],
+                [0, 0, 0.001611, 0.007896, 0.023055],
+            ]
         )
-        self.plant = pd.DataFrame(mock_plant)
-        self.plant.set_index("plant_id", inplace=True)
+        nox = generate_emissions_stats(scenario, pollutant="nox", method="simple")
+        assert_array_almost_equal(
+            expected_values, nox.to_numpy(), err_msg="Values do not match expected"
+        )
 
-    def test_emissions_summarization(self):
+    def test_calculate_nox_disallowed_method(self, scenario):
+        with pytest.raises(ValueError):
+            generate_emissions_stats(scenario, pollutant="nox", method="decommit")
+
+
+class TestSO2Calculation:
+    def test_calculate_so2_simple(self, scenario):
+        expected_values = np.array(
+            [
+                [0, 0, 0, 0, 0],
+                [0, 0, 3.0000e-05, 3.8600e-03, 1.0945e-02],
+                [0, 0, 6.0000e-05, 7.7200e-03, 2.1890e-02],
+                [0, 0, 9.0000e-05, 1.1580e-02, 3.2835e-02],
+            ]
+        )
+        nox = generate_emissions_stats(scenario, pollutant="so2", method="simple")
+        assert_array_almost_equal(
+            expected_values, nox.to_numpy(), err_msg="Values do not match expected"
+        )
+
+    def test_calculate_so2_disallowed_method(self, scenario):
+        with pytest.raises(ValueError):
+            generate_emissions_stats(scenario, pollutant="so2", method="always-on")
+
+
+class TestEmissionsSummarization:
+    def test_emissions_summarization(self, mock_pg, mock_plant):
         # setup
-        pg = self.pg
-        plant = self.plant
+        pg = pd.DataFrame(mock_pg).iloc[:3, :]
+        plant = pd.DataFrame(mock_plant)
+        plant.set_index("plant_id", inplace=True)
         input_carbon_values = [
             [0, 0, 6.6998, 13.546000, 11.8475],
             [0, 0, 9.4472, 21.1873333, 20.3100],
@@ -263,18 +201,12 @@ class TestEmissionsSummarization(unittest.TestCase):
 
         # checks
         err_msg = "summarize_emissions_by_bus didn't return a dict"
-        self.assertTrue(isinstance(summation, dict), err_msg)
+        assert isinstance(summation, dict), err_msg
         err_msg = "summarize_emissions_by_bus didn't return the right dict keys"
-        self.assertEqual(set(summation.keys()), self.fossil_fuels, err_msg)
+        assert set(summation.keys()) == expected_sum.keys(), err_msg
         for k in expected_sum.keys():
             err_msg = "summation not correct for fuel " + k
-            self.assertEqual(expected_sum[k].keys(), summation[k].keys(), err_msg)
+            assert expected_sum[k].keys() == summation[k].keys(), err_msg
             for bus in expected_sum[k]:
                 err_msg = "summation not correct for bus " + str(bus)
-                self.assertAlmostEqual(
-                    expected_sum[k][bus], summation[k][bus], msg=err_msg
-                )
-
-
-if __name__ == "__main__":
-    unittest.main()
+                assert expected_sum[k][bus] == pytest.approx(summation[k][bus]), err_msg
