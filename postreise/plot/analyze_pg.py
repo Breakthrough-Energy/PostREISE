@@ -5,7 +5,6 @@ import seaborn as sns
 import matplotlib.dates as mdates
 from pandas.plotting import scatter_matrix
 
-from postreise.analyze.helpers import get_resources_in_grid
 from powersimdata.network.usa_tamu.constants.plants import type2color, type2label
 
 
@@ -378,7 +377,7 @@ class AnalyzePG:
                     )
 
             t2l = type2label.copy()
-            for t in get_resources_in_grid(self.grid):
+            for t in type2label.keys():
                 if t not in pg_groups.columns:
                     del t2l[t]
 
@@ -505,7 +504,7 @@ class AnalyzePG:
                 ax = fig.gca()
 
             t2l = type2label.copy()
-            for t in get_resources_in_grid(self.grid):
+            for t in type2label.keys():
                 if t not in pg_stack.columns:
                     del t2l[t]
 
