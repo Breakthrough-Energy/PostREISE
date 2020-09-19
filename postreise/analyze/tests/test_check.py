@@ -11,7 +11,8 @@ from postreise.analyze.check import (
     _check_areas_and_format,
     _check_resources_and_format,
     _check_resources_are_renewable_and_format,
-    _check_resources_are_in_grid,
+    _check_areas_are_in_grid_and_format,
+    _check_resources_are_in_grid_and_format,
     _check_plants_are_in_grid,
     _check_number_hours_to_analyze,
     _check_date,
@@ -20,7 +21,6 @@ from postreise.analyze.check import (
     _check_epsilon,
     _check_gencost,
     _check_time_series,
-    _check_curtailment,
 )
 
 
@@ -43,6 +43,23 @@ mock_plant = {
         "ng",
         "solar",
     ],
+    "interconnect": ["Western"] * 3 + ["Texas"] * 8 + ["Eastern"] * 4,
+    "zone_name": [
+        "Washington",
+        "El Paso",
+        "Bay Area",
+    ]
+    + [
+        "Far West",
+        "North",
+        "West",
+        "South",
+        "North Central",
+        "South Central",
+        "Coast",
+        "East",
+    ]
+    + ["Kentucky", "Nebraska", "East Texas", "Texas Panhandle"],
 }
 
 mock_gencost = {
@@ -221,16 +238,51 @@ def test_check_resources_are_renewable_and_format():
     _check_resources_are_renewable_and_format({"wind"})
 
 
-def test_check_resources_are_in_grid_argument_value():
+def test_check_areas_are_in_grid_and_format_argument_type():
+    arg = (({"Texas", "El Paso"}, grid), ({123: "Nebraska"}, grid))
+    for a in arg:
+        with pytest.raises(TypeError):
+            _check_areas_are_in_grid_and_format(a[0], a[1])
+
+
+def test_check_areas_are_in_grid_and_format_argument_value():
+    arg = (
+        ({"county": "Kentucky"}, grid),
+        ({"state": "California"}, grid),
+        ({"loadzone": "Texas"}, grid),
+        ({"state": "El Paso"}, grid),
+        ({"interconnect": "Nebraska"}, grid),
+    )
+    for a in arg:
+        with pytest.raises(ValueError):
+            _check_areas_are_in_grid_and_format(a[0], a[1])
+
+
+def test_check_areas_are_in_grid_and_format():
+    assert _check_areas_are_in_grid_and_format(
+        {
+            "state": {"Washington", "Kentucky", "NE", "TX", "WA"},
+            "loadzone": ["Washington", "East", "El Paso", "Bay Area"],
+            "interconnect": "Texas",
+        },
+        grid,
+    ) == {
+        "interconnect": {"Texas"},
+        "state": {"Washington", "Kentucky", "Nebraska", "Texas"},
+        "loadzone": {"Washington", "East", "El Paso", "Bay Area"},
+    }
+
+
+def test_check_resources_are_in_grid_and_format_argument_value():
     arg = (({"solar", "dfo"}, grid), ({"uranium"}, grid))
     for a in arg:
         with pytest.raises(ValueError):
-            _check_resources_are_in_grid(a[0], a[1])
+            _check_resources_are_in_grid_and_format(a[0], a[1])
 
 
-def test_check_resources_are_in_grid():
-    _check_resources_are_in_grid({"solar", "coal", "hydro"}, grid)
-    _check_resources_are_in_grid(["solar", "ng", "hydro", "nuclear"], grid)
+def test_check_resources_are_in_grid_and_format():
+    _check_resources_are_in_grid_and_format({"solar", "coal", "hydro"}, grid)
+    _check_resources_are_in_grid_and_format(["solar", "ng", "hydro", "nuclear"], grid)
 
 
 def test_check_plants_are_in_grid_argument_type():
@@ -368,31 +420,3 @@ def test_check_gencost_argument_value():
 def test_check_gencost():
     gencost = grid.gencost["after"]
     _check_gencost(gencost)
-
-
-def test_check_curtailment_argument_type():
-    curtailment = {
-        "solar": pd.DataFrame(
-            {1: 100, 2: 20, 3: 0},
-            index=pd.date_range("2018-01-01", periods=3, freq="H"),
-        ),
-        "wind": [50, 5, 13],
-    }
-    arg = (1, ["solar", "wind"], curtailment)
-    for a in arg:
-        with pytest.raises(TypeError):
-            _check_curtailment()
-
-
-def check_curtailment():
-    curtaiment = {
-        "solar": pd.DataFrame(
-            {1: 100, 2: 20, 3: 0},
-            index=pd.date_range("2018-01-01", periods=3, freq="H"),
-        ),
-        "wind": pd.DataFrame(
-            {1: 50, 2: 5, 3: 13},
-            index=pd.date_range("2018-01-01", periods=3, freq="H"),
-        ),
-    }
-    _check_curtailment(curtailment)
