@@ -1,9 +1,8 @@
 import numpy as np
 import pandas as pd
-from bokeh.plotting import show, figure
+from bokeh.plotting import figure
 from bokeh.tile_providers import get_provider, Vendors
-from bokeh.io import output_notebook
-from bokeh.models import ColumnDataSource, LabelSet, Label
+from bokeh.models import ColumnDataSource, LabelSet, Label, HoverTool
 from bokeh.layouts import row
 from bokeh.sampledata import us_states
 from postreise.plot.projection_helpers import project_bus
@@ -14,6 +13,11 @@ default_states_dict = us_states.data.copy()
 del default_states_dict["HI"]
 del default_states_dict["AK"]
 default_states_list = list(default_states_dict.keys())
+
+# breakthrough energy (be) color names
+be_purple = "#8B36FF"
+be_green = "#78D911"
+be_red = "#FF8563"
 
 
 def get_borders(us_states_dat, state_list=None):
@@ -46,9 +50,10 @@ def plot_states(state_list, col_list, labels_list, font_size, us_states_dat=None
     """Plots US state borders and allows color coding by state,
         for example to represent different emissions goals.
 
-    :param labels_list: list of labels for us states.
-    :param state_list: list of us states to color code.
-    :param col_list: list of colors associated with states in state_list.
+    :param list state_list: list of us states to color code.
+    :param list col_list: list of colors associated with states in state_list.
+    :param list labels_list: list of labels for us states.
+    :param float font_size: citation font size
     :param dict us_states_dat: if None default to us_states data file, imported from bokeh.
     :return:  -- map of us states with option to color by value.
     """
@@ -105,24 +110,25 @@ def plot_states(state_list, col_list, labels_list, font_size, us_states_dat=None
     return p
 
 
-def group_lat_lon(bus_map):
+def group_lat_lon(bus_map, agg=True):
     """Groups data and sums values, based on coordinates.
         Rounds to the nearest lat lon degrees
 
     :param pandas.DataFrame bus_map: data frame with coal, ng, and lat lon
         coordinates per bus
+    :param boolean agg: aggregate by rounded lat/lon if true
     :return: (pandas.DataFrame) -- data frame, aggregated by rounded lat lon
         coordinates
     """
     bus_map1 = bus_map
+    if agg:
+        bus_map1.lat = bus_map1.lat.round(1)
+        bus_map1.lon = bus_map1.lon.round(1)
 
-    bus_map1.lat = bus_map1.lat.round()
-    bus_map1.lon = bus_map1.lon.round()
-
-    bus_map1 = bus_map1.groupby(["lat", "lon"]).agg(
+    bus_map1 = bus_map1.groupby(["lat", "lon", "color", "type"]).agg(
         {"coal": "sum", "ng": "sum", "x": "mean", "y": "mean"}
     )
-
+    bus_map1 = bus_map1.reset_index()
     return bus_map1
 
 
@@ -324,55 +330,102 @@ def map_carbon_emission_bar(
     return row(p_legend, p)
 
 
+def _prepare_busmap(
+    bus_info_and_emission, color_ng, color_coal, agg, type1="natural gas", type2="coal"
+):
+    """Prepare data with amount of emissions and type for hover tips
+
+    :param pandas.DataFrame bus_info_and_emission: info and emission of buses
+        as returned by :func:`combine_bus_info_and_emission`.
+    :param str color_ng: color assigned for ng, default to BE purple
+    :param str color_coal: color associated with coal, default to black/gray
+        :param boolean agg: if true, aggregates points by lat lon within a given radius
+    :param str type1: label for hover over tool tips, first color/type
+        (usual choices: natural gas or increase if making a diff map)
+    :param str type2: label for hover over tool tips, second color/type
+        (usual choices: coal or decrease if making diff map)
+    :return: (pandas.DataFrame) -- data frame with amount and tye fields
+    """
+    bus_map = bus_info_and_emission
+    bus_map["color"] = ""
+    bus_map["type"] = ""
+    bus_map.loc[(bus_map["ng"] > 0), "color"] = color_ng
+    bus_map.loc[(bus_map["coal"] > 0), "color"] = color_coal
+    bus_map.loc[(bus_map["ng"] > 0), "type"] = type1
+    bus_map.loc[(bus_map["coal"] > 0), "type"] = type2
+
+    bus_map = project_bus(bus_map)
+    bus_map1 = group_lat_lon(bus_map, agg=agg)
+    bus_map1["amount"] = bus_map1["ng"] + bus_map1["coal"]
+    return bus_map1
+
+
 def map_carbon_emission(
     bus_info_and_emission,
-    scenario_name,
     color_coal="black",
-    color_ng="purple",
-    label_coal="Coal: tons",
-    label_ng="NG: tons",
+    color_ng=be_purple,
+    label_coal=u"Coal: CO\u2082",
+    label_ng=u"Natural gas: CO\u2082",
     us_states_dat=None,
     size_factor=1,
+    web=True,
+    agg=True,
+    type1="natural gas",
+    type2="coal",
 ):
     """Makes map of carbon emissions, color code by fuel type. Size/area
         indicates emissions.
 
     :param pandas.DataFrame bus_info_and_emission: info and emission of buses
         as returned by :func:`combine_bus_info_and_emission`.
-    :param str scenario_name: name of scenario for labeling.
-    :param str color_coal: color assigned for coal, default to black.
-    :param str color_ng: color assigned for ng, default to purple.
+    :param str color_ng: color assigned for ng, default to BE purple
+    :param str color_coal: color associated with coal, default to black/gray
     :param str label_coal: label for legend associated with coal.
     :param str label_ng: label for legend associated with ng.
     :param dict us_states_dat: if None default to us_states data file, imported from bokeh
+    :param float size_factor: scaling factor for size of emissions circles glyphs
+    :param boolean web: if true, optimizes figure for web-based presentation
+    :param boolean agg: if true, aggregates points by lat lon within a given radius
+    :param str type1: label for hover over tool tips, first color/type
+        (usual choices: natural gas or increase if making a diff map)
+    :param str type2: label for hover over tool tips, second color/type
+        (usual choices: coal or decrease if making diff map)
     """
+
+    # us states borders, prepare data
     if us_states_dat is None:
         us_states_dat = us_states.data
-
-    bus_map = project_bus(bus_info_and_emission)
-    bus_map = group_lat_lon(bus_map)
-
     a, b = get_borders(us_states_dat.copy())
+
+    # prepare data frame for emissions data
+    bus_map = _prepare_busmap(
+        bus_info_and_emission, color_ng, color_coal, agg=agg, type1=type1, type2=type2
+    )
+    bus_map = bus_map.sort_values(by=["color"])
 
     bus_source = ColumnDataSource(
         {
             "x": bus_map["x"],
             "y": bus_map["y"],
-            "coal": (bus_map["coal"] / 1000 * size_factor) ** 0.5,
-            "ng": (bus_map["ng"] / 1000 * size_factor) ** 0.5,
+            "size": (bus_map["amount"] / 10000 * size_factor) ** 0.5 + 2,
+            "radius": (bus_map["amount"] * 1000 * size_factor) ** 0.5 + 10,
+            "tons": bus_map["amount"],
+            "color": bus_map["color"],
+            "type": bus_map["type"],
         }
     )
 
     # Set up figure
-    tools: str = "pan,wheel_zoom,reset,hover,save"
+    tools: str = "pan,wheel_zoom,reset,save"
     p = figure(
-        title=scenario_name,
         tools=tools,
         x_axis_location=None,
         y_axis_location=None,
         plot_width=800,
         plot_height=800,
         output_backend="webgl",
+        sizing_mode="stretch_both",
+        match_aspect=True,
     )
     p_legend = figure(
         x_axis_location=None,
@@ -384,28 +437,55 @@ def map_carbon_emission(
         x_range=(0, 2),
         output_backend="webgl",
     )
-    p.add_tile(get_provider(Vendors.CARTODBPOSITRON_RETINA))
-    # state borders
-    p.patches(a, b, fill_alpha=0.0, line_color="black", line_width=2)
-    # emissions circles
+
+    # circle glyphs that exist only for the web legend,
+    # these are plotted behind the tiles, not visible
     p.circle(
-        "x",
-        "y",
+        -8.1e6,
+        5.2e6,
         fill_color=color_coal,
         color=color_coal,
-        alpha=0.25,
-        size="coal",
-        source=bus_source,
+        alpha=0.5,
+        size=50,
+        legend_label=label_coal,
     )
     p.circle(
-        "x",
-        "y",
+        -8.1e6,
+        5.2e6,
         fill_color=color_ng,
         color=color_ng,
-        alpha=0.25,
-        size="ng",
-        source=bus_source,
+        alpha=0.5,
+        size=50,
+        legend_label=label_ng,
     )
+
+    p.add_tile(get_provider(Vendors.CARTODBPOSITRON_RETINA))
+    # state borders
+    p.patches(a, b, fill_alpha=0.0, line_color="gray", line_width=2)
+
+    # emissions circles, web version
+    if web:
+
+        circle = p.circle(
+            "x",
+            "y",
+            fill_color="color",
+            color="color",
+            alpha=0.25,
+            radius="radius",
+            source=bus_source,
+        )
+
+    else:
+        p.circle(
+            "x",
+            "y",
+            fill_color="color",
+            color="color",
+            alpha=0.25,
+            size="size",
+            source=bus_source,
+        )
 
     # legend: white square background and bars per color code
     p_legend.square(1, [1, 3], fill_color="white", color="white", size=300)
@@ -419,15 +499,15 @@ def map_carbon_emission(
         color=np.repeat([color_coal, color_ng], 3),
         alpha=0.25,
         size=[
-            (10000000 / 1000 * size_factor) ** 0.5,
-            (5000000 / 1000 * size_factor) ** 0.5,
-            (1000000 / 1000 * size_factor) ** 0.5,
+            (10000000 / 10000 * size_factor) ** 0.5 + 2,
+            (5000000 / 10000 * size_factor) ** 0.5 + 2,
+            (1000000 / 10000 * size_factor) ** 0.5 + 2,
         ]
         * 2,
     )
     source = ColumnDataSource(
         data=dict(
-            x=[1, 1, 1, 0.5, 1, 1, 1, 0.5],
+            x=[1, 1, 1, 0.3, 1, 1, 1, 0.3],
             y=[0.9, 1.1, 1.3, 1.55, 2.9, 3.1, 3.3, 3.55],
             text=["1M", "5M", "10M", label_coal, "1M", "5M", "10M", label_ng],
         )
@@ -444,10 +524,30 @@ def map_carbon_emission(
     )
     p_legend.add_layout(labels)
 
-    return row(p_legend, p)
+    if web:
+        p.legend.location = "bottom_right"
+        p.legend.label_text_font_size = "12pt"
+
+        hover = HoverTool(
+            tooltips=[
+                ("Type", "@type"),
+                (u"Tons CO\u2082", "@tons"),
+            ],
+            renderers=[circle],
+        )
+
+        p.add_tools(hover)
+        return_p = p
+
+    else:
+        p.legend.visible = False
+        return_p = row(p_legend, p)
+    return return_p
 
 
-def map_carbon_emission_comparison(bus_info_and_emission_1, bus_info_and_emission_2):
+def map_carbon_emission_comparison(
+    bus_info_and_emission_1, bus_info_and_emission_2, web=True
+):
     """Makes map of carbon emissions, color code by fuel type, size/area
         indicates emissions Also, returns data frame enclosing emission
         released by thermal generators.
@@ -458,33 +558,58 @@ def map_carbon_emission_comparison(bus_info_and_emission_1, bus_info_and_emissio
     :param pandas.DataFrame bus_info_and_emission_2: info and emission
         of buses for 2nd scenario
         as returned by :func:`combine_bus_info_and_emission`.
+    :param boolean web: if true, optimizes figure for web-based presentation
     :return: (pandas.DataFrame) -- comparison map indicating increase or
         decrease in emission
     """
-    bus_map = bus_info_and_emission_1.merge(
-        bus_info_and_emission_2, right_index=True, left_index=True, how="outer"
+    # merge
+    bus_info_and_emission_1 = bus_info_and_emission_1.fillna(0)
+    bus_info_and_emission_2 = bus_info_and_emission_2.fillna(0)
+
+    bus_info_and_emission_1["amt"] = (
+        bus_info_and_emission_1["ng"] + bus_info_and_emission_1["coal"]
+    )
+    bus_info_and_emission_2["amt"] = (
+        bus_info_and_emission_2["ng"] + bus_info_and_emission_2["coal"]
     )
 
-    bus_map.coal_x = bus_map.coal_x.fillna(0)
-    bus_map.coal_y = bus_map.coal_y.fillna(0)
-    bus_map.ng_x = bus_map.ng_x.fillna(0)
-    bus_map.ng_y = bus_map.ng_y.fillna(0)
+    bus_map = bus_info_and_emission_1.merge(
+        bus_info_and_emission_2,
+        right_index=True,
+        left_index=True,
+        suffixes=("_x", "_y"),
+        how="outer",
+    )
+    # fill 0s so we can subtract
+    bus_map = bus_map.fillna(0)
 
-    bus_map["coal_dif"] = bus_map["coal_x"] - bus_map["coal_y"]
-    bus_map["ng_dif"] = bus_map["ng_x"] - bus_map["ng_y"]
+    bus_map["amt_dif"] = bus_map["amt_x"] - bus_map["amt_y"]
     bus_map["lon"] = bus_map["lon_x"].fillna(bus_map["lon_y"])
     bus_map["lat"] = bus_map["lat_x"].fillna(bus_map["lat_y"])
     bus_map["coal"] = 0
     bus_map["ng"] = 0
-    bus_map.loc[bus_map.coal_dif > 0, ["coal"]] = bus_map["coal_dif"]
-    bus_map.loc[bus_map.ng_dif > 0, ["coal"]] = bus_map["ng_dif"]
+    bus_map.loc[bus_map.amt_dif > 0, ["coal"]] = bus_map["amt_dif"]
 
-    bus_map.loc[bus_map.coal_dif < 0, ["ng"]] = abs(bus_map["coal_dif"])
-    bus_map.loc[bus_map.ng_dif < 0, ["ng"]] = abs(bus_map["ng_dif"])
+    bus_map.loc[bus_map.amt_dif < 0, ["ng"]] = abs(bus_map["amt_dif"])
 
-    map_carbon_emission(bus_map, "compare", "green", "red", "Less: tons", "More: tons")
+    bus_map2 = bus_map[bus_map.amt_dif != 0]
+    bus_map2 = project_bus(bus_map2)
+    bus_map2 = _prepare_busmap(
+        bus_map2, be_green, be_red, agg=False, type1="increase", type2="decrease"
+    )
 
-    return bus_map
+    p = map_carbon_emission(
+        bus_map2,
+        be_green,
+        be_red,
+        u"Less tons CO\u2082",
+        u"More tons CO\u2082",
+        web=web,
+        type1="increase",
+        type2="decrease",
+    )
+
+    return p
 
 
 def combine_bus_info_and_emission(bus_info, carbon_by_bus):
