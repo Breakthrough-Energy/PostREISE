@@ -1,7 +1,6 @@
 from postreise.analyze.check import (
     _check_scenario_is_in_analyze_state,
-    _check_resources_and_format,
-    _check_resources_are_in_grid,
+    _check_resources_are_in_grid_and_format,
     _check_number_hours_to_analyze,
 )
 
@@ -18,8 +17,7 @@ def calculate_NLDC(scenario, resources, hours=100):
     """
     _check_scenario_is_in_analyze_state(scenario)
     grid = scenario.state.get_grid()
-    resources = _check_resources_and_format(resources)
-    _check_resources_are_in_grid(resources, grid)
+    resources = _check_resources_are_in_grid_and_format(resources, grid)
     _check_number_hours_to_analyze(scenario, hours)
 
     # Then calculate capacity value
@@ -46,8 +44,7 @@ def calculate_net_load_peak(scenario, resources, hours=100):
     """
     _check_scenario_is_in_analyze_state(scenario)
     grid = scenario.state.get_grid()
-    resources = _check_resources_and_format(resources)
-    _check_resources_are_in_grid(resources, grid)
+    resources = _check_resources_are_in_grid_and_format(resources, grid)
     _check_number_hours_to_analyze(scenario, hours)
 
     # Then calculate capacity value
