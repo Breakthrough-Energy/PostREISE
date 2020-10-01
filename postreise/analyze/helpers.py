@@ -1,6 +1,9 @@
 from collections import defaultdict
 
 import pandas as pd
+from powersimdata.input.grid import Grid
+from powersimdata.network.usa_tamu.constants import zones
+
 from postreise.analyze.check import (
     _check_areas_are_in_grid_and_format,
     _check_data_frame,
@@ -8,8 +11,6 @@ from postreise.analyze.check import (
     _check_plants_are_in_grid,
     _check_resources_are_in_grid_and_format,
 )
-from powersimdata.input.grid import Grid
-from powersimdata.network.usa_tamu.constants import zones
 
 
 def get_resources_in_grid(grid):

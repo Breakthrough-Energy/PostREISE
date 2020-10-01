@@ -1,16 +1,17 @@
 from collections import defaultdict
-import pandas as pd
-import numpy as np
 
-from powersimdata.scenario.scenario import Scenario
-from powersimdata.scenario.analyze import Analyze
-from powersimdata.network.usa_tamu.constants.zones import (
-    interconnect2abv,
-    abv2state,
-    loadzone2state,
-    loadzone2interconnect,
-)
+import numpy as np
+import pandas as pd
 from powersimdata.network.usa_tamu.constants.plants import label2type
+from powersimdata.network.usa_tamu.constants.zones import (
+    abv2state,
+    interconnect2abv,
+    loadzone2interconnect,
+    loadzone2state,
+)
+from powersimdata.scenario.analyze import Analyze
+from powersimdata.scenario.scenario import Scenario
+
 from postreise.analyze.check import _check_scenario_is_in_analyze_state
 
 

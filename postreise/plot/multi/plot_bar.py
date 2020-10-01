@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import pandas as pd
+
 from postreise.plot.multi.constants import ALL_RESOURCE_TYPES, RESOURCE_LABELS
 from postreise.plot.multi.plot_helpers import handle_plot_inputs
 

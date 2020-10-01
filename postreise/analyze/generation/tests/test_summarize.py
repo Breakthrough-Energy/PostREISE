@@ -1,16 +1,17 @@
-import unittest
-import pytest
-import pandas as pd
 import pathlib
+import unittest
 
-from powersimdata.tests.mock_scenario import MockScenario
+import pandas as pd
+import pytest
 from powersimdata.tests.mock_grid import MockGrid
-from postreise.analyze.tests.test_helpers import check_dataframe_matches
+from powersimdata.tests.mock_scenario import MockScenario
+
 from postreise.analyze.generation.summarize import (
-    sum_generation_by_type_zone,
     sum_generation_by_state,
+    sum_generation_by_type_zone,
     summarize_hist_gen,
 )
+from postreise.analyze.tests.test_helpers import check_dataframe_matches
 
 # plant_id is the index
 mock_plant = {

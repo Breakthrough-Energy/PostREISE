@@ -1,5 +1,5 @@
-from matplotlib import pyplot as plt
 import numpy as np
+from matplotlib import pyplot as plt
 
 
 def plot_carbon_bar(carbon_by_bus_1, carbon_by_bus_2, scenario_name_1, scenario_name_2):

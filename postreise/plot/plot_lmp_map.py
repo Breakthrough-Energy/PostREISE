@@ -4,12 +4,13 @@
 import pandas as pd
 from bokeh.layouts import row
 from bokeh.models import ColumnDataSource
-from bokeh.plotting import figure
-from bokeh.tile_providers import Vendors, get_provider
-from bokeh.sampledata import us_states
 from bokeh.palettes import Turbo256
-from postreise.plot.projection_helpers import project_bus
+from bokeh.plotting import figure
+from bokeh.sampledata import us_states
+from bokeh.tile_providers import Vendors, get_provider
+
 from postreise.plot.plot_carbon_map import get_borders
+from postreise.plot.projection_helpers import project_bus
 
 # make default states list for drawing of state borders
 default_states_dict = us_states.data.copy()

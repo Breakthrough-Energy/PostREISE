@@ -1,4 +1,4 @@
-name: Run pytest
+name: Pytest
 
 on: [push]
 
@@ -29,14 +29,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pipenv
-          pipenv install --python=${{ matrix.python-version }}
+      - run: python -m pip install --upgrade tox
         working-directory: PostREISE
 
-      - name: Test with pytest
-        run: |
-          pipenv run pytest
+      - run: tox -e pytest
         working-directory: PostREISE

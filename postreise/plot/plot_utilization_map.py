@@ -1,10 +1,10 @@
+import numpy as np
 import pandas as pd
-from bokeh.models import ColumnDataSource, ColorBar
+from bokeh.models import ColorBar, ColumnDataSource
 from bokeh.plotting import figure
 from bokeh.sampledata import us_states
-from bokeh.tile_providers import get_provider, Vendors
+from bokeh.tile_providers import Vendors, get_provider
 from bokeh.transform import linear_cmap
-import numpy as np
 
 from postreise.plot import plot_carbon_map
 from postreise.plot.projection_helpers import project_branch
