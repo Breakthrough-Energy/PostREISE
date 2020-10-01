@@ -21,13 +21,13 @@ To carry out transmission congestion analyses per scenario:
 2. calculate congestion statistics;
 3. display the data.
 
-The ***[utilization_demo.ipynb][utilization]*** notebook shows the steps for 
-downloading, calculating and plotting the various statistics. Note that since 
+The ***[utilization_demo.ipynb][utilization]*** notebook shows the steps for
+downloading, calculating and plotting the various statistics. Note that since
 the plot outputs are meant to be interactive, they may not render on GitHub.
 
 ### B. Transmission Congestion (Surplus) Analysis
 The congestion surplus for each hour can be calculated by calling
-```
+```python
 postreise.analyze.transmission.congestion.calculate_congestion_surplus(scenario)
 ```
 where `scenario` is a powersimdata.scenario.scenario.Scenario object in Analyze
@@ -36,14 +36,14 @@ state.
 ### C. Carbon Analysis
 The hourly CO<sub>2</sub> emissions from a scenario may be analyzed by calling
 
-```
+```python
 postreise.analyze.generation.carbon.generate_carbon_stats(scenario)
 ```
-where `scenario` is a powersimdata.scenario.scenario.Scenario instance in the 
+where `scenario` is a powersimdata.scenario.scenario.Scenario instance in the
 analyze state.
 
 The resulting data frame can be summed by generator type and bus by calling
-```
+```python
 postreise.analyze.generation.carbon.summarize_carbon_by_bus(carbon, plant)
 ```
 where `carbon` is a pandas.DataFrame as returned by `generate_carbon_stats` and
@@ -52,51 +52,78 @@ where `carbon` is a pandas.DataFrame as returned by `generate_carbon_stats` and
 ### D. Curtailment Analysis
 The level of curtailment for a Scenario may be calculated in several ways.
 
+
+
 #### I. Calculating Time Series
 To calculate the time-series curtailment for each solar and wind generator, call
+```python
+from postreise.analyze.generation.curtailment import calculate_curtailment_time_series
+calculate_curtailment_time_series(scenario)
 ```
-postreise.analyze.generation.curtailment.calculate_curtailment_time_series(scenario)
+where `scenario` is a `powersimdata.scenario.scenario.Scenario` instance in the
+analyze state. If you call:
+```python
+postreise.analyze.generation.curtailment import calculate_curtailment_time_series_by_resources
+calculate_curtailment_time_series_by_resources(scenario, resources={"solar", "wind"})
 ```
-where `scenario` is a powersimdata.scenario.scenario.Scenario instance in the 
-analyze state. To calculate the curtailment just for wind or solar, call
+you will obtain a dictionary where the keys are solar and wind and the values are
+the curtailment time-series for the associated resource.
+
+You can also get the curtailment time-series by areas by calling:
+```python
+from postreise.analyze.generation.curtailment import calculate_curtailment_time_series_by_areas
+calculate_curtailment_time_series_by_areas(scenario,
+  areas={"interconnect": {"Western", "Texas"},
+         "state": {"Washington", "California", "Idaho"},
+         "loadzone": {"Bay Area", "El Paso", "Far West"}})
 ```
-postreise.analyze.generation.curtailment.calculate_curtailment_time_series(scenario, resources={'wind'})
+this returns a dictionary where the keys are the areas and the values are the
+curtailment time-series for solar and wind in the associated area.
+
+Finally, you can group the curtailment time-series by areas and resources as follows:
+```python
+postreise.analyze.generation.curtailment import calculate_curtailment_time_series_by_areas_and_resources
+calculate_curtailment_time_series_by_areas_and_resources(scenario,
+  areas={"interconnect": {"Western", "Texas"},
+         "state": {"Washington", "California", "Idaho"},
+         "loadzone": {"Bay Area", "El Paso", "Far West"}},
+  resources={"solar", "wind"})
 ```
-or
-```
-postreise.analyze.generation.curtailment.calculate_curtailment_time_series(scenario, resources={'solar'})
-```
+in that case the it returns a dictionary where the keys are the areas and the values
+are a dictionary where the keys are the resources and the values the curtailment
+time-series for the associated area-resource pair.
+
+
 
 #### II. Summarizing Time Series: Plant => Bus/Location
 A curtailment data frame with plants as columns can be further summarized by bus
 or by location (substation) with:
-```
-postreise.analyze.generation.curtailment.summarize_curtailment_by_bus(curtailment, grid)
+```python
+postreise.analyze.generation.curtailment.summarize_curtailment_by_bus(scenario)
 ```
 or
-
+```python
+postreise.analyze.generation.curtailment.summarize_curtailment_by_location(scenario)
 ```
-postreise.analyze.generation.curtailment.summarize_curtailment_by_location(curtailment, grid)
-```
 
-where `curtailment` is a pandas.DataFrame as returned by
-`calculate_curtailment_time_series` and `grid` is a
-powersimdata.input.grid.Grid instance.
+
 
 #### III. Calculating Annual Curtailment Percentage
 An annual average curtailment value can be found for all wind/solar plants with
 
-```
+```python
 postreise.analyze.generation.curtailment.calculate_curtailment_percentage(scenario)
 ```
-where `scenario` is a powersimdata.scenario.scenario.Scenario instance in the 
+where `scenario` is a `powersimdata.scenario.scenario.Scenario` instance in the
 analyze state. To calculate the average curtailment just for wind or solar, call
-```
-postreise.analyze.generation.curtailment.calculate_curtailment_percentage(scenario, resources={'wind'})
+```python
+from postreise.analyze.generation.curtailment import calculate_curtailment_percentage
+calculate_curtailment_percentage(scenario, resources={'wind'})
 ```
 or
-```
-postreise.analyze.generation.curtailment.calculate_curtailment_percentage(scenario, resources={'solar'})
+```python
+from ostreise.analyze.generation.curtailment import calculate_curtailment_percentage
+calculate_curtailment_percentage(scenario, resources={'solar'})
 ```
 
 
@@ -118,7 +145,7 @@ the same zone and using the same resource.
 * Calculate the capacity factor of one resource in one zone and show result
 using box plots.
 * Map the shadowprice and congested branches for a given hour
-* Tornado plot: Horizontal bar chart styled to show both positive and negative 
+* Tornado plot: Horizontal bar chart styled to show both positive and negative
 values cleanly.
 
 Check out the notebooks within the [demo][plot_notebooks] folder.
@@ -129,14 +156,14 @@ Check out the notebooks within the [demo][plot_notebooks] folder.
 
 The `plot_carbon_map` module is used to plot carbon emissions on a map.
 There are two ways it can be used:
-* Map carbon emissions per bus, size scaled to emissions quantity (tons) and 
+* Map carbon emissions per bus, size scaled to emissions quantity (tons) and
 color coded by fuel type.
 * Map carbon emissions per bus for two scenarios and compare.
-Comparison map color codes by increase vs. decrease from first to second 
+Comparison map color codes by increase vs. decrease from first to second
 scenario analyzed.
 
-The `plot_carbon_bar` module is used to make barcharts comparing carbon 
+The `plot_carbon_bar` module is used to make barcharts comparing carbon
 emissions of two scenarios.
 
-The `projection_helpers.py` module contains helper functions such as 
+The `projection_helpers.py` module contains helper functions such as
 re-projection, necessary for mapping.
