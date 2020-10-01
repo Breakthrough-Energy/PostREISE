@@ -1,21 +1,15 @@
 import datetime
+
 import numpy as np
 import pandas as pd
-
-from powersimdata.scenario.scenario import Scenario
-from powersimdata.scenario.analyze import Analyze
 from powersimdata.input.grid import Grid
+from powersimdata.network.usa_tamu.constants import zones
 from powersimdata.network.usa_tamu.constants.plants import (
     all_resources,
     renewable_resources,
 )
-from powersimdata.network.usa_tamu.constants.zones import (
-    loadzone,
-    state2loadzone,
-    abv2loadzone,
-    interconnect2loadzone,
-    abv2state,
-)
+from powersimdata.scenario.analyze import Analyze
+from powersimdata.scenario.scenario import Scenario
 
 
 def _check_data_frame(df, label):
@@ -85,7 +79,8 @@ def _check_areas_and_format(areas):
         state name(s)/abbreviation(s) or interconnect(s).
     :raises TypeError: if areas is not a list/tuple/set of str.
     :raises ValueError: if areas is empty or not valid.
-    :return: (*set*) -- areas as a set.
+    :return: (*set*) -- areas as a set. State abbreviations are converted to state
+        names.
     """
     if isinstance(areas, str):
         areas = {areas}
@@ -97,20 +92,15 @@ def _check_areas_and_format(areas):
         raise TypeError("areas must be a str or a list/tuple/set of str")
     if len(areas) == 0:
         raise ValueError("areas must be non-empty")
-    all_areas = (
-        loadzone
-        | set(abv2loadzone.keys())
-        | set(state2loadzone.keys())
-        | set(interconnect2loadzone.keys())
-    )
+    all_areas = zones.loadzone | zones.abv | zones.state | zones.interconnect
     if not areas <= all_areas:
         diff = areas - all_areas
         raise ValueError("invalid area(s): %s" % " | ".join(diff))
 
-    abv_in_areas = [z for z in areas if z in abv2state.keys()]
+    abv_in_areas = [z for z in areas if z in zones.abv]
     for a in abv_in_areas:
         areas.remove(a)
-        areas.add(abv2state[a])
+        areas.add(zones.abv2state[a])
 
     return areas
 
@@ -154,28 +144,90 @@ def _check_resources_are_renewable_and_format(resources):
     return resources
 
 
-def _check_resources_are_in_grid(resources, grid):
+def _check_areas_are_in_grid_and_format(areas, grid):
+    """Ensure that list of areas are in grid.
+
+    :param dict areas: keys are area types: '*loadzone*', '*state*' or '*interconnect*'.
+        Values are str/list/tuple/set of areas.
+    :param powersimdata.input.grid.Grid grid: Grid instance.
+    :return: (*dict*) -- modified areas dictionary. Keys are area types ('*loadzone*',
+        '*state*' or '*interconnect*'). State abbreviations, if present, are converted
+        to state names. Values are areas as a set.
+    :raises TypeError: if areas is not a dict or its keys are not str.
+    :raises ValueError: if area type is invalid, an area in not in grid or an
+        invalid loadzone/state/interconnect is passed.
+    """
+    _check_grid(grid)
+    if not isinstance(areas, dict):
+        raise TypeError("areas must be a dict")
+
+    areas_formatted = {}
+    for a in areas.keys():
+        if a in ["loadzone", "state", "interconnect"]:
+            areas_formatted[a] = set()
+
+    all_loadzones = set()
+    for k, v in areas.items():
+        if not isinstance(k, str):
+            raise TypeError("area type must be a str")
+        elif k == "interconnect":
+            interconnects = _check_areas_and_format(v)
+            for i in interconnects:
+                try:
+                    all_loadzones.update(zones.interconnect2loadzone[i])
+                except KeyError:
+                    raise ValueError("invalid interconnect: %s" % i)
+            areas_formatted["interconnect"].update(interconnects)
+        elif k == "state":
+            states = _check_areas_and_format(v)
+            for s in states:
+                try:
+                    all_loadzones.update(zones.state2loadzone[s])
+                except KeyError:
+                    raise ValueError("invalid state: %s" % s)
+            areas_formatted["state"].update(states)
+        elif k == "loadzone":
+            loadzones = _check_areas_and_format(v)
+            for l in loadzones:
+                if l not in zones.loadzone:
+                    raise ValueError("invalid load zone: %s" % l)
+            all_loadzones.update(loadzones)
+            areas_formatted["loadzone"].update(loadzones)
+        else:
+            raise ValueError("invalid area type")
+
+    valid_loadzones = set(grid.plant["zone_name"].unique())
+    if not all_loadzones <= valid_loadzones:
+        diff = all_loadzones - valid_loadzones
+        raise ValueError("%s not in in grid" % " | ".join(diff))
+
+    return areas_formatted
+
+
+def _check_resources_are_in_grid_and_format(resources, grid):
     """Ensure that resource(s) is represented in at least one generator in the grid
     used for the scenario.
 
     :param str/list/tuple/set resources: resource(s) to analyze.
     :param powersimdata.input.grid.Grid grid: a Grid instance.
+    :return: (*set*) -- resources as a set.
     :raises ValueError: if resources is not used in scenario.
     """
+    _check_grid(grid)
     resources = _check_resources_and_format(resources)
     valid_resources = set(grid.plant["type"].unique())
     if not resources <= valid_resources:
         diff = resources - valid_resources
         raise ValueError("%s not in in grid" % " | ".join(diff))
+    return resources
 
 
 def _check_plants_are_in_grid(plant_id, grid):
     """Ensure that list of plant id are in grid.
 
-    :param list/tuple/set plant_id: list of plant_id.
+    :param list/tuple/set plant_id: list of plant id.
     :param powersimdata.input.grid.Grid grid: Grid instance.
-    :raises TypeError: if plant_id is not a list of int or str and grid is not a Grid
-        object.
+    :raises TypeError: if plant_id is not a list of int or str.
     :raises ValueError: if plant id is not in network.
     """
     _check_grid(grid)
@@ -184,8 +236,6 @@ def _check_plants_are_in_grid(plant_id, grid):
         and all([isinstance(p, (int, str)) for p in plant_id])
     ):
         raise TypeError("plant_id must be a a list/tuple/set of int or str")
-    if not isinstance(grid, Grid):
-        raise TypeError("grid must be powersimdata.input.grid.Grid object")
     if not set([str(p) for p in plant_id]) <= set([str(i) for i in grid.plant.index]):
         raise ValueError("plant_id must be subset of plant index")
 
@@ -313,20 +363,3 @@ def _check_gencost(gencost):
     for c in coef_columns:
         if c not in gencost.columns:
             raise ValueError("gencost of order {0} must have column {1}".format(n, c))
-
-
-def _check_curtailment(curtailment, grid):
-    """Ensure that curtailment is a dict of data frames, and that each key is
-    represented in at least one generator in grid.
-
-    :param dict curtailment: curtailment data.
-    :param powersimdata.input.grid.Grid grid: a Grid object.
-    :raises TypeError: if curtailment is not a dict and values are not data frames.
-    """
-    if not isinstance(curtailment, dict):
-        raise TypeError("curtailment must be a dict")
-    _check_grid(grid)
-    resources = _check_resources_are_renewable_and_format(list(curtailment.keys()))
-    _check_resources_are_in_grid(resources, grid)
-    if not all([isinstance(v, pd.DataFrame) for v in curtailment.values()]):
-        raise TypeError("curtailment values must be a data frame")

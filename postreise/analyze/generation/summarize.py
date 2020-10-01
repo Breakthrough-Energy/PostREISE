@@ -5,7 +5,7 @@ import numpy as np
 from powersimdata.scenario.scenario import Scenario
 from powersimdata.scenario.analyze import Analyze
 from powersimdata.network.usa_tamu.constants.zones import (
-    interconnect2state,
+    interconnect2abv,
     abv2state,
     loadzone2state,
     loadzone2interconnect,
@@ -87,8 +87,8 @@ def summarize_hist_gen(hist_gen_raw: pd.DataFrame, all_resources: list) -> pd.Da
     :param list all_resources: list of resources from the scenario
     :return: (*pandas.DataFrame*) historical generation per resource
     """
-    western = [abv2state[s] for s in interconnect2state["Western"]]
-    eastern = [abv2state[s] for s in interconnect2state["Eastern"]]
+    western = [abv2state[s] for s in interconnect2abv["Western"]]
+    eastern = [abv2state[s] for s in interconnect2abv["Eastern"]]
 
     filtered_colnames = [k for k in label2type.keys() if label2type[k] in all_resources]
     result = hist_gen_raw.copy()
