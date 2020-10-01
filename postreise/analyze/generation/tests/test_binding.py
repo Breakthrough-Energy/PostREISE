@@ -1,14 +1,17 @@
 import unittest
 
 import pandas as pd
-
 from powersimdata.tests.mock_scenario import MockScenario
+
+from postreise.analyze.check import (
+    _check_epsilon,
+    _check_scenario_is_in_analyze_state,
+)
 from postreise.analyze.generation.binding import (
-    pmin_constraints,
     pmax_constraints,
+    pmin_constraints,
     ramp_constraints,
 )
-from postreise.analyze.check import _check_scenario_is_in_analyze_state, _check_epsilon
 
 
 class TestCheckScenario(unittest.TestCase):

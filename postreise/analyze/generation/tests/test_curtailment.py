@@ -1,16 +1,15 @@
 import unittest
 
-from numpy.testing import assert_array_equal
 import pandas as pd
-
+from numpy.testing import assert_array_equal
 from powersimdata.tests.mock_scenario import MockScenario
+
 from postreise.analyze.generation.curtailment import (
-    calculate_curtailment_time_series_by_resources,
     calculate_curtailment_percentage_by_resources,
+    calculate_curtailment_time_series_by_resources,
     summarize_curtailment_by_bus,
     summarize_curtailment_by_location,
 )
-
 
 # plant_id is the index
 mock_plant = {

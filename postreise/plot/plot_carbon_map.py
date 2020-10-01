@@ -1,12 +1,13 @@
 import numpy as np
 import pandas as pd
-from bokeh.plotting import figure
-from bokeh.tile_providers import get_provider, Vendors
-from bokeh.models import ColumnDataSource, LabelSet, Label, HoverTool
 from bokeh.layouts import row
+from bokeh.models import ColumnDataSource, HoverTool, Label, LabelSet
+from bokeh.plotting import figure
 from bokeh.sampledata import us_states
-from postreise.plot.projection_helpers import project_bus
+from bokeh.tile_providers import Vendors, get_provider
 from pyproj import Transformer
+
+from postreise.plot.projection_helpers import project_bus
 
 # make default states list, lower 48 only
 default_states_dict = us_states.data.copy()

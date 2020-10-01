@@ -1,4 +1,5 @@
 import pandas as pd
+
 from postreise.plot.multi.plot_helpers import (
     handle_plot_inputs,
     handle_shortfall_inputs,

@@ -1,4 +1,7 @@
-from postreise.analyze.check import _check_scenario_is_in_analyze_state, _check_epsilon
+from postreise.analyze.check import (
+    _check_epsilon,
+    _check_scenario_is_in_analyze_state,
+)
 
 
 def pmin_constraints(scenario, epsilon=1e-3):

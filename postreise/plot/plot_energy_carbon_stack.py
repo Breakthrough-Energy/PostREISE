@@ -3,11 +3,10 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+from powersimdata.network.usa_tamu.constants.plants import type2color
+from powersimdata.scenario.scenario import Scenario
 
 from postreise.analyze.generation.carbon import generate_carbon_stats
-from powersimdata.scenario.scenario import Scenario
-from powersimdata.network.usa_tamu.constants.plants import type2color
-
 
 # Define common classifications
 possible_renewable = ["solar", "wind", "wind_offshore"]

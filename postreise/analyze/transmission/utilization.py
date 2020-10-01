@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-
 from powersimdata.utility.distance import great_circle_distance
 
 

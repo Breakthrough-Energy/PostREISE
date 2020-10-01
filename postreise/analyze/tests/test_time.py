@@ -3,12 +3,11 @@ import pytest
 import pytz
 
 from postreise.analyze.time import (
-    slice_time_series,
-    resample_time_series,
     change_time_zone,
     is_dst,
+    resample_time_series,
+    slice_time_series,
 )
-
 
 nb_hours = 366 * 24
 ts_as_data_frame = pd.DataFrame(

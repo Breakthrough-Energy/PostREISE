@@ -1,7 +1,7 @@
 from postreise.analyze.check import (
-    _check_scenario_is_in_analyze_state,
-    _check_resources_are_in_grid_and_format,
     _check_number_hours_to_analyze,
+    _check_resources_are_in_grid_and_format,
+    _check_scenario_is_in_analyze_state,
 )
 
 

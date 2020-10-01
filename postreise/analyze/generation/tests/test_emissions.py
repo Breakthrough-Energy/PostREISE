@@ -1,10 +1,9 @@
-import pytest
-
 import numpy as np
-from numpy.testing import assert_array_almost_equal
 import pandas as pd
-
+import pytest
+from numpy.testing import assert_array_almost_equal
 from powersimdata.tests.mock_scenario import MockScenario
+
 from postreise.analyze.generation.emissions import (
     generate_emissions_stats,
     summarize_emissions_by_bus,

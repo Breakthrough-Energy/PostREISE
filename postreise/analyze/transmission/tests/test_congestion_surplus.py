@@ -2,13 +2,13 @@ import unittest
 
 import numpy as np
 import pandas as pd
+from powersimdata.tests.mock_grid import MockGrid
+from powersimdata.tests.mock_scenario import MockScenario
 
 from postreise.analyze.transmission.congestion import (
     calculate_congestion_surplus,
     map_demand_to_buses,
 )
-from powersimdata.tests.mock_grid import MockGrid
-from powersimdata.tests.mock_scenario import MockScenario
 
 mock_plant = {
     "plant_id": ["A", "B", "C", "D"],

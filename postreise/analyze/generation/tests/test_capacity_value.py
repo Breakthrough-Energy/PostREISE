@@ -1,13 +1,12 @@
 import pandas as pd
 import pytest
+from powersimdata.tests.mock_scenario import MockScenario
 from pytest import approx
 
-from powersimdata.tests.mock_scenario import MockScenario
 from postreise.analyze.generation.capacity_value import (
-    calculate_NLDC,
     calculate_net_load_peak,
+    calculate_NLDC,
 )
-
 
 mock_plant = {
     "plant_id": [101, 102, 103],
