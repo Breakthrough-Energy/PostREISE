@@ -6,7 +6,7 @@ import numpy as np
 from powersimdata.network.usa_tamu.constants.plants import type2color
 from powersimdata.scenario.scenario import Scenario
 
-from postreise.analyze.generation.carbon import generate_carbon_stats
+from postreise.analyze.generation.emissions import generate_emissions_stats
 
 # Define common classifications
 possible_renewable = ["solar", "wind", "wind_offshore"]
@@ -18,7 +18,7 @@ all_possible = possible_carbon + ["other"] + possible_clean
 def plot_n_scenarios(*args):
     """For 1-to-n scenarios, plot stacked energy and carbon side-by-side.
 
-    :param powersimdata.scenario.scenario.Scenario *args: scenarios in
+    :param powersimdata.scenario.scenario.Scenario args: scenarios in
         Analyze state.
     """
     if not all([isinstance(a, Scenario) for a in args]):
@@ -34,7 +34,7 @@ def plot_n_scenarios(*args):
         # Calculate raw numbers
         annual_plant_energy = scenario.state.get_pg().sum()
         raw_energy_by_type = annual_plant_energy.groupby(plant[id].type).sum()
-        annual_plant_carbon = generate_carbon_stats(scenario).sum()
+        annual_plant_carbon = generate_emission_stats(scenario).sum()
         raw_carbon_by_type = annual_plant_carbon.groupby(plant[id].type).sum()
         # Drop fuels with zero energy (e.g. all offshore_wind scaled to 0 MW)
         energy_by_type[id] = raw_energy_by_type[raw_energy_by_type != 0]
