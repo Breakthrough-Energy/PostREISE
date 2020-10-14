@@ -32,13 +32,14 @@ def resample_time_series(ts, freq, agg="sum"):
 
     .. note::
         When resampling:
+
         * the left side of the bin interval is closed.
         * the left bin edge is used to label the interval.
         * intervals start at midnight.
         * when the aggregation method is *'sum'*, incomplete days, weeks and months are
-            clipped
+          clipped
         * when aggregation method is *'mean'*, intervals not enclosed in the UTC date
-            range are clipped
+          range are clipped
     """
     _check_time_series(ts, "time series")
     if is_dst(ts):

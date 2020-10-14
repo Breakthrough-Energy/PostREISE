@@ -14,37 +14,28 @@ def plot_pie(
     custom_data=None,
     min_percentage=0,
 ):
-    """Plots any number of scenarios as pie charts with
-        two columns per scenario - defaults to generation and capacity
+    """Plot any number of scenarios as pie charts with two columns per scenario -
+    defaults to generation and capacity.
 
-    :param interconnect: either 'Western' or 'Texas'
-    :type interconnect: string
-    :param time: time related parameters. 1st element is the starting
-        date. 2nd element is the ending date (left out). 3rd element is the
-        timezone, only *'utc'*, *'US/Pacific'* and *'local'* are possible. 4th
-        element is the frequency, which can be *'H'* (hour), *'D'* (day), *'W'*
-         (week) or *'auto'*.
-    :type time: tuple
-    :param scenario_ids: list of scenario ids, defaults to None
-    :type scenario_ids: list(string), optional
-    :param scenario_names: list of scenario names of same len as scenario ids,
-        defaults to None
-    :type scenario_names: list(string), optional
-    :param custom_data: hand-generated data, defaults to None
-    :type custom_data: dict {'scenario_id': {
-        'label': 'scenario_name',
-        'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'zone_name':
-            {'resource_type': float value(s), ...}, ...}},
-        'cap': {'label': 'Capacity', 'unit': 'GW', 'data': {'zone_name':
-            {'resource_type': float value(s), ...}, ...}}},
-        ...}, optional
-    NOTE: If you want to plot scenario data and custom data together,
-        custom data MUST be in TWh for generation and GW for capacity.
-        We may add a feature to check for and convert to equal units
-        but it's not currently a priority
-    :param min_percentage: roll up small pie pieces into an Other category,
-        defaults to 0
-    :type min_percentage: float, optional
+    :param str interconnect: either 'Western' or 'Texas'.
+    :param tuple time: time related parameters.
+        1st element is the starting date.
+        2nd element is the ending date (left out).
+        3rd element is the timezone, only *'utc'*, *'US/Pacific'* and *'local'* are
+        possible.
+        4th element is the frequency, which can be *'H'* (hour), *'D'* (day), *'W'*
+        (week) or *'auto'*.
+    :param list scenario_ids: list of scenario ids, defaults to None.
+    :param list scenario_names: list of scenario names of same length as scenario ids,
+        defaults to None.
+    :param dict custom_data: hand-generated data, defaults to None.
+    :param float min_percentage: roll up small pie pieces into an Other category,
+        defaults to 0.
+
+    .. note::
+        if you want to plot scenario data and custom data together, custom data MUST be
+        in TWh for generation and GW for capacity. We may add a feature to check for
+        and convert to equal units but it's not currently a priority.
     """
     zone_list, graph_data = handle_plot_inputs(
         interconnect, time, scenario_ids, scenario_names, custom_data
@@ -56,22 +47,13 @@ def plot_pie(
 
 
 def _construct_pie_ax_data(zone, scenarios, min_percentage):
-    """Creates a list of labels, values, and colors for each axis of the plot
+    """Create a list of labels, values, and colors for each axis of the plot.
 
-    :param zone: the zone name
-    :type zone: string
-    :param scenarios: the scenario data to format
-    :type scenarios: dict {'scenario_id': {
-        'label': 'scenario_name',
-        'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'zone_name':
-            {'resource_type': float value(s), ...}, ...}},
-        'cap': {'label': 'Capacity', 'unit': 'GW', 'data': {'zone_name':
-            {'resource_type': float value(s), ...}, ...}}},
-        ...}
-    :param min_percentage: roll up small pie pieces into an Other category
-    :type min_percentage: float
-    :return: a list of labels, values, and colors for each axis of the plot
-    :rtype: list(dict) [{title, labels, values, colors, unit}, ...]
+    :param str zone: the zone name.
+    :param dict scenarios: the scenario data as returned by
+        :func:`postreise.plot.multi.plot_helpers.handle_plot_inputs`.
+    :param float min_percentage: roll up small pie pieces into an Other category
+    :return: (*list*) -- a list of labels, values, and colors for each axis of the plot
     """
     ax_data_list = []
     for scenario in scenarios.values():
@@ -97,16 +79,12 @@ def _construct_pie_ax_data(zone, scenarios, min_percentage):
 
 
 def _roll_up_small_pie_wedges(resource_data, min_percentage):
-    """Combines small wedges into an "other" category
-        Removes wedges with value 0
+    """Combine small wedges into an "other" category. Removes wedges with value 0.
 
-    :param resource_data: values for each resource type
-    :type resource_data: dict {'resource_type': float value, ...}
-    :param min_percentage: roll up small pie pieces into an Other category
-    :type min_percentage: float
-    :return: Returns updated axis data and a list of labels
-        that includes the other category label if it exists
-    :rtype: dict {'resource_type': float value, ...}
+    :param dict resource_data: values for each resource type.
+    :param float min_percentage: roll up small pie pieces into an Other category.
+    :return: (*dict*) -- returns updated axis data and a list of labels that includes
+        the other category label if it exists
     """
     resource_list = list(resource_data.keys())
     total_resources = sum(resource_data.values())
@@ -139,13 +117,11 @@ def _roll_up_small_pie_wedges(resource_data, min_percentage):
 
 
 def _construct_pie_visuals(zone, ax_data_list):
-    """Use matplot lib to plot formatted data
+    """Plot formatted data.
 
-    :param zone: the zone name
-    :type zone: string
-    :param ax_data_list: a list of labels, values, and colors
-        for each axis of the plot
-    :type ax_data_list: list(dict) [{title, labels, values, colors, unit}, ...]
+    :param str zone: the zone name
+    :param list ax_data_list: a list of labels, values, and colors for each axis of the
+        plot.
     """
     rows = int(len(ax_data_list) / 2)
     fig, axes = plt.subplots(rows, 2, figsize=(20, 12 * rows))

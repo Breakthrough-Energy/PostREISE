@@ -20,7 +20,7 @@ class AnalyzePG:
         date. 2nd element is the ending date (left out). 3rd element is the
         timezone, only *'utc'*, *'US/Pacific'* and *'local'* are possible. 4th
         element is the frequency, which can be *'H'* (hour), *'D'* (day), *'W'*
-         (week) or *'auto'*.
+        (week) or *'auto'*.
     :param list zones: geographical zones. Any combinations of load zones in the
         Western interconnection or ERCOT plus *'California'*, *'Western'* or
         *'Texas'*.

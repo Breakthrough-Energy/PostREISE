@@ -18,48 +18,34 @@ def plot_shortfall(
     targets=None,
     demand=None,
 ):
-    """Plots a stacked bar chart of generation shortfall
-        for any number of scenarios
+    """Plot a stacked bar chart of generation shortfall for any number of scenarios.
 
-    :param interconnect: currently only 'Western' works. We include this param
-        to keep a consistent API with all plotting functions
-    :type interconnect: string
-    :param time: time related parameters. 1st element is the starting
-        date. 2nd element is the ending date (left out). 3rd element is the
-        timezone, only *'utc'*, *'US/Pacific'* and *'local'* are possible. 4th
-        element is the frequency, which can be *'H'* (hour), *'D'* (day), *'W'*
-         (week) or *'auto'*.
-    :type time: tuple
-    :param scenario_ids: list of scenario ids, defaults to None
-    :type scenario_ids: list(string), optional
-    :param scenario_names: list of scenario names of same len as scenario ids,
-        defaults to None
-    :type scenario_names: list(string), optional
-    :param custom_data: hand-generated data, defaults to None
-    :type custom_data: dict {'scenario_id': {
-        'label': 'scenario_name',
-        'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'zone_name':
-            {'resource_type': float value(s), ...}, ...}},
-        'cap': {'label': 'Capacity', 'unit': 'GW', 'data': {'zone_name':
-            {'resource_type': float value(s), ...}, ...}}},
-        ...}, optional
-    NOTE: If you want to plot scenario data and custom data together,
-        custom data MUST be in TWh for generation and GW for capacity.
-        We may add a feature to check for and convert to equal units
-        but it's not currently a priority
-    :param is_match_CA: calculate shortfall using special rules that apply
-        when all zones match California goals, defaults to False
-    :type is_match_CA: bool, optional
-    :param has_collaborative_scenarios: list of scenario ids where
-        all zones collaborate to meet goals. Affects results for interconnect,
-        defaults to None
-    :type has_collaborative_scenarios: list(string), optional
-    :param baselines: baseline renewables generation for each zone, defaults to None
-    :type baselines: dict {zone: float generation in TWh}, optional
-    :param targets: target renewables renewable generation for each zone, defaults to None
-    :type targets: dict {zone: float generation in TWh}, optional
-    :param demand: total demand for each zone, defaults to None
-    :type demand: dict {zone: float generation in TWh}, optional
+    :param str interconnect: currently only 'Western' works. We include this param
+        to keep a consistent API with all plotting functions.
+    :param tuple time: time related parameters.
+        1st element is the starting date.
+        2nd element is the ending date (left out).
+        3rd element is the timezone, only *'utc'*, *'US/Pacific'* and *'local'* are
+        possible.
+        4th element is the frequency, which can be *'H'* (hour), *'D'* (day), *'W'*
+        (week) or *'auto'*.
+    :param list scenario_ids: list of scenario ids.
+    :param list scenario_names: list of scenario names of same len as scenario ids.
+    :param dict custom_data: hand-generated data, defaults to None.
+    :param bool is_match_CA: calculate shortfall using special rules that apply when
+        all zones match California goals, defaults to False
+    :param list has_collaborative_scenarios: list of scenario ids where all zones
+        collaborate to meet goals. Affects results for interconnect, defaults to None.
+    :param dict baselines: baseline renewables generation for each zone, defaults to
+        None.
+    :param dict targets: target renewables renewable generation for each zone, defaults
+        to None.
+    :param dict demand: total demand for each zone, defaults to None
+
+    .. note::
+        If you want to plot scenario data and custom data together, custom data MUST be
+        in TWh for generation and GW for capacity. We may add a feature to check for
+        and convert to equal units but it's not currently a priority.
     """
     zone_list, graph_data = handle_plot_inputs(
         interconnect, time, scenario_ids, scenario_names, custom_data
@@ -97,31 +83,17 @@ def plot_shortfall(
 def _construct_shortfall_ax_data(
     zone, scenarios, is_match_CA, baseline, target, demand
 ):
-    """Formats scenario data into something we can plot
+    """Format scenario data into something we can plot.
 
-    :param zone: the zone name
-    :type zone: string
-    :param scenarios: the scenario data to format
-    :type scenarios: dict {'scenario_id': {
-        'label': 'scenario_name',
-        'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'zone_name':
-            {'resource_type': float value(s), ...}, ...}},
-        'cap': {'label': 'Capacity', 'unit': 'GW', 'data': {'zone_name':
-            {'resource_type': float value(s), ...}, ...}}},
-        ...}
-    :param is_match_CA: calculate shortfall using special rules that apply
-        when all zones match California goals
-    :type is_match_CA: bool
-    :param baseline: baseline renewables generation for this zone
-    :type baseline: float
-    :param target: target renewables renewable generation for this zone
-    :type target: float
-    :param demand: total demand for this zone
-    :type demand: float
-    :return: dictionary of data to visualize
-    :rtype: dict { 'scenario_name': {'2016 Renewables': float value,
-        'Simulated increase in renewables': float value,
-        'Missed target': float value }, ...}
+    :param str zone: the zone name.
+    :param dict scenarios: the scenario data as returned by
+        :func:`postreise.plot.multi.plot_helpers.handle_plot_inputs`
+    :param bool is_match_CA: calculate shortfall using special rules that apply when
+        all zones match California goals
+    :param float baseline: baseline renewables generation for this zone.
+    :param float target: target renewables renewable generation for this zone.
+    :param float demand: total demand for this zone
+    :return: (*dict*) -- dictionary of data to visualize
     """
     ax_data = {}
     shortfall_pct_list = []
@@ -157,36 +129,21 @@ def _construct_shortfall_ax_data(
 def _construct_shortfall_data_for_western(
     scenarios, is_match_CA, has_collaborative_scenarios, baseline, targets, demand
 ):
-    """Formats scenario data into something we can plot
-        Western has unique needs for data construction
-        there are special rules around calculating shortfall
-        when a scenario is collaborative vs. when it's independent.
+    """Format scenario data into something we can plot Western has unique needs for
+    data construction there are special rules around calculating shortfall when a
+    scenario is collaborative vs. when it's independent.
 
-    :param scenarios: the scenario data to format
-    :type scenarios: dict {'scenario_id': {
-        'label': 'scenario_name',
-        'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'zone_name':
-            {'resource_type': float value(s), ...}, ...}},
-        'cap': {'label': 'Capacity', 'unit': 'GW', 'data': {'zone_name':
-            {'resource_type': float value(s), ...}, ...}}},
-        ...}
-    :param is_match_CA: calculate shortfall using special rules that apply
-        when all zones match California goals
-    :type is_match_CA: bool
-    :param has_collaborative_scenarios: list of scenario ids where
-        all zones collaborate to meet goals. Affects results for interconnect
-    :type has_collaborative_scenarios: list(string)
-    :param baseline: baseline renewables generation for this zone
-    :type baseline: float
-    :param targets: target renewables renewable generation for each zone,
-        defaults to None
-    :type targets: dict {zone: float generation in TWh}, optional
-    :param demand: total demand for this zone
-    :type demand: float
-    :return: dictionary of data to visualize
-    :rtype: dict { 'scenario_name': {'2016 Renewables': float value,
-        'Simulated increase in renewables': float value,
-        'Missed target': float value }, ...}
+    :param dict scenarios: the scenario data as returned by
+        :func:`postreise.plot.multi.plot_helpers.handle_plot_inputs`
+    :param bool is_match_CA: calculate shortfall using special rules that apply when
+        all zones match California goals
+    :param list has_collaborative_scenarios: list of scenario ids where all zones
+        collaborate to meet goals. Affects results for interconnect
+    :param float baseline: baseline renewables generation for this zone
+    :param dict targets: target renewables renewable generation for each zone, defaults
+        to None.
+    :param float demand: total demand for this zone
+    :return: (*dict*) -- dictionary of data to visualize.
     """
     ax_data = {}
     shortfall_pct_list = []
@@ -252,17 +209,13 @@ def _construct_shortfall_data_for_western(
 
 
 def _get_total_generated_renewables(zone, resource_data, is_match_CA):
-    """Calculates the sum of all the renewable energy generated in a zone
+    """Calculate the sum of all the renewable energy generated in a zone
 
-    :param zone: the zone name
-    :type zone: string
-    :param resource_data: dict of values for each resource type
-    :type resource_data: dict {'resource_type': float value, ...}
-    :param is_match_CA: calculate generation using special rules that apply
-        when all zones match California goals
-    :type is_match_CA: bool
-    :return: the sum of all the renewable energy generated in a zone
-    :rtype: float
+    :param str zone: the zone name
+    :param dict resource_data: dict of values for each resource type
+    :param bool is_match_CA: calculate generation using special rules that apply when
+        all zones match California goals
+    :return: (*float*) -- the sum of all the renewable energy generated in a zone
     """
     CA_extras = 32.045472
 
@@ -290,24 +243,16 @@ def _get_total_generated_renewables(zone, resource_data, is_match_CA):
 def _construct_shortfall_visuals(
     zone, ax_data, shortfall_pct_list, is_match_CA, target, demand
 ):
-    """Use matplot lib to plot formatted data
+    """Plot formatted data.
 
-    :param zone: the zone name
-    :type zone: string
-    :param ax_data: the formatted data to plot
-    :type ax_data: dict { 'scenario_name': {'2016 Renewables': float value,
-        'Simulated increase in renewables': float value,
-        'Missed target': float value }, ...}
-    :param shortfall_pct_list: list of percent shortfall
-        in terms of total demand
-    :type shortfall_pct_list: list(string)
-    :param is_match_CA: calculate shortfall using special rules that
-        apply when all zones match California goals
-    :type is_match_CA: bool
-    :param target: target renewables renewable generation for this zone
-    :type target: float
-    :param demand: total demand for this zone
-    :type demand: float
+    :param str zone: the zone name.
+    :param dict ax_data: the formatted data as returned by
+        :func:`_construct_shortfall_data_for_western` or :func:`_construct_shortfall_ax_data`.
+    :param list shortfall_pct_list: list of percent shortfall in terms of total demand.
+    :param bool is_match_CA: calculate shortfall using special rules that apply when
+        all zones match California goals
+    :param float target: target renewables renewable generation for this zone
+    :param float demand: total demand for this zone
     """
     df = pd.DataFrame(ax_data).T
     ax = df.plot.bar(
