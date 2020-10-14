@@ -4,7 +4,7 @@ from powersimdata.utility.distance import great_circle_distance
 
 
 def get_utilization(branch, pf, median=False):
-    """Generates utilization table to be used as input for congestion analyses.
+    """Generate utilization table to be used as input for congestion analyses.
 
     :param pandas.DataFrame branch: branch data frame.
     :param pandas.DataFrame pf: power flow data frame.
@@ -21,7 +21,7 @@ def get_utilization(branch, pf, median=False):
 
 
 def _count_hours_gt_thresh(utilization_df, threshold):
-    """Calculates number of hours above a given utilization threshold.
+    """Calculate number of hours above a given utilization threshold.
 
     :param pandas.DataFrame utilization_df: normalized pf data frame as
         returned by :func:`get_utilization`.
@@ -32,7 +32,7 @@ def _count_hours_gt_thresh(utilization_df, threshold):
 
 
 def _flag(statistics, utilname, thresh, uflagname):
-    """Flags branches that meet screening criteria for WECC.
+    """Flag branches that meet screening criteria for WECC.
 
     :param pandas.DataFrame statistics: congestion statistics as returned by
         :func:`generate_cong_stats`.
@@ -46,19 +46,18 @@ def _flag(statistics, utilname, thresh, uflagname):
 
 
 def generate_cong_stats(pf, grid_branch, util=None, thresh=None):
-    """Generates congestion/utilization statistics from powerflow data
-        (WECC congestion reports' analyses are the inspiration
-        for these analyses and are the source of the default parameters).
+    """Generates congestion/utilization statistics from powerflow data (WECC congestion
+    reports' analyses are the inspiration for these analyses and are the source of the default parameters).
 
     :param pandas.DataFrame pf: power flow data frame
     :param pandas.DataFrame grid_branch: grid.branch branch info
-    :param list util: utilization (float) flag level 1, 2, 3.
-        Default values are values used by WECC: 0.75, 0.9, 99.
-    :param list thresh: threshold for proportion time, for flag level 1, 2, 3.
-        Default values are values used by WECC: 0.5, 0.2, 0.05.
-     :return: (*pandas.DataFrame*) -- congestion statistics
-        *'per_util1'*,*'per_util2'*, *'per_util3'*,
-        *'u1flag'*,*'u2flag'*, *'u3flag'*,*'sumflag'*, *'risk'*.
+    :param list util: utilization (float) flag level 1, 2, 3. Default values are values
+        used by WECC: 0.75, 0.9, 99.
+    :param list thresh: threshold for proportion time, for flag level 1, 2, 3. Default
+        values are values used by WECC: 0.5, 0.2, 0.05.
+    :return: (*pandas.DataFrame*) -- congestion statistics.
+        *'per_util1'*,*'per_util2'*, *'per_util3'*, *'u1flag'*,*'u2flag'*,
+        *'u3flag'*,*'sumflag'*, *'risk'*.
     """
 
     if util is None:

@@ -13,36 +13,26 @@ def plot_bar(
     custom_data=None,
     resource_types=None,
 ):
-    """Plots any number of scenarios as bar charts with
-    two columns per scenario - defaults to generation and capacity
+    """Plot any number of scenarios as bar charts with two columns per scenario - defaults to generation and capacity.
 
-    :param interconnect: either 'Western' or 'Texas'
-    :type interconnect: string
-    :param time: time related parameters. 1st element is the starting
-        date. 2nd element is the ending date (left out). 3rd element is the
-        timezone, only *'utc'*, *'US/Pacific'* and *'local'* are possible. 4th
-        element is the frequency, which can be *'H'* (hour), *'D'* (day), *'W'*
-         (week) or *'auto'*.
-    :type time: tuple
-    :param scenario_ids: list of scenario ids, defaults to None
-    :type scenario_ids: list(string), optional
-    :param scenario_names: list of scenario names of same len as scenario ids,
+    :param str interconnect: either 'Western' or 'Texas'.
+    :param tuple time: time related parameters.
+        1st element is the starting date.
+        2nd element is the ending date (left out).
+        3rd element is the timezone, only *'utc'*, *'US/Pacific'* and *'local'* are
+        possible.
+        4th element is the frequency, which can be *'H'* (hour), *'D'* (day), *'W'*
+        (week) or *'auto'*.
+    :param list scenario_ids: list of scenario ids, defaults to None.
+    :param list scenario_names: list of scenario names of same len as scenario ids,
         defaults to None
-    :type scenario_names: list(string), optional
-    :param custom_data: hand-generated data, defaults to None
-    :type custom_data: dict {'scenario_id': {
-        'label': 'scenario_name',
-        'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'zone_name':
-            {'resource_type': float value(s), ...}, ...}},
-        'cap': {'label': 'Capacity', 'unit': 'GW', 'data': {'zone_name':
-            {'resource_type': float value(s), ...}, ...}}},
-        ...}, optional
-    NOTE: If you want to plot scenario data and custom data together,
-        custom data MUST be in TWh for generation and GW for capacity.
-        We may add a feature to check for and convert to equal units
-        but it's not currently a priority
-    :param resource_types: list of resource types to show, defaults to None
-    :type resource_types: list(string), optional
+    :param dict custom_data: hand-generated data, defaults to None
+    :param list resource_types: list of resource types to show, defaults to None
+
+    .. note::
+        If you want to plot scenario data and custom data together, custom data MUST be
+        in TWh for generation and GW for capacity. We may add a feature to check for
+        and convert to equal units but it's not currently a priority
     """
     zone_list, graph_data = handle_plot_inputs(
         interconnect, time, scenario_ids, scenario_names, custom_data
@@ -61,36 +51,28 @@ def plot_hbar(
     custom_data=None,
     resource_types=None,
 ):
-    """Plots any number of scenarios as horizontal bar charts with
-        two columns per scenario - defaults to generation and capacity
+    """Plot any number of scenarios as horizontal bar charts with two columns per
+    scenario - defaults to generation and capacity.
 
-    :param interconnect: either 'Western' or 'Texas'
-    :type interconnect: string
-    :param time: time related parameters. 1st element is the starting
-        date. 2nd element is the ending date (left out). 3rd element is the
-        timezone, only *'utc'*, *'US/Pacific'* and *'local'* are possible. 4th
-        element is the frequency, which can be *'H'* (hour), *'D'* (day), *'W'*
-         (week) or *'auto'*.
-    :type time: tuple
-    :param scenario_ids: list of scenario ids, defaults to None
-    :type scenario_ids: list(string), optional
-    :param scenario_names: list of scenario names of same len as scenario ids,
+    :param str interconnect: either 'Western' or 'Texas'.
+    :param tuple time: time related parameters.
+        1st element is the starting date.
+        2nd element is the ending date (left out).
+        3rd element is the timezone, only *'utc'*, *'US/Pacific'* and *'local'* are
+        possible.
+        4th element is the frequency, which can be *'H'* (hour), *'D'* (day), *'W'*
+        (week) or *'auto'*.
+    :param list scenario_ids: list of scenario ids, defaults to None.
+    :param list scenario_names: list of scenario names of same len as scenario ids,
         defaults to None
-    :type scenario_names: list(string), optional
-    :param custom_data: hand-generated data, defaults to None
-    :type custom_data: dict {'scenario_id': {
-        'label': 'scenario_name',
-        'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'zone_name':
-            {'resource_type': float value(s), ...}, ...}},
-        'cap': {'label': 'Capacity', 'unit': 'GW', 'data': {'zone_name':
-            {'resource_type': float value(s), ...}, ...}}},
-        ...}, optional
-    NOTE: If you want to plot scenario data and custom data together,
-        custom data MUST be in TWh for generation and GW for capacity.
-        We may add a feature to check for and convert to equal units
-        but it's not currently a priority
-    :param resource_types: list of resource types to show, defaults to None
-    :type resource_types: list(string), optional
+    :param custom_data: hand-generated data as returned by
+        :func:`postreise.plot.multi.plot_helpers.handle_plot_inputs`, defaults to None.
+    :param list resource_types: list of resource types to show, defaults to None.
+
+    .. note::
+        If you want to plot scenario data and custom data together, custom data MUST be
+        in TWh for generation and GW for capacity. We may add a feature to check for
+        and convert to equal units but it's not currently a priority.
     """
     zone_list, graph_data = handle_plot_inputs(
         interconnect, time, scenario_ids, scenario_names, custom_data
@@ -102,23 +84,13 @@ def plot_hbar(
 
 
 def _construct_bar_ax_data(zone, scenarios, user_set_resource_types):
-    """Creates a list of labels and values for each axis of the plot
+    """Create a list of labels and values for each axis of the plot.
 
-    :param zone: the zone name
-    :type zone: string
-    :param scenarios: the scenario data to format
-    :type scenarios: dict {'scenario_id': {
-        'label': 'scenario_name',
-        'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'zone_name':
-            {'resource_type': float value(s), ...}, ...}},
-        'cap': {'label': 'Capacity', 'unit': 'GW', 'data': {'zone_name':
-            {'resource_type': float value(s), ...}, ...}}},
-        ...}
-    :param user_set_resource_types: list of resource types to show,
-        defaults to None
-    :type user_set_resource_types: list(string), optional
-    :return: a list of labels and values for each axis of the plot
-    :rtype: list(dict) [{title, labels, values, unit}, ...]
+    :param str zone: the zone name
+    :param dict scenarios: the scenario data as returned by
+        :func:`postreise.plot.multi.plot_helpers.handle_plot_inputs`.
+    :param list user_set_resource_types: list of resource types to show.
+    :return: (*list*) -- a list of labels and values for each axis of the plot.
     """
     resource_types = (
         user_set_resource_types
@@ -160,21 +132,13 @@ def _construct_bar_ax_data(zone, scenarios, user_set_resource_types):
 
 
 def _get_bar_resource_types(zone, scenarios):
-    """Some scenarios might have extra data for resources like biofuel
-        So we join the set of resource types from each scenario
+    """Some scenarios might have extra data for resources like biofuel. So we join the
+    set of resource types from each scenario.
 
-    :param zone: the zone name
-    :type zone: string
-    :param scenarios: the scenario data to format
-    :type scenarios: dict {'scenario_id': {
-        'label': 'scenario_name',
-        'gen': {'label': 'Generation', 'unit': 'TWh', 'data': {'zone_name':
-            {'resource_type': float value(s), ...}, ...}},
-        'cap': {'label': 'Capacity', 'unit': 'GW', 'data': {'zone_name':
-            {'resource_type': float value(s), ...}, ...}}},
-        ...}
-    :return: a sorted list of resource types to plot
-    :rtype: list(string)
+    :param str zone: the zone name.
+    :param dict scenarios: the scenario data as returned by
+        :func:`postreise.plot.multi.plot_helpers.handle_plot_inputs`.
+    :return: (*list*) -- a sorted list of resource types to plot.
     """
     resource_type_set = set()
     for scenario in scenarios.values():
@@ -192,12 +156,11 @@ def _get_bar_resource_types(zone, scenarios):
 
 
 def _construct_bar_visuals(zone, ax_data_list):
-    """Use matplot lib to plot formatted data
+    """Plot formatted data.
 
-    :param zone: the zone name
-    :type zone: string
-    :param ax_data_list: a list of labels and values for each axis of the plot
-    :type ax_data_list: list(dict) [{title, labels, values, unit}, ...]
+    :param str zone: the zone name
+    :param list ax_data_list: a list of labels and values for each axis of the plot as
+        returned by :func:`_construct_bar_ax_data`.
     """
     num_scenarios = len(ax_data_list[0]["values"].keys())
     num_resource_types = len(ax_data_list[0]["labels"])
@@ -240,12 +203,11 @@ def _construct_bar_visuals(zone, ax_data_list):
 
 
 def _construct_hbar_visuals(zone, ax_data_list):
-    """Use matplot lib to plot formatted data
+    """Plot formatted data.
 
-    :param zone: the zone name
-    :type zone: string
-    :param ax_data_list: a list of labels and values for each axis of the plot
-    :type ax_data_list: list(dict) [{title, labels, values, unit}, ...]
+    :param str zone: the zone name.
+    :param list ax_data_list: a list of labels and values for each axis of the plot as
+        returned by :func:`_construct_bar_ax_data`.
     """
     num_scenarios = len(ax_data_list[0]["values"].keys())
     num_resource_types = len(ax_data_list[0]["labels"])
@@ -289,12 +251,10 @@ def _construct_hbar_visuals(zone, ax_data_list):
 
 
 def _get_bar_display_val(val):
-    """Formats the display value for a single bar
+    """Format the display value for a single bar.
 
-    :param val: the original value
-    :type val: float
-    :return: the formatted value
-    :rtype: int, float if val is between 0 and 10
+    :param float val: the original value.
+    :return: (*int/float*) -- the formatted value.
     """
     if val >= 10:
         return int(round(val, 0))
