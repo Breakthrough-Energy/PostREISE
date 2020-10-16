@@ -393,7 +393,7 @@ def test_check_epsilon():
 
 def test_check_gencost_argument_type():
     gencost_n = grid.gencost["after"].copy()
-    gencost_n.loc[0, "n"] = 3.0
+    gencost_n.n = gencost_n.n.astype(float)
     arg = (1, gencost_n)
     for a in arg:
         with pytest.raises(TypeError):
