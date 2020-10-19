@@ -94,7 +94,7 @@ def map_risk_bind(risk_or_bind, congestion_stats, branch, us_states_dat=None):
         source=multi_line_source_all,
         alpha=0.5,
     )
-    p.multi_line("xs", "ys", color=mapper1, line_width="cap", source=multi_line_source)
+    p.multi_line("xs", "ys", color=mapper, line_width="cap", source=multi_line_source)
     return p
 
 
