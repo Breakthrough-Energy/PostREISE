@@ -1,3 +1,4 @@
+import os
 import pathlib
 import unittest
 
@@ -71,9 +72,14 @@ def sim_gen_result():
 
 @pytest.fixture
 def hist_gen_raw():
-    raw_hist_gen_csv = "usa_hist_gen.csv"
-    path_to_csv = pathlib.Path(__file__).parent.joinpath(raw_hist_gen_csv)
-    hist_gen_raw = pd.read_csv(path_to_csv, index_col=0)
+    # raw_hist_gen_csv = "usa_hist_gen.csv"
+    # path_to_csv = pathlib.Path(__file__).parent.joinpath(raw_hist_gen_csv)
+
+    path_to_csv = pathlib.Path(__file__).parent.joinpath(
+        "..", "..", "..", "data", "2016_Historical_USA_TAMU_Generation_GWh.csv"
+    )
+
+    hist_gen_raw = pd.read_csv(path_to_csv, index_col=0).T
     return hist_gen_raw
 
 
@@ -98,11 +104,19 @@ def test_sum_generation_by_state_values_scaled(sim_gen_result):
 def test_summarize_hist_gen_include_areas(hist_gen_raw):
     all_resources = ["wind", "hydro", "coal"]
     actual_hist_gen = summarize_hist_gen(hist_gen_raw, all_resources)
-    for area in ("Western", "Eastern", "Texas", "Montana", "all"):
+    for area in (
+        "Western interconnection",
+        "Eastern interconnection",
+        "Texas interconnection",
+        "Montana",
+        "New Mexico",
+        "All",
+    ):
         assert area in actual_hist_gen.index
 
 
 def test_summarize_hist_gen_shape(hist_gen_raw):
     all_resources = ["wind", "hydro", "coal"]
     actual_hist_gen = summarize_hist_gen(hist_gen_raw, all_resources)
-    assert (8, 3) == actual_hist_gen.shape
+    # 48 contiguous, 3 interconnections and total
+    assert (52, 3) == actual_hist_gen.shape

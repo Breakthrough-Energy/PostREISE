@@ -2,17 +2,23 @@ from collections import defaultdict
 
 import numpy as np
 import pandas as pd
-from powersimdata.network.usa_tamu.constants.plants import label2type
+from powersimdata.network.usa_tamu.constants.plants import type2label
 from powersimdata.network.usa_tamu.constants.zones import (
     abv2state,
     interconnect2abv,
+    interconnect2loadzone,
     loadzone2interconnect,
     loadzone2state,
+    state2loadzone,
 )
 from powersimdata.scenario.analyze import Analyze
 from powersimdata.scenario.scenario import Scenario
 
-from postreise.analyze.check import _check_scenario_is_in_analyze_state
+from postreise.analyze.check import (
+    _check_data_frame,
+    _check_resources_and_format,
+    _check_scenario_is_in_analyze_state,
+)
 
 
 def sum_generation_by_type_zone(scenario: Scenario) -> pd.DataFrame:
@@ -71,11 +77,12 @@ def _groupby_state(index: str) -> str:
     """Use state as a dict key if index is a smaller region (e.g. Texas East),
     otherwise use the given index.
 
-    :param str index: either a state name or region within a state
-    :return: (*str*) the corresponding state name
+    :param str index: either a state name or region within a state.
+    :return: (*str*) -- the corresponding state name.
     """
-    for state in ("Texas", "New Mexico", "Montana"):
-        if state in index:
+    interconnect_spanning_states = ("Texas", "New Mexico", "Montana")
+    for state in interconnect_spanning_states:
+        if index in state2loadzone[state]:
             return state
     return index
 
@@ -84,19 +91,44 @@ def summarize_hist_gen(hist_gen_raw: pd.DataFrame, all_resources: list) -> pd.Da
     """Sum generation by state for the given resources from a scenario, adding
     totals for interconnects and for all states.
 
-    :param pandas.DataFrame hist_gen_raw: historical generation data frame
-    :param list all_resources: list of resources from the scenario
-    :return: (*pandas.DataFrame*) historical generation per resource
+    :param pandas.DataFrame hist_gen_raw: historical generation data frame. Columns
+        are resources and indices are either state or load zone.
+    :param list all_resources: list of resources.
+    :return: (*pandas.DataFrame*) -- historical generation per resource.
     """
-    western = [abv2state[s] for s in interconnect2abv["Western"]]
-    eastern = [abv2state[s] for s in interconnect2abv["Eastern"]]
+    _check_data_frame(hist_gen_raw, "PG")
+    filtered_colnames = _check_resources_and_format(all_resources)
 
-    filtered_colnames = [k for k in label2type.keys() if label2type[k] in all_resources]
     result = hist_gen_raw.copy()
-    result = result.loc[:, filtered_colnames]
-    result.rename(columns=label2type, inplace=True)
+
+    # Interconnection
+    eastern_areas = (
+        set([abv2state[s] for s in interconnect2abv["Eastern"]])
+        | interconnect2loadzone["Eastern"]
+    )
+    eastern = result.loc[result.index.isin(eastern_areas)].sum()
+
+    ercot_areas = interconnect2loadzone["Texas"]
+    ercot = result.loc[result.index.isin(ercot_areas)].sum()
+
+    western_areas = (
+        set([abv2state[s] for s in interconnect2abv["Western"]])
+        | interconnect2loadzone["Western"]
+    )
+    western = result.loc[result.index.isin(western_areas)].sum()
+
+    # State
     result = result.groupby(by=_groupby_state).aggregate(np.sum)
-    result.loc["Western"] = result[result.index.isin(western)].sum()
-    result.loc["Eastern"] = result[result.index.isin(eastern)].sum()
-    result.loc["all"] = result[~result.index.isin(["Eastern", "Western"])].sum()
+
+    # Summary
+    all = result.sum()
+
+    result.loc["Eastern interconnection"] = eastern
+    result.loc["Western interconnection"] = western
+    result.loc["Texas interconnection"] = ercot
+    result.loc["All"] = all
+
+    result = result.loc[:, filtered_colnames]
+    result.rename(columns=type2label, inplace=True)
+
     return result
