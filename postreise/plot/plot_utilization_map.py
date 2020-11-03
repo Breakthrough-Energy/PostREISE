@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from bokeh.models import ColorBar, ColumnDataSource
+from bokeh.models import ColorBar, ColumnDataSource, HoverTool
 from bokeh.plotting import figure
 from bokeh.sampledata import us_states
 from bokeh.tile_providers import Vendors, get_provider
@@ -38,6 +38,12 @@ def map_risk_bind(risk_or_bind, congestion_stats, branch, us_states_dat=None):
     if us_states_dat is None:
         us_states_dat = us_states.data
 
+    if risk_or_bind == "risk":
+        risk_or_bind_units = "Risk (MWH)"
+
+    if risk_or_bind == "bind":
+        risk_or_bind_units = "Binding incidents"
+
     # projection steps for mapping
     branch_congestion = pd.concat(
         [branch.loc[congestion_stats.index], congestion_stats], axis=1
@@ -47,11 +53,11 @@ def map_risk_bind(risk_or_bind, congestion_stats, branch, us_states_dat=None):
         {
             "xs": branch_map_all[["from_x", "to_x"]].values.tolist(),
             "ys": branch_map_all[["from_y", "to_y"]].values.tolist(),
-            "cap": branch_map_all["rateA"] / 1000 + 2,
+            "cap": branch_map_all["rateA"] / 2000 + 0.2,
         }
     )
     a, b = plot_carbon_map.get_borders(us_states_dat.copy())
-    tools: str = "pan,wheel_zoom,reset,hover,save"
+    tools: str = "pan,wheel_zoom,reset,save"
 
     branch_congestion = branch_congestion[branch_congestion[risk_or_bind] > 0]
     branch_congestion.sort_values(by=[risk_or_bind])
@@ -62,30 +68,39 @@ def map_risk_bind(risk_or_bind, congestion_stats, branch, us_states_dat=None):
         field_name=risk_or_bind, palette=traffic_palette, low=min_val, high=max_val
     )
     color_bar = ColorBar(
-        color_mapper=mapper["transform"], width=8, location=(0, 0), title=risk_or_bind
+        color_mapper=mapper["transform"],
+        width=500,
+        height=5,
+        location=(0, 0),
+        title=risk_or_bind_units,
+        orientation="horizontal",
+        padding=5,
     )
     multi_line_source = ColumnDataSource(
         {
             "xs": branch_map[["from_x", "to_x"]].values.tolist(),
             "ys": branch_map[["from_y", "to_y"]].values.tolist(),
             risk_or_bind: branch_map[risk_or_bind],
+            "value": branch_map[risk_or_bind].round(),
             "cap": branch_map["capacity"] / 1000 + 2,
+            "capacity": branch_map.rateA.round(),
         }
     )
 
     # Set up figure
     p = figure(
-        title=risk_or_bind,
         tools=tools,
         x_axis_location=None,
         y_axis_location=None,
         plot_width=800,
         plot_height=800,
         output_backend="webgl",
+        sizing_mode="stretch_both",
+        match_aspect=True,
     )
-    p.add_layout(color_bar, "right")
+    p.add_layout(color_bar, "center")
     p.add_tile(get_provider(Vendors.CARTODBPOSITRON))
-    p.patches(a, b, fill_alpha=0.0, line_color="black", line_width=2)
+    p.patches(a, b, fill_alpha=0.0, line_color="gray", line_width=1)
     p.multi_line(
         "xs",
         "ys",
@@ -94,7 +109,17 @@ def map_risk_bind(risk_or_bind, congestion_stats, branch, us_states_dat=None):
         source=multi_line_source_all,
         alpha=0.5,
     )
-    p.multi_line("xs", "ys", color=mapper, line_width="cap", source=multi_line_source)
+    lines = p.multi_line(
+        "xs", "ys", color=mapper, line_width="cap", source=multi_line_source
+    )
+    hover = HoverTool(
+        tooltips=[
+            ("Capacity MW", "@capacity"),
+            (risk_or_bind_units, "@value"),
+        ],
+        renderers=[lines],
+    )
+    p.add_tools(hover)
     return p
 
 
@@ -134,9 +159,12 @@ def map_utilization(utilization_df, branch, us_states_dat=None):
 
     color_bar = ColorBar(
         color_mapper=mapper1["transform"],
-        width=8,
+        width=500,
+        height=5,
         location=(0, 0),
         title="median utilization",
+        orientation="horizontal",
+        padding=5,
     )
 
     branch_map = project_branch(branch_utilization)
@@ -151,24 +179,37 @@ def map_utilization(utilization_df, branch, us_states_dat=None):
             "xs": branch_map[["from_x", "to_x"]].values.tolist(),
             "ys": branch_map[["from_y", "to_y"]].values.tolist(),
             "median_utilization": branch_map.median_utilization,
-            "cap": branch_map.rateA / 1000 + 2,
+            "cap": branch_map.rateA / 2000 + 0.2,
+            "util": branch_map.median_utilization.round(2),
+            "capacity": branch_map.rateA.round(),
         }
     )
 
     # Set up figure
-    tools: str = "pan,wheel_zoom,reset,hover,save"
+    tools: str = "pan,wheel_zoom,reset,save"
 
     p = figure(
-        title="Utilization",
         tools=tools,
         x_axis_location=None,
         y_axis_location=None,
         plot_width=800,
         plot_height=800,
         output_backend="webgl",
+        sizing_mode="stretch_both",
+        match_aspect=True,
     )
-    p.add_layout(color_bar, "right")
+    p.add_layout(color_bar, "center")
     p.add_tile(get_provider(Vendors.CARTODBPOSITRON))
-    p.patches(a, b, fill_alpha=0.0, line_color="black", line_width=2)
-    p.multi_line("xs", "ys", color=mapper1, line_width="cap", source=multi_line_source)
+    p.patches(a, b, fill_alpha=0.0, line_color="gray", line_width=2)
+    lines = p.multi_line(
+        "xs", "ys", color=mapper1, line_width="cap", source=multi_line_source
+    )
+    hover = HoverTool(
+        tooltips=[
+            ("Capacity MW", "@capacity"),
+            ("Utilization", "@util{f0.00}"),
+        ],
+        renderers=[lines],
+    )
+    p.add_tools(hover)
     return p
