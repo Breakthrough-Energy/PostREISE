@@ -3,7 +3,7 @@
 
 import pandas as pd
 from bokeh.layouts import row
-from bokeh.models import ColumnDataSource
+from bokeh.models import ColumnDataSource, HoverTool
 from bokeh.palettes import Turbo256
 from bokeh.plotting import figure
 from bokeh.sampledata import us_states
@@ -22,14 +22,11 @@ default_states_list = list(default_states_dict.keys())
 def map_lmp(s_grid, lmp, us_states_dat=None):
     """Plots average LMP by color coding buses
 
-    :param s_grid: scenario grid
-    :type s_grid: pandas.DataFrame
-    :param lmp: lmps (locational marginal prices) calculated for the scenario
-    :type lmp: pandas.DataFrame
-    :param file_name: name for output png file
-    :type file_name: str
-    :param us_states_dat: if None default to us_states data file, imported from bokeh
-    :type us_states_dat: dict
+    :param powersimdata.input.grid.Grid s_grid: scenario grid
+    :param pandas.DataFrame lmp: locational marginal prices calculated for the scenario
+    :param str file_name: name for output png file
+    :param dict us_states_dat: if None default to us_states data file, imported from bokeh
+    :return: (bokeh.layout.row) bokeh map visual in row layout
     """
     if us_states_dat is None:
         us_states_dat = us_states.data
@@ -43,14 +40,10 @@ def map_lmp(s_grid, lmp, us_states_dat=None):
 def _construct_bus_data(bus_map, lmp, lmp_split_points):
     """Adds lmp data to each bus, splits buses into lmp segments for coloring
 
-    :param bus_map: bus dataframe with location data
-    :type bus_map: pandas.DataFrame
-    :param lmp: lmp dataframe
-    :type lmp: pandas.DataFrame
-    :param lmp_split_points: lmp values to split the bus data.
-    :type lmp_split_points: list(float)
-    :return: bus data split into segments
-    :rtype: list(pandas.DataFrame)
+    :param pandas.DataFrame bus_map: bus dataframe with location data
+    :param pandas.DataFrame lmp: lmp dataframe
+    :param list(float) lmp_split_points: lmp values to split the bus data.
+    :return: (list(pandas.DataFrame)) -- bus data split into segments
     """
     # Add mean lmp to bus dataframe
     lmp_mean = pd.DataFrame(lmp.mean())
@@ -96,23 +89,16 @@ def group_lat_lon(bus_map):
 
 
 def _construct_shadowprice_visuals(lmp_split_points, bus_segments, us_states_dat):
-    """Uses bokeh to plot formatted data. Make map showing congestion,
-        with green dot for transformer winding, blue dot transformer,
-        and lines for congested branches with varying color and thickness
-        indicating degree of congestion
+    """Uses bokeh to plot formatted data. Make map showing lmp using color.
 
-
-    :param lmp_split_points: the lmp vals we have chosen to split bus data
-    :type lmp_split_points: list(float)
-    :param bus_segments: bus data split by lmp
-    :type bus_segments: list(pandas.DataFrame)
-    :param us_states_dat: us_states data file, imported from bokeh
-    :type us_states_dat: dict
-    :param file_name: name for output png file
-    :type file_name: str
+    :param list(float) lmp_split_points: the lmp vals we have chosen to split bus data
+    :param list(pandas.DataFrame) bus_segments: bus data split by lmp
+    :param dict us_states_dat: us_states data file, imported from bokeh
+    :param str file_name: name for output png file
+    return: (bokeh.layout.row) bokeh map in row layout
     """
 
-    tools = "pan,wheel_zoom,reset,hover,save"
+    tools = "pan,wheel_zoom,reset,save"
     p = figure(
         tools=tools,
         x_axis_location=None,
@@ -120,22 +106,37 @@ def _construct_shadowprice_visuals(lmp_split_points, bus_segments, us_states_dat
         plot_width=800,
         plot_height=800,
         output_backend="webgl",
+        sizing_mode="stretch_both",
+        match_aspect=True,
     )
 
     # Add USA map
     p.add_tile(get_provider(Vendors.CARTODBPOSITRON))
     # state borders
     a, b = get_borders(us_states_dat.copy())
-    p.patches(a, b, fill_alpha=0.0, line_color="black", line_width=2)
+    p.patches(a, b, fill_alpha=0.0, line_color="gray", line_width=1)
     # Add colored circles for bus locations
 
     bus_segments.lmp_norm = bus_segments.lmp_norm.astype(int)
     bus_segments["col"] = bus_segments["lmp_norm"].apply(lambda x: Turbo256[x])
-    bus_cds = ColumnDataSource(
-        {"x": bus_segments["x"], "y": bus_segments["y"], "col": bus_segments["col"]}
-    )
-    p.circle("x", "y", color="col", size=2, source=bus_cds)
 
+    bus_cds = ColumnDataSource(
+        {
+            "x": bus_segments["x"],
+            "y": bus_segments["y"],
+            "col": bus_segments["col"],
+            "lmp": bus_segments["lmp"].round(2),
+        }
+    )
+    circle = p.circle("x", "y", color="col", radius=10000, alpha=0.2, source=bus_cds)
+
+    hover = HoverTool(
+        tooltips=[
+            (f"$/MWh", "@lmp{1.11}"),
+        ],
+        renderers=[circle],
+    )
+    p.add_tools(hover)
     # Add legend
     bus_legend = _construct_bus_legend(lmp_split_points)
     return row(bus_legend, p)
@@ -144,11 +145,9 @@ def _construct_shadowprice_visuals(lmp_split_points, bus_segments, us_states_dat
 def _construct_bus_legend(lmp_split_points):
     """Constructs the legend for lmp at each bus
 
-    :param lmp_split_points: the lmp values we have chosen to
+    :param list(float) lmp_split_points: the lmp values we have chosen to
         split the bus data
-    :type lmp_split_points: list(float)
-    :return: the legend showing lmp for each bus
-    :rtype: bokeh.plotting.figure
+    :return: (bokeh.plotting.figure) the legend showing lmp for each bus
     """
     x_range = [""]
     bars, bar_len_sum, labels = _get_bus_legend_bars_and_labels(
@@ -188,12 +187,9 @@ def _construct_bus_legend(lmp_split_points):
 def _get_bus_legend_bars_and_labels(lmp_split_points, x_range):
     """Gets the bar lengths and labels for the bus legend
 
-    :param lmp_split_points: the lmp vs we have chosen to split the bus data
-    :type lmp_split_points: list(float)
-    :param x_range: the x-range for the vbar_stack
-    :type x_range: list(string)
-    :return: bar lengths and labels for the bus legend
-    :rtype: dict, float, dict
+    :param list(float) lmp_split_points: the lmp vs we have chosen to split the bus data
+    :param list(string) x_range: the x-range for the vbar_stack
+    :return: (dict, float, dict) bar lengths and labels for the bus legend
     """
     bars = {"x_range": x_range}
     bar_length_sum = 0
