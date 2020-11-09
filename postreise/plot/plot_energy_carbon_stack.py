@@ -34,7 +34,7 @@ def plot_n_scenarios(*args):
         # Calculate raw numbers
         annual_plant_energy = scenario.state.get_pg().sum()
         raw_energy_by_type = annual_plant_energy.groupby(plant[id].type).sum()
-        annual_plant_carbon = generate_emission_stats(scenario).sum()
+        annual_plant_carbon = generate_emissions_stats(scenario).sum()
         raw_carbon_by_type = annual_plant_carbon.groupby(plant[id].type).sum()
         # Drop fuels with zero energy (e.g. all offshore_wind scaled to 0 MW)
         energy_by_type[id] = raw_energy_by_type[raw_energy_by_type != 0]
