@@ -7,7 +7,7 @@ This package contains a variety of materials, including data sets and related ma
 ##### Source 1
 * Name: Form EIA-923
 * Author: Energy Information Administration (EIA)
-* Description: Electric power data -- mo  nthly and annually -- on electricity generation, fuel consumption, fossil fuel stocks, and receipts at the power plant and prime mover level for 2016
+* Description: Electric power data -- monthly and annually -- on electricity generation, fuel consumption, fossil fuel stocks, and receipts at the power plant and prime mover level for 2016
 * Source: https://www.eia.gov
 * Exact source location: https://www.eia.gov/electricity/data/eia923/
 
@@ -68,9 +68,9 @@ This package contains a variety of materials, including data sets and related ma
 ##### Destination
 * Modifications to source file(s): Aggregation were made in source to obtain the generation capacity for each generator type in each load zone.
 * Location:
-  * ***2016_Historical_Texas_Capacity_GW.csv***
-  * ***2016_Historical_Western_Capacity_GW.csv***
-  * ***2016_Historical_USA_TAMU_Capacity_MW.csv***
+  * ***postreise/data/2016_Historical_Texas_Capacity_GW.csv***
+  * ***postreise/data/2016_Historical_Western_Capacity_GW.csv***
+  * ***postreise/data/2016_Historical_USA_TAMU_Capacity_MW.csv***
 
 
 ---
@@ -85,8 +85,8 @@ This package contains a variety of materials, including data sets and related ma
 ##### Destination
 * Modifications to source file(s): None
 * Location:
-  * ***2016_NREL_Low_Demand_Western_Generation_TWh.csv***
-  * ***2016_NREL_Mid_Case_Western_Generation_TWh.csv***
+  * ***postreise/data/2016_NREL_Low_Demand_Western_Generation_TWh.csv***
+  * ***postreise/data/2016_NREL_Mid_Case_Western_Generation_TWh.csv***
 
 
 #### Note
