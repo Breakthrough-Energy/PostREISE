@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 import numpy as np
 import pandas as pd
 from powersimdata.network.usa_tamu.constants.plants import type2label
@@ -11,7 +9,6 @@ from powersimdata.network.usa_tamu.constants.zones import (
     loadzone2state,
     state2loadzone,
 )
-from powersimdata.scenario.analyze import Analyze
 from powersimdata.scenario.scenario import Scenario
 
 from postreise.analyze.check import (

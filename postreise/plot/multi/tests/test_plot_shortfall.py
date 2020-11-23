@@ -1,4 +1,3 @@
-from postreise.plot.multi.constants import ZONES
 from postreise.plot.multi.plot_shortfall import (
     _construct_shortfall_ax_data,
     _construct_shortfall_data_for_western,

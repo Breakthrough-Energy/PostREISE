@@ -288,7 +288,7 @@ def _construct_bus_legend(lmp_split_points):
     p.text(
         x=[-0.05],
         y=[bar_len_sum * 1.01],
-        text=[f"LMP ($/MWh)"],
+        text=["LMP ($/MWh)"],
         text_font_size="8pt",
         text_font_style="italic",
     )

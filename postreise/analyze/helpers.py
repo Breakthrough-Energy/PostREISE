@@ -1,7 +1,6 @@
 from collections import defaultdict
 
 import pandas as pd
-from powersimdata.input.grid import Grid
 from powersimdata.network.usa_tamu.constants import zones
 
 from postreise.analyze.check import (
@@ -173,7 +172,6 @@ def decompose_plant_data_frame_into_areas(df, areas, grid):
     _check_plants_are_in_grid(plant_id, grid)
     areas = _check_areas_are_in_grid_and_format(areas, grid)
 
-    plant = grid.plant
     df_areas = {}
     for k, v in areas.items():
         if k == "interconnect":

@@ -40,7 +40,7 @@ def plot_bar(
     for zone in zone_list:
         ax_data_list = _construct_bar_ax_data(zone, graph_data, resource_types)
         _construct_bar_visuals(zone, ax_data_list)
-    print(f"\nDone\n")
+    print("\nDone\n")
 
 
 def plot_hbar(
@@ -80,7 +80,7 @@ def plot_hbar(
     for zone in zone_list:
         ax_data_list = _construct_bar_ax_data(zone, graph_data, resource_types)
         _construct_hbar_visuals(zone, ax_data_list)
-    print(f"\nDone\n")
+    print("\nDone\n")
 
 
 def _construct_bar_ax_data(zone, scenarios, user_set_resource_types):

@@ -132,7 +132,7 @@ def _construct_shadowprice_visuals(lmp_split_points, bus_segments, us_states_dat
 
     hover = HoverTool(
         tooltips=[
-            (f"$/MWh", "@lmp{1.11}"),
+            ("$/MWh", "@lmp{1.11}"),
         ],
         renderers=[circle],
     )
@@ -179,7 +179,7 @@ def _construct_bus_legend(lmp_split_points):
     p.yaxis.ticker = list(labels.keys())
     p.yaxis.major_label_overrides = labels
 
-    p.text(x=[-0.05], y=[bar_len_sum * 1.01], text=[f" $/MWh"], text_font_size="12pt")
+    p.text(x=[-0.05], y=[bar_len_sum * 1.01], text=[" $/MWh"], text_font_size="12pt")
 
     return p
 
