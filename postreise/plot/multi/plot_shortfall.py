@@ -77,7 +77,7 @@ def plot_shortfall(
         _construct_shortfall_visuals(
             zone, ax_data, shortfall_pct_list, is_match_CA, targets[zone], demand[zone]
         )
-    print(f"\nDone\n")
+    print("\nDone\n")
 
 
 def _construct_shortfall_ax_data(
@@ -191,7 +191,7 @@ def _construct_shortfall_data_for_western(
             if total_renewables <= baseline
             else shortfall
         )
-        print(f"\n\nWestern\n")
+        print("\n\nWestern\n")
         print(baseline, "|", total_renewables, "|", targets["Western"], "|", shortfall)
         ax_data.update(
             {

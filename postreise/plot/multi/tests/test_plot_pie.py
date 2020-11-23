@@ -79,4 +79,4 @@ def test_roll_up_small_pie_wedges_with_other_category():
         {"coal": 3, "solar": 1, "hydro": 4, "wind": 2}, 20
     )
     assert ax_data == {"coal": 3, "hydro": 4, "other": 3}
-    assert labels == ["Coal", "Hydro", f"Solar 10.0%\nWind 20.0%\n"]
+    assert labels == ["Coal", "Hydro", "Solar 10.0%\nWind 20.0%\n"]

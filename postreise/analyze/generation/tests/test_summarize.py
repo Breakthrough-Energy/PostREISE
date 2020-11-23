@@ -1,10 +1,8 @@
-import os
 import pathlib
 import unittest
 
 import pandas as pd
 import pytest
-from powersimdata.tests.mock_grid import MockGrid
 from powersimdata.tests.mock_scenario import MockScenario
 
 from postreise.analyze.generation.summarize import (

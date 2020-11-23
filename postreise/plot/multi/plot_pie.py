@@ -43,7 +43,7 @@ def plot_pie(
     for zone in zone_list:
         ax_data_list = _construct_pie_ax_data(zone, graph_data, min_percentage)
         _construct_pie_visuals(zone, ax_data_list)
-    print(f"\nDone\n")
+    print("\nDone\n")
 
 
 def _construct_pie_ax_data(zone, scenarios, min_percentage):

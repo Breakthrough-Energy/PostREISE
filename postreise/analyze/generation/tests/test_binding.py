@@ -90,7 +90,7 @@ class TestRampConstraints(unittest.TestCase):
     def test_ramp_constraints_default(self):
         binding_ramps = ramp_constraints(self.mock_scenario)
         expected = self.get_default_expected()
-        assert binding_ramps.equals(self.get_default_expected())
+        assert binding_ramps.equals(expected)
 
     def test_ramp_constraints_spec_epsilon1(self):
         # Same results as test_ramp_constraints_default
