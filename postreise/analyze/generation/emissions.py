@@ -8,8 +8,6 @@ from powersimdata.network.usa_tamu.constants.plants import (
     nox_per_mwh,
     so2_per_mwh,
 )
-from powersimdata.scenario.analyze import Analyze
-from powersimdata.scenario.scenario import Scenario
 
 from postreise.analyze.check import (
     _check_gencost,

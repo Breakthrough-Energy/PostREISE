@@ -127,7 +127,7 @@ class TestCalculateCurtailmentTimeSeries(unittest.TestCase):
 class TestCheckResourceInScenario(unittest.TestCase):
     def test_error_geothermal_curtailment(self):
         with self.assertRaises(ValueError):
-            curtailment = calculate_curtailment_time_series_by_resources(
+            calculate_curtailment_time_series_by_resources(
                 scenario, resources=("geothermal",)
             )
 
@@ -136,7 +136,7 @@ class TestCheckResourceInScenario(unittest.TestCase):
         no_solar_grid_attrs = {"plant": no_solar_mock_plant}
         no_solar_scenario = MockScenario(no_solar_grid_attrs)
         with self.assertRaises(ValueError):
-            curtailment = calculate_curtailment_time_series_by_resources(
+            calculate_curtailment_time_series_by_resources(
                 no_solar_scenario, resources=("solar",)
             )
 

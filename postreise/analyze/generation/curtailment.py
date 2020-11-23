@@ -1,5 +1,4 @@
 import pandas as pd
-from powersimdata.network.usa_tamu.constants import zones
 from powersimdata.network.usa_tamu.constants.plants import renewable_resources
 
 from postreise.analyze.check import (
