@@ -109,12 +109,12 @@ def test_daily_resampling_time_shift_mean():
     for i, a in enumerate(arg):
         ts_resampled = resample_time_series(a, "D", agg="mean")
         assert len(a) != len(ts_resampled)
-        assert len(ts_resampled) == 366
+        assert len(ts_resampled) == 367
         if i == 0:
             # first day (2015/12/31) and last day (2016/12/31) are incomplete.
-            # 366 days are available in 2016 after resampling using mean.
+            # 1 day is available in 2015 and 366 days are available in 2016
             assert str(ts_resampled.index[0]) == str(
-                pd.Timestamp("2016-01-01", tz="ETC/GMT+8")
+                pd.Timestamp("2015-12-31", tz="ETC/GMT+8")
             )
             assert str(ts_resampled.index[-1]) == str(
                 pd.Timestamp("2016-12-31", tz="ETC/GMT+8")
@@ -123,12 +123,12 @@ def test_daily_resampling_time_shift_mean():
             assert ts_resampled.iloc[0, 1] == ts_resampled.iloc[-1, 1] == 2
         else:
             # first day (2016/01/01) and last day (2017/01/01) are incomplete.
-            # 366 days are available in 2016 after resampling using mean.
+            # 366 days are available in 2016 and 1 day is available in 2017
             assert str(ts_resampled.index[0]) == str(
                 pd.Timestamp("2016-01-01", tz="ETC/GMT-8")
             )
             assert str(ts_resampled.index[-1]) == str(
-                pd.Timestamp("2016-12-31", tz="ETC/GMT-8")
+                pd.Timestamp("2017-01-01", tz="ETC/GMT-8")
             )
             assert ts_resampled.iloc[0] == ts_resampled.iloc[-1] == 1
 
@@ -164,7 +164,7 @@ def test_daily_resampling_incomplete_and_time_shift_sum():
         assert len(a) != len(ts_resampled)
         if i == 0:
             # first day (2016/01/01) and last day (2016/01/31) are incomplete.
-            # 29 full days are available in Jamuary 2016 after resampling using sum.
+            # 29 full days are available in January 2016 after resampling using sum.
             assert len(ts_resampled) == 29
             assert str(ts_resampled.index[0]) == str(
                 pd.Timestamp("2016-01-02", tz="ETC/GMT+8")
@@ -224,13 +224,13 @@ def test_daily_resampling_incomplete_and_time_shift_mean():
             )
         else:
             # first day (2016/01/02) and last day (2016/02/01) are incomplete.
-            # 30 days are available in January 2016 when resampling using mean.
-            assert len(ts_resampled) == 30
+            # 30 days are available in January 2016 and 1 day available in February 2016
+            assert len(ts_resampled) == 31
             assert str(ts_resampled.index[0]) == str(
                 pd.Timestamp("2016-01-02", tz="ETC/GMT-8")
             )
             assert str(ts_resampled.index[-1]) == str(
-                pd.Timestamp("2016-01-31", tz="ETC/GMT-8")
+                pd.Timestamp("2016-02-01", tz="ETC/GMT-8")
             )
 
 
@@ -284,10 +284,12 @@ def test_weekly_resampling_mean():
     for i, a in enumerate(arg):
         ts_resampled = resample_time_series(a, "W", agg="mean")
         assert len(a) != len(ts_resampled)
-        # first week (2015/12/28) is incomplete.
-        # 52 weeks are available in 2016 after resampling using sum.
-        assert len(ts_resampled) == 52
+        # first week (2015/12/27) is incomplete.
+        # 1 week is available in 2015 and 52 weeks are available in 2016
+        assert len(ts_resampled) == 53
         assert ts_resampled.index.dayofweek[0] == 6  # week starts on Sunday
+        assert ts_resampled.index[0] == pd.Timestamp(2015, 12, 27)
+        assert ts_resampled.index[-1] == pd.Timestamp(2016, 12, 25)
         if i == 0:
             assert ts_resampled.iloc[0, 0] == ts_resampled.iloc[-1, 0] == 1
             assert ts_resampled.iloc[0, 1] == ts_resampled.iloc[-1, 1] == 2
@@ -303,25 +305,27 @@ def test_weekly_resampling_time_shift_mean():
     for i, a in enumerate(arg):
         ts_resampled = resample_time_series(a, "W", agg="mean")
         assert len(a) != len(ts_resampled)
-        assert len(ts_resampled) == 52
         if i == 0:
-            # first week (2015/12/28) and last wekk (2016/12/25) are incomplete.
-            # 52 weeks are available in 2016 after resampling using mean.
+            # first week (2015/12/27) and last week (2016/12/25) are incomplete.
+            # 1 week is available in 2015 and 52 weeks are available in 2016
+            assert len(ts_resampled) == 53
             assert str(ts_resampled.index[0]) == str(
-                pd.Timestamp("2016-01-03", tz="ETC/GMT+8")
+                pd.Timestamp("2015-12-27", tz="ETC/GMT+8")
             )
             assert str(ts_resampled.index[-1]) == str(
                 pd.Timestamp("2016-12-25", tz="ETC/GMT+8")
             )
 
         else:
-            # first week (2015/12/28) and last week (2016/12/25) are incomplete.
-            # 52 weeks are available in 2016 after resampling using mean.
+            # first week (2015/12/27) and last week (2017/01/01) are incomplete.
+            # 1 week is available in 2015, 52 weeks are available in 2016 and 1 week
+            # is available in 2017
+            assert len(ts_resampled) == 54
             assert str(ts_resampled.index[0]) == str(
-                pd.Timestamp("2016-01-03", tz="ETC/GMT-8")
+                pd.Timestamp("2015-12-27", tz="ETC/GMT-8")
             )
             assert str(ts_resampled.index[-1]) == str(
-                pd.Timestamp("2016-12-25", tz="ETC/GMT-8")
+                pd.Timestamp("2017-01-01", tz="ETC/GMT-8")
             )
 
 
@@ -356,7 +360,7 @@ def test_weekly_resampling_incomplete_and_time_shift_sum():
         ts_resampled = resample_time_series(a, "W")
         assert len(a) != len(ts_resampled)
         if i == 0:
-            # first week (2015/12/28) and last week (2016/01/31) are incomplete.
+            # first week (2015/12/27) and last week (2016/01/31) are incomplete.
             # 4 full weeks are available in 2016 after resampling using sum.
             assert len(ts_resampled) == 4
             assert str(ts_resampled.index[0]) == str(
@@ -366,7 +370,7 @@ def test_weekly_resampling_incomplete_and_time_shift_sum():
                 pd.Timestamp("2016-01-24", tz="ETC/GMT+8")
             )
         else:
-            # first week (2015/12/28) and last week (2016/01/31) are incomplete.
+            # first week (2015/12/27) and last week (2016/01/31) are incomplete.
             # 4 full weeks are available in 2016 after resampling using sum.
             assert len(ts_resampled) == 4
             assert str(ts_resampled.index[0]) == str(
@@ -383,10 +387,11 @@ def test_weekly_resampling_incomplete_mean():
     arg = (ts_as_data_frame[start:end], ts_as_series[start:end])
     for i, a in enumerate(arg):
         ts_resampled = resample_time_series(a, "W", agg="mean")
-        # first week (2015/12/28) and last week (2016/01/31) are incomplete.
-        # 5 weeks are available in 2016 after resampling using sum.
-        assert len(ts_resampled) == 5
-        assert str(ts_resampled.index[0]) == str(pd.Timestamp(2016, 1, 3))
+        # first week (2015/12/27) and last week (2016/01/31) are incomplete.
+        # 1 week is available in 2015 and 5 weeks are available in 2016 after
+        # resampling using mean.
+        assert len(ts_resampled) == 6
+        assert str(ts_resampled.index[0]) == str(pd.Timestamp(2015, 12, 27))
         assert str(ts_resampled.index[-1]) == str(pd.Timestamp(2016, 1, 31))
         if i == 0:
             assert ts_resampled.iloc[0, 0] == ts_resampled.iloc[-1, 0] == 1
@@ -405,22 +410,23 @@ def test_weekly_resampling_incomplete_and_time_shift_mean():
     for i, a in enumerate(arg):
         ts_resampled = resample_time_series(a, "W", agg="mean")
         assert len(a) != len(ts_resampled)
+        assert len(ts_resampled) == 6
         if i == 0:
-            # first week (2015/12/28) and last week (2016/01/31) are incomplete.
-            # 5 weeks are available in 2016 when resampling using mean.
-            assert len(ts_resampled) == 5
+            # first week (2015/12/27) and last week (2016/01/31) are incomplete.
+            # 1 week is available in 2015 and 5 weeks are available in 2016 when
+            # resampling using mean.
             assert str(ts_resampled.index[0]) == str(
-                pd.Timestamp("2016-01-03", tz="ETC/GMT+8")
+                pd.Timestamp("2015-12-27", tz="ETC/GMT+8")
             )
             assert str(ts_resampled.index[-1]) == str(
                 pd.Timestamp("2016-01-31", tz="ETC/GMT+8")
             )
         else:
-            # first week (2015/12/28) and last week (2016/01/31) are incomplete.
-            # 5 weeks available in 2016 when resampling using mean.
-            assert len(ts_resampled) == 5
+            # first week (2015/12/27) and last week (2016/01/31) are incomplete.
+            # 1 week is available in 2015 and 5 weeks are available in 2016 when
+            # resampling using mean.
             assert str(ts_resampled.index[0]) == str(
-                pd.Timestamp("2016-01-03", tz="ETC/GMT-8")
+                pd.Timestamp("2015-12-27", tz="ETC/GMT-8")
             )
             assert str(ts_resampled.index[-1]) == str(
                 pd.Timestamp("2016-01-31", tz="ETC/GMT-8")
@@ -496,23 +502,25 @@ def test_monthly_resampling_time_shift_mean():
         assert len(a) != len(ts_resampled)
         if i == 0:
             # first month (2015/12) and last month (2016/12) are incomplete.
-            # 12 months are available in 2016 after resampling using sum.
-            assert len(ts_resampled) == 12
+            # 1 month is available in 2015 and 12 months are available in 2016 after
+            # resampling using mean
+            assert len(ts_resampled) == 13
             assert str(ts_resampled.index[0]) == str(
-                pd.Timestamp("2016-01-01", tz="ETC/GMT+8")
+                pd.Timestamp("2015-12-01", tz="ETC/GMT+8")
             )
             assert str(ts_resampled.index[-1]) == str(
                 pd.Timestamp("2016-12-01", tz="ETC/GMT+8")
             )
         else:
             # first month (2016/01) and last month (2017/01) are incomplete.
-            # 12 months are available in 2016 after resampling using sum.
-            assert len(ts_resampled) == 12
+            # 12 months are available in 2016 and 1 month available in 2017 after
+            # resampling using mean
+            assert len(ts_resampled) == 13
             assert str(ts_resampled.index[0]) == str(
                 pd.Timestamp("2016-01-01", tz="ETC/GMT-8")
             )
             assert str(ts_resampled.index[-1]) == str(
-                pd.Timestamp("2016-12-01", tz="ETC/GMT-8")
+                pd.Timestamp("2017-01-01", tz="ETC/GMT-8")
             )
 
 
@@ -571,8 +579,8 @@ def test_monthly_resampling_incomplete_mean():
     arg = (ts_as_data_frame, ts_as_series)
     for i, a in enumerate(arg):
         ts_resampled = resample_time_series(a[start:end], "M", agg="mean")
-        # first mont (01/2016) and last month (2016/12) are incomplete.
-        # 12 monts are available in 2016 when resampling using mean.
+        # first month (01/2016) and last month (2016/12) are incomplete.
+        # 12 months are available in 2016 when resampling using mean.
         assert len(ts_resampled) == 12
         assert str(ts_resampled.index[0]) == str(pd.Timestamp(2016, 1, 1))
         if i == 0:
@@ -604,13 +612,13 @@ def test_monthly_resampling_incomplete_and_time_shift_mean():
             )
         else:
             # first month (2016/01) and last month (2016/07) are incomplete.
-            # 6 months are available in Jamuary 2016 after resampling using mean.
-            assert len(ts_resampled) == 6
+            # 7 months are available in 2016 after resampling using mean.
+            assert len(ts_resampled) == 7
             assert str(ts_resampled.index[0]) == str(
                 pd.Timestamp("2016-01-01", tz="ETC/GMT-8")
             )
             assert str(ts_resampled.index[-1]) == str(
-                pd.Timestamp("2016-06-01", tz="ETC/GMT-8")
+                pd.Timestamp("2016-07-01", tz="ETC/GMT-8")
             )
 
 

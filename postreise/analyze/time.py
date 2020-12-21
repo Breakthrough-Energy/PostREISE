@@ -35,11 +35,11 @@ def resample_time_series(ts, freq, agg="sum"):
 
         * the left side of the bin interval is closed.
         * the left bin edge is used to label the interval.
-        * intervals start at midnight.
-        * when the aggregation method is *'sum'*, incomplete days, weeks and months are
-          clipped
-        * when aggregation method is *'mean'*, intervals not enclosed in the UTC date
-          range are clipped
+        * intervals start at midnight when freq=*'D'*.
+        * intervals start on Sunday when freq=*'W'*.
+        * incomplete days, weeks and months are clipped when agg=*'sum'*.
+        * incomplete days, weeks and months are calculated using available data
+        samples when agg=*'mean'*.
     """
     _check_time_series(ts, "time series")
     if is_dst(ts):
@@ -54,28 +54,13 @@ def resample_time_series(ts, freq, agg="sum"):
         raise ValueError("aggregation method must 'sum' or 'mean'")
 
     if agg == "sum":
-        print("clip incomplet %s" % {"D": "days", "W": "weeks", "M": "months"}[freq])
-
-    tz = ts.index.tz
-    if not (tz is None or tz is pytz.timezone("UTC")):
-        utc_start = ts.tz_convert(None).index[0]
-        utc_end = ts.tz_convert(None).index[-1]
-    else:
-        utc_start = ts.index[0]
-        utc_end = ts.index[-1]
+        print("clip incomplete %s" % {"D": "days", "W": "weeks", "M": "months"}[freq])
 
     if freq == "D":
         if agg == "sum":
             return ts.resample("D").sum(min_count=24).dropna()
         else:
-            start = pd.Timestamp(utc_start.year, utc_start.month, utc_start.day)
-            end = pd.Timestamp(utc_end.year, utc_end.month, utc_end.day)
-            if tz is None:
-                return ts.resample("D").mean()[start:end]
-            else:
-                return ts.resample("D").mean()[
-                    start.tz_localize(tz) : end.tz_localize(tz)
-                ]
+            return ts.resample("D").mean()
     elif freq == "W":
         if agg == "sum":
             return (
@@ -84,14 +69,7 @@ def resample_time_series(ts, freq, agg="sum"):
                 .dropna()
             )
         else:
-            start = pd.Timestamp(utc_start.year, utc_start.month, utc_start.day)
-            end = pd.Timestamp(utc_end.year, utc_end.month, utc_end.day)
-            if tz is None:
-                return ts.resample("W").mean()[start:end]
-            else:
-                return ts.resample("W").mean()[
-                    start.tz_localize(tz) : end.tz_localize(tz)
-                ]
+            return ts.resample("W", label="left", closed="left").mean()
     elif freq == "M":
         if agg == "sum":
             # coerce Series to DataFrame as necessary, grab first column, count entries by month
@@ -99,14 +77,7 @@ def resample_time_series(ts, freq, agg="sum"):
             keep = [k for k, v in count.items() if k.days_in_month * 24 == v]
             return ts.resample("MS").sum().filter(items=keep, axis=0)
         else:
-            start = pd.Timestamp(utc_start.year, utc_start.month, 1)
-            end = pd.Timestamp(utc_end.year, utc_end.month, utc_end.days_in_month, 23)
-            if tz is None:
-                return ts.resample("MS").mean()[start:end]
-            else:
-                return ts.resample("MS").mean()[
-                    start.tz_localize(tz) : end.tz_localize(tz)
-                ]
+            return ts.resample("MS").mean()
 
 
 def change_time_zone(ts, tz):
