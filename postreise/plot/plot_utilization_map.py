@@ -27,7 +27,9 @@ traffic_palette = [
 ]
 
 
-def map_risk_bind(risk_or_bind, congestion_stats, branch, us_states_dat=None):
+def map_risk_bind(
+    risk_or_bind, congestion_stats, branch, us_states_dat=None, vmin=None, vmax=None
+):
     """Makes map showing risk or binding incidents on US states map.
 
     :param str risk_or_bind: specify plotting "risk" or "bind"
@@ -37,6 +39,8 @@ def map_risk_bind(risk_or_bind, congestion_stats, branch, us_states_dat=None):
     :param dict us_states_dat: state border coordinates to be passed to
         :func:`postreise.plot.projection_helpers.project_borders`.
         If None, default to bokeh.sampledata.us_states.
+    :param int/float vmin: minimum value for color range. If None, use data minimum.
+    :param int/float vmax: maximum value for color range. If None, use data maximum.
     :return:  -- map of lines with risk and bind incidents color coded
     """
     if us_states_dat is None:
@@ -66,8 +70,8 @@ def map_risk_bind(risk_or_bind, congestion_stats, branch, us_states_dat=None):
     branch_congestion = branch_congestion[branch_congestion[risk_or_bind] > 0]
     branch_congestion.sort_values(by=[risk_or_bind])
     branch_map = project_branch(branch_congestion)
-    min_val = branch_congestion[risk_or_bind].min()
-    max_val = branch_congestion[risk_or_bind].max()
+    min_val = branch_congestion[risk_or_bind].min() if vmin is None else vmin
+    max_val = branch_congestion[risk_or_bind].max() if vmax is None else vmax
     mapper = linear_cmap(
         field_name=risk_or_bind, palette=traffic_palette, low=min_val, high=max_val
     )
