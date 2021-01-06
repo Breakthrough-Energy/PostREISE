@@ -1,5 +1,5 @@
 # This plotting module has a corresponding demo notebook in
-#   PostREISE/postreise/plot/demo: plot_lmp_map.ipynb
+#   PostREISE/postreise/plot/demo: lmp_map_demo.ipynb
 
 import pandas as pd
 from bokeh.layouts import row
