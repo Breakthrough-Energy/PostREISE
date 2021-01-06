@@ -26,11 +26,8 @@ def map_lmp(s_grid, lmp, us_states_dat=None, lmp_min=20, lmp_max=45):
         us_states_dat = us_states.data
 
     bus = project_bus(s_grid.bus)
-    lmp_split_points = list(range(0, 256, 1))
     bus_segments = _construct_bus_data(bus, lmp, lmp_min, lmp_max)
-    return _construct_shadowprice_visuals(
-        lmp_split_points, bus_segments, us_states_dat, lmp_min, lmp_max
-    )
+    return _construct_shadowprice_visuals(bus_segments, us_states_dat, lmp_min, lmp_max)
 
 
 def _construct_bus_data(bus_map, lmp, lmp_min, lmp_max):
@@ -78,12 +75,9 @@ def group_lat_lon(bus_map):
     return bus_map2
 
 
-def _construct_shadowprice_visuals(
-    lmp_split_points, bus_segments, us_states_dat, lmp_min, lmp_max
-):
+def _construct_shadowprice_visuals(bus_segments, us_states_dat, lmp_min, lmp_max):
     """Uses bokeh to plot formatted data. Make map showing lmp using color.
 
-    :param list(float) lmp_split_points: the lmp vals we have chosen to split bus data
     :param list(pandas.DataFrame) bus_segments: bus data split by lmp
     :param dict us_states_dat: us_states data file, imported from bokeh
     :param str file_name: name for output png file
@@ -132,22 +126,20 @@ def _construct_shadowprice_visuals(
     )
     p.add_tools(hover)
     # Add legend
-    bus_legend = _construct_bus_legend(lmp_split_points, lmp_min, lmp_max)
+    bus_legend = _construct_bus_legend(lmp_min, lmp_max)
     return row(bus_legend, p)
 
 
-def _construct_bus_legend(lmp_split_points, lmp_min, lmp_max):
+def _construct_bus_legend(lmp_min, lmp_max):
     """Constructs the legend for lmp at each bus
 
-    :param list(float) lmp_split_points: the lmp values we have chosen to
-        split the bus data
     :param inf/float lmp_min: minimum LMP to clamp plot range to.
     :param inf/float lmp_max: maximum LMP to clamp plot range to.
     :return: (bokeh.plotting.figure) the legend showing lmp for each bus
     """
     x_range = [""]
     bars, bar_len_sum, labels = _get_bus_legend_bars_and_labels(
-        lmp_split_points, x_range, lmp_min, lmp_max
+        x_range, lmp_min, lmp_max
     )
 
     # Make legend
@@ -180,16 +172,16 @@ def _construct_bus_legend(lmp_split_points, lmp_min, lmp_max):
     return p
 
 
-def _get_bus_legend_bars_and_labels(lmp_split_points, x_range, lmp_min, lmp_max):
+def _get_bus_legend_bars_and_labels(x_range, lmp_min, lmp_max):
     """Gets the bar lengths and labels for the bus legend
 
-    :param list(float) lmp_split_points: the lmp vs we have chosen to split the bus data
     :param list(string) x_range: the x-range for the vbar_stack
     :param inf/float lmp_min: minimum LMP to clamp plot range to.
     :param inf/float lmp_max: maximum LMP to clamp plot range to.
     :return: (dict, float, dict) bar lengths and labels for the bus legend
     """
     bars = {"x_range": x_range}
+    lmp_split_points = list(range(0, 256, 1))
     bar_length_sum = 0
     labels = {}  # { y-position: label_text, ... }
     for i in range(len(lmp_split_points) - 2):
