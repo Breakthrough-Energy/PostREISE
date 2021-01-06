@@ -1,3 +1,6 @@
+# This plotting module has a corresponding demo notebook in
+#   PostREISE/postreise/plot/demo: renewable_capacity_map_demo.ipynb
+
 import pandas as pd
 from bokeh.models import ColumnDataSource, HoverTool
 from bokeh.plotting import figure

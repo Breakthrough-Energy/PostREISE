@@ -1,3 +1,6 @@
+# This plotting module has a corresponding demo notebook in
+#   PostREISE/postreise/plot/demo: utilization_map_demo.ipynb
+
 import numpy as np
 import pandas as pd
 from bokeh.models import ColorBar, ColumnDataSource, HoverTool
@@ -29,9 +32,11 @@ def map_risk_bind(risk_or_bind, congestion_stats, branch, us_states_dat=None):
 
     :param str risk_or_bind: specify plotting "risk" or "bind"
     :param pandas.DataFrame congestion_stats: data frame as returned by
-        :func:`postreise.analyze.transmission.generate_cong_stats`.
+        :func:`postreise.analyze.transmission.utilization.generate_cong_stats`.
     :param pandas.DataFrame branch: branch data frame.
-    :param dict us_states_dat: if None default to us_states data file, imported from bokeh.
+    :param dict us_states_dat: state border coordinates to be passed to
+        :func:`postreise.plot.projection_helpers.project_borders`.
+        If None, default to bokeh.sampledata.us_states.
     :return:  -- map of lines with risk and bind incidents color coded
     """
     if us_states_dat is None:
@@ -126,10 +131,12 @@ def map_utilization(utilization_df, branch, us_states_dat=None):
     """Makes map showing utilization. Utilization input can either be medians
     only, or can be normalized utilization dataframe
 
-    :param us_states_dat: if None default to us_states data file, imported from bokeh.
     :param pandas.DataFrame utilization_df: utilization returned by
         :func:`postreise.analyze.transmission.utilization.get_utilization`
     :param pandas.DataFrame branch: branch data frame.
+    :param dict us_states_dat: state border coordinates to be passed to
+        :func:`postreise.plot.projection_helpers.project_borders`.
+        If None, default to bokeh.sampledata.us_states.
     :return:  -- map of lines with median utilization color coded
     """
     if us_states_dat is None:
