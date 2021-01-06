@@ -131,7 +131,7 @@ def map_risk_bind(
     return p
 
 
-def map_utilization(utilization_df, branch, us_states_dat=None):
+def map_utilization(utilization_df, branch, us_states_dat=None, vmin=None, vmax=None):
     """Makes map showing utilization. Utilization input can either be medians
     only, or can be normalized utilization dataframe
 
@@ -141,6 +141,8 @@ def map_utilization(utilization_df, branch, us_states_dat=None):
     :param dict us_states_dat: state border coordinates to be passed to
         :func:`postreise.plot.projection_helpers.project_borders`.
         If None, default to bokeh.sampledata.us_states.
+    :param int/float vmin: minimum value for color range. If None, use data minimum.
+    :param int/float vmax: maximum value for color range. If None, use data maximum.
     :return:  -- map of lines with median utilization color coded
     """
     if us_states_dat is None:
@@ -157,8 +159,8 @@ def map_utilization(utilization_df, branch, us_states_dat=None):
     )
     lines = branch_utilization.loc[(branch_utilization["branch_device_type"] == "Line")]
 
-    min_val = lines["median_utilization"].min()
-    max_val = lines["median_utilization"].max()
+    min_val = lines["median_utilization"].min() if vmin is None else vmin
+    max_val = lines["median_utilization"].max() if vmax is None else vmax
 
     mapper1 = linear_cmap(
         field_name="median_utilization",
