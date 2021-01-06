@@ -148,14 +148,10 @@ def map_utilization(utilization_df, branch, us_states_dat=None, vmin=None, vmax=
     if us_states_dat is None:
         us_states_dat = us_states.data
 
+    branch_mask = branch.rateA != 0
+    median_util = utilization_df[branch.loc[branch_mask].index].median()
     branch_utilization = pd.concat(
-        [
-            branch.loc[branch.rateA != 0],
-            utilization_df[branch.loc[branch.rateA != 0].index]
-            .median()
-            .rename("median_utilization"),
-        ],
-        axis=1,
+        [branch.loc[branch_mask], median_util.rename("median_utilization")], axis=1
     )
     lines = branch_utilization.loc[(branch_utilization["branch_device_type"] == "Line")]
 
