@@ -6,8 +6,7 @@ from bokeh.sampledata import us_states
 from bokeh.tile_providers import Vendors, get_provider
 from bokeh.transform import linear_cmap
 
-from postreise.plot import plot_carbon_map
-from postreise.plot.projection_helpers import project_branch
+from postreise.plot.projection_helpers import project_borders, project_branch
 
 traffic_palette = [
     "darkgreen",
@@ -56,7 +55,7 @@ def map_risk_bind(risk_or_bind, congestion_stats, branch, us_states_dat=None):
             "cap": branch_map_all["rateA"] / 2000 + 0.2,
         }
     )
-    a, b = plot_carbon_map.get_borders(us_states_dat.copy())
+    a, b = project_borders(us_states_dat)
     tools: str = "pan,wheel_zoom,reset,save"
 
     branch_congestion = branch_congestion[branch_congestion[risk_or_bind] > 0]
@@ -172,7 +171,7 @@ def map_utilization(utilization_df, branch, us_states_dat=None):
     branch_map = branch_map[~branch_map.isin([np.nan, np.inf, -np.inf]).any(1)]
 
     # state borders
-    a, b = plot_carbon_map.get_borders(us_states_dat.copy())
+    a, b = project_borders(us_states_dat)
 
     multi_line_source = ColumnDataSource(
         {

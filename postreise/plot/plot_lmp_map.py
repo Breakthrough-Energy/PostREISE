@@ -9,14 +9,7 @@ from bokeh.plotting import figure
 from bokeh.sampledata import us_states
 from bokeh.tile_providers import Vendors, get_provider
 
-from postreise.plot.plot_carbon_map import get_borders
-from postreise.plot.projection_helpers import project_bus
-
-# make default states list for drawing of state borders
-default_states_dict = us_states.data.copy()
-del default_states_dict["HI"]
-del default_states_dict["AK"]
-default_states_list = list(default_states_dict.keys())
+from postreise.plot.projection_helpers import project_borders, project_bus
 
 
 def map_lmp(s_grid, lmp, us_states_dat=None):
@@ -113,7 +106,7 @@ def _construct_shadowprice_visuals(lmp_split_points, bus_segments, us_states_dat
     # Add USA map
     p.add_tile(get_provider(Vendors.CARTODBPOSITRON))
     # state borders
-    a, b = get_borders(us_states_dat.copy())
+    a, b = project_borders(us_states_dat)
     p.patches(a, b, fill_alpha=0.0, line_color="gray", line_width=1)
     # Add colored circles for bus locations
 

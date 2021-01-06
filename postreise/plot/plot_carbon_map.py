@@ -5,47 +5,13 @@ from bokeh.models import ColumnDataSource, HoverTool, Label, LabelSet
 from bokeh.plotting import figure
 from bokeh.sampledata import us_states
 from bokeh.tile_providers import Vendors, get_provider
-from pyproj import Transformer
 
-from postreise.plot.projection_helpers import project_bus
-
-# make default states list, lower 48 only
-default_states_dict = us_states.data.copy()
-del default_states_dict["HI"]
-del default_states_dict["AK"]
-del default_states_dict["DC"]
-default_states_list = list(default_states_dict.keys())
+from postreise.plot.projection_helpers import project_borders, project_bus
 
 # breakthrough energy (be) color names
 be_purple = "#8B36FF"
 be_green = "#78D911"
 be_red = "#FF8563"
-
-
-def get_borders(us_states_dat, state_list=None):
-    """Prepares US state borders data for use on the map.
-
-    :param dict us_states_dat: us_states data file, imported from bokeh
-    :param list state_list: us states, defaults to all states except AK and HI
-    :return: (*tuple*) -- reprojected coordinates for use on map.
-    """
-    # separate latitude and longitude points for the borders of the states.
-    if state_list is None:
-        state_list = default_states_list
-    num_states = len(state_list)
-    us_states_dat = [us_states_dat[k] for k in state_list]
-    state_lats = [state["lats"] for state in us_states_dat]
-    state_lons = [state["lons"] for state in us_states_dat]
-    # transform/re-project coordinates for Bokeh
-    transformer = Transformer.from_crs("epsg:4326", "epsg:3857")
-    all_state_xs = []
-    all_state_ys = []
-    for j in range(num_states):
-        state_xs, state_ys = transformer.transform(state_lats[j], state_lons[j])
-        all_state_xs.append(state_xs)
-        all_state_ys.append(state_ys)
-
-    return all_state_xs, all_state_ys
 
 
 def plot_states(
@@ -80,7 +46,7 @@ def plot_states(
     if len(state_list) != len(labels_list):
         print("warning: state_list and labels_list must be same length")
 
-    a, b = get_borders(us_states_dat.copy())
+    a, b = project_borders(us_states_dat)
 
     tools: str = "pan,wheel_zoom,reset,save"
     p = figure(
@@ -110,7 +76,7 @@ def plot_states(
     # plot state borders
     p.patches(a, b, fill_alpha=0, fill_color="blue", line_color="gray", line_width=2)
 
-    a1, b1 = get_borders(us_states_dat.copy(), state_list=state_list)
+    a1, b1 = project_borders(us_states_dat, state_list=state_list)
     source = ColumnDataSource(
         dict(
             xs=a1,
@@ -136,7 +102,7 @@ def plot_states(
     # loop through states and colors, plot patches
     for i in state_list:
         n = n + 1
-        a1, b1 = get_borders(us_states_dat.copy(), state_list=[i])
+        a1, b1 = project_borders(us_states_dat, state_list=[i])
         citation = Label(
             x=min(a1[0]) + 100000,
             y=(max(b1[0]) + min(b1[0])) / 2,
@@ -254,7 +220,7 @@ def map_carbon_emission_bar(
     bus_map = project_bus(bus_info_and_emission)
     bus_map = group_zone(bus_map)
 
-    a, b = get_borders(us_states_dat.copy())
+    a, b = project_borders(us_states_dat)
 
     # plotting adjustment constants
     ha = 85000
@@ -457,7 +423,7 @@ def map_carbon_emission(
     # us states borders, prepare data
     if us_states_dat is None:
         us_states_dat = us_states.data
-    a, b = get_borders(us_states_dat.copy())
+    a, b = project_borders(us_states_dat)
 
     # prepare data frame for emissions data
     bus_map = _prepare_busmap(
