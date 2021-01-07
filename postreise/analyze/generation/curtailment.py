@@ -6,11 +6,15 @@ from postreise.analyze.check import (
     _check_resources_are_renewable_and_format,
     _check_scenario_is_in_analyze_state,
 )
+from postreise.analyze.generation.summarize import (
+    get_generation_time_series_by_resources,
+)
 from postreise.analyze.helpers import (
     decompose_plant_data_frame_into_areas,
     decompose_plant_data_frame_into_areas_and_resources,
     decompose_plant_data_frame_into_resources,
     decompose_plant_data_frame_into_resources_and_areas,
+    get_plant_id_by_resources,
     get_plant_id_for_resources,
     summarize_plant_to_bus,
     summarize_plant_to_location,
@@ -159,7 +163,8 @@ def calculate_curtailment_time_series_by_resources_and_areas(
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param str/tuple/list/set resources: names of resources to analyze. Default is
-        all renewable resources.    :param dict areas: keys are area types ('*loadzone*', '*state*' or
+        all renewable resources.
+    :param dict areas: keys are area types ('*loadzone*', '*state*' or
         '*interconnect*'), values are a list of areas. Default is the interconnect of
         the scenario. Default is the scenario interconnect.
     :return: (*dict*) -- keys are areas, values are dictionaries whose keys are
@@ -222,3 +227,38 @@ def summarize_curtailment_by_location(scenario):
     }
 
     return location_curtailment
+
+
+def get_curtailment_time_series(scenario, area, area_type=None):
+    """Get time series curtailments for each available resource in a certain area of
+    a scenario
+
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
+    :param str area: one of: *loadzone*, *state*, *state abbreviation*,
+        *interconnect*, *'all'*
+    :param str area_type: one of: *'loadzone'*, *'state'*,
+        *'state_abbr'*, *'interconnect'*
+    :return: (*pandas.DataFrame*) -- index: time stamps, columns: available resources
+    """
+    renewables = ["wind", "wind_offshore", "solar"]
+    curtailment = get_generation_time_series_by_resources(
+        scenario, area, renewables, area_type=area_type
+    )
+    renewable_profiles = {
+        "wind": scenario.state.get_wind(),
+        "solar": scenario.state.get_solar(),
+    }
+    for r in renewables:
+        if r in curtailment.columns:
+            plant_id = get_plant_id_by_resources(scenario, area, r, area_type=area_type)
+            if r == "wind_offshore":
+                curtailment[r] = (
+                    renewable_profiles["wind"][plant_id].sum(axis=1) - curtailment[r]
+                )
+            else:
+                curtailment[r] = (
+                    renewable_profiles[r][plant_id].sum(axis=1) - curtailment[r]
+                )
+    curtailment.rename(lambda x: x + "_curtailment", axis="columns", inplace=True)
+
+    return curtailment.clip(lower=0)
