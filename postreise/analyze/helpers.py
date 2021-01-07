@@ -2,6 +2,7 @@ from collections import defaultdict
 
 import pandas as pd
 from powersimdata.network.usa_tamu.constants import zones
+from powersimdata.network.usa_tamu.usa_tamu_model import area_to_loadzone
 
 from postreise.analyze.check import (
     _check_areas_are_in_grid_and_format,
@@ -125,7 +126,7 @@ def get_plant_id_for_resources_in_states(resources, states, grid):
     """Get plant id for for plants fueled by resource(s) in state(s).
 
     :param str/list/tuple/set resources: name of resource(s).
-    :param str/list/tuple/set interconnects: state(s) name or abbreviation.
+    :param str/list/tuple/set states: state(s) name or abbreviation.
     :param powersimdata.input.grid.Grid grid: a Grid instance.
     :return: (*set*) -- list of plant id
     """
@@ -279,3 +280,56 @@ def summarize_plant_to_location(df, grid):
     location_data = df.T.groupby(locations_in_df).sum().T
 
     return location_data
+
+
+def get_plant_id_by_resources(scenario, area, resources, area_type=None):
+    """Get the list of plant ids of certain resources in the specific area of a
+    scenario.
+
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
+    :param str area: one of: *loadzone*, *state*, *state abbreviation*,
+        *interconnect*, *'all'*
+    :param str/list resources: one or a list of resources
+    :param str area_type: one of: *'loadzone'*, *'state'*,
+        *'state_abbr'*, *'interconnect'*
+    :return: (*list*) -- list of plant id
+    """
+    if isinstance(resources, str):
+        resource_set = set([resources])
+    else:
+        resource_set = set(resources)
+    grid = scenario.state.get_grid()
+    loadzone_set = area_to_loadzone(grid, area, area_type=area_type)
+    plant_id = grid.plant[
+        (grid.plant["zone_name"].isin(loadzone_set))
+        & (grid.plant["type"].isin(resource_set))
+    ].index.tolist()
+
+    return plant_id
+
+
+def get_storage_id(scenario, area, area_type=None):
+    """Get the list of storage ids in the specific area of a scenario
+
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
+    :param str area: one of: *loadzone*, *state*, *state abbreviation*,
+        *interconnect*, *'all'*
+    :param str area_type: one of: *'loadzone'*, *'state'*,
+        *'state_abbr'*, *'interconnect'*
+    :return: (*list*) -- list of storage id
+    """
+    grid = scenario.state.get_grid()
+    loadzone_set = area_to_loadzone(grid, area, area_type=area_type)
+    loadzone_id_set = {grid.zone2id[lz] for lz in loadzone_set if lz in grid.zone2id}
+
+    storage_id = (
+        grid.storage["gen"]
+        .loc[
+            grid.storage["gen"]["bus_id"]
+            .apply(lambda x: grid.bus.loc[x, "zone_id"])
+            .isin(loadzone_id_set)
+        ]
+        .index.tolist()
+    )
+
+    return storage_id
