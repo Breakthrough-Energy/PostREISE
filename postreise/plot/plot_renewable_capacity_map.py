@@ -8,10 +8,8 @@ from bokeh.sampledata import us_states
 from bokeh.tile_providers import Vendors, get_provider
 
 from postreise.analyze.check import _check_scenario_is_in_analyze_state
+from postreise.plot.colors import be_green
 from postreise.plot.projection_helpers import project_borders, project_bus
-
-# green, breakthrough energy colors (be)
-be_green = "#36D78C"
 
 
 def map_plant_capacity(

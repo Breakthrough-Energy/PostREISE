@@ -6,12 +6,8 @@ from bokeh.plotting import figure
 from bokeh.sampledata import us_states
 from bokeh.tile_providers import Vendors, get_provider
 
+from postreise.plot.colors import be_green, be_purple, be_red
 from postreise.plot.projection_helpers import project_borders, project_bus
-
-# breakthrough energy (be) color names
-be_purple = "#8B36FF"
-be_green = "#78D911"
-be_red = "#FF8563"
 
 
 def plot_states(
