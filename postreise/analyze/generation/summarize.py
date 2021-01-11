@@ -16,7 +16,10 @@ from postreise.analyze.check import (
     _check_resources_and_format,
     _check_scenario_is_in_analyze_state,
 )
-from postreise.analyze.helpers import get_plant_id_by_resources, get_storage_id
+from postreise.analyze.helpers import (
+    get_plant_id_for_resources_in_area,
+    get_storage_id_in_area,
+)
 
 
 def sum_generation_by_type_zone(scenario: Scenario) -> pd.DataFrame:
@@ -145,7 +148,9 @@ def get_generation_time_series_by_resources(scenario, area, resources, area_type
         resource, index: time stamps, columns: resources
     """
     _check_scenario_is_in_analyze_state(scenario)
-    plant_id = get_plant_id_by_resources(scenario, area, resources, area_type=area_type)
+    plant_id = get_plant_id_for_resources_in_area(
+        scenario, area, resources, area_type=area_type
+    )
     pg = scenario.state.get_pg()[plant_id]
     grid = scenario.state.get_grid()
 
@@ -164,6 +169,6 @@ def get_storage_time_series(scenario, area, area_type=None):
         stamps, column: storage energy
     """
     _check_scenario_is_in_analyze_state(scenario)
-    storage_id = get_storage_id(scenario, area, area_type)
+    storage_id = get_storage_id_in_area(scenario, area, area_type)
 
     return scenario.state.get_storage_pg()[storage_id].sum(axis=1)

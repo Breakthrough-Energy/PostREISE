@@ -14,8 +14,8 @@ from postreise.analyze.helpers import (
     decompose_plant_data_frame_into_areas_and_resources,
     decompose_plant_data_frame_into_resources,
     decompose_plant_data_frame_into_resources_and_areas,
-    get_plant_id_by_resources,
     get_plant_id_for_resources,
+    get_plant_id_for_resources_in_area,
     summarize_plant_to_bus,
     summarize_plant_to_location,
 )
@@ -250,7 +250,9 @@ def get_curtailment_time_series(scenario, area, area_type=None):
     }
     for r in renewables:
         if r in curtailment.columns:
-            plant_id = get_plant_id_by_resources(scenario, area, r, area_type=area_type)
+            plant_id = get_plant_id_for_resources_in_area(
+                scenario, area, r, area_type=area_type
+            )
             if r == "wind_offshore":
                 curtailment[r] = (
                     renewable_profiles["wind"][plant_id].sum(axis=1) - curtailment[r]

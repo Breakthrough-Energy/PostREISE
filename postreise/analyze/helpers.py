@@ -282,7 +282,7 @@ def summarize_plant_to_location(df, grid):
     return location_data
 
 
-def get_plant_id_by_resources(scenario, area, resources, area_type=None):
+def get_plant_id_for_resources_in_area(scenario, area, resources, area_type=None):
     """Get the list of plant ids of certain resources in the specific area of a
     scenario.
 
@@ -308,7 +308,7 @@ def get_plant_id_by_resources(scenario, area, resources, area_type=None):
     return plant_id
 
 
-def get_storage_id(scenario, area, area_type=None):
+def get_storage_id_in_area(scenario, area, area_type=None):
     """Get the list of storage ids in the specific area of a scenario
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
