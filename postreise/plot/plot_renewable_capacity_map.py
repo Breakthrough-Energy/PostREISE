@@ -1,3 +1,6 @@
+# This plotting module has a corresponding demo notebook in
+#   PostREISE/postreise/plot/demo: renewable_capacity_map_demo.ipynb
+
 import pandas as pd
 from bokeh.models import ColumnDataSource, HoverTool
 from bokeh.plotting import figure
@@ -5,8 +8,7 @@ from bokeh.sampledata import us_states
 from bokeh.tile_providers import Vendors, get_provider
 
 from postreise.analyze.check import _check_scenario_is_in_analyze_state
-from postreise.plot.plot_carbon_map import get_borders
-from postreise.plot.projection_helpers import project_bus
+from postreise.plot.projection_helpers import project_borders, project_bus
 
 # green, breakthrough energy colors (be)
 be_green = "#36D78C"
@@ -52,7 +54,7 @@ def map_plant_capacity(
         {"Pmax": "sum", "x": "mean", "y": "mean"}
     )
 
-    a, b = get_borders(us_states_dat.copy())
+    a, b = project_borders(us_states_dat)
 
     rar_source = ColumnDataSource(
         {

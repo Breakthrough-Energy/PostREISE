@@ -1,5 +1,5 @@
 # This plotting module has a corresponding demo notebook in
-#   PostREISE/postreise/plot/demo: plot_lmp_map.ipynb
+#   PostREISE/postreise/plot/demo: lmp_map_demo.ipynb
 
 import pandas as pd
 from bokeh.layouts import row
@@ -9,53 +9,40 @@ from bokeh.plotting import figure
 from bokeh.sampledata import us_states
 from bokeh.tile_providers import Vendors, get_provider
 
-from postreise.plot.plot_carbon_map import get_borders
-from postreise.plot.projection_helpers import project_bus
-
-# make default states list for drawing of state borders
-default_states_dict = us_states.data.copy()
-del default_states_dict["HI"]
-del default_states_dict["AK"]
-default_states_list = list(default_states_dict.keys())
+from postreise.plot.projection_helpers import project_borders, project_bus
 
 
-def map_lmp(s_grid, lmp, us_states_dat=None):
+def map_lmp(s_grid, lmp, us_states_dat=None, lmp_min=20, lmp_max=45):
     """Plots average LMP by color coding buses
 
     :param powersimdata.input.grid.Grid s_grid: scenario grid
     :param pandas.DataFrame lmp: locational marginal prices calculated for the scenario
-    :param str file_name: name for output png file
     :param dict us_states_dat: if None default to us_states data file, imported from bokeh
-    :return: (bokeh.layout.row) bokeh map visual in row layout
+    :param inf/float lmp_min: minimum LMP to clamp plot range to.
+    :param inf/float lmp_max: maximum LMP to clamp plot range to.
+    :return: (*bokeh.models.layout.Row*) bokeh map visual in row layout
     """
     if us_states_dat is None:
         us_states_dat = us_states.data
 
     bus = project_bus(s_grid.bus)
-    lmp_split_points = list(range(0, 256, 1))
-    bus_segments = _construct_bus_data(bus, lmp, lmp_split_points)
-    return _construct_shadowprice_visuals(lmp_split_points, bus_segments, us_states_dat)
+    bus_segments = _construct_bus_data(bus, lmp, lmp_min, lmp_max)
+    return _construct_shadowprice_visuals(bus_segments, us_states_dat, lmp_min, lmp_max)
 
 
-def _construct_bus_data(bus_map, lmp, lmp_split_points):
+def _construct_bus_data(bus_map, lmp, lmp_min, lmp_max):
     """Adds lmp data to each bus, splits buses into lmp segments for coloring
 
     :param pandas.DataFrame bus_map: bus dataframe with location data
     :param pandas.DataFrame lmp: lmp dataframe
-    :param list(float) lmp_split_points: lmp values to split the bus data.
+    :param inf/float lmp_min: minimum LMP to clamp plot range to.
+    :param inf/float lmp_max: maximum LMP to clamp plot range to.
     :return: (list(pandas.DataFrame)) -- bus data split into segments
     """
     # Add mean lmp to bus dataframe
     lmp_mean = pd.DataFrame(lmp.mean())
     lmp_mean = lmp_mean.rename(columns={lmp_mean.columns[0]: "lmp"})
-
-    # min and max values for 'continuous' color scale, in $MW/h
-    min_lmp_clamp = 20
-    max_lmp_clamp = 45
-
-    lmp_mean["lmp_norm"] = (
-        (lmp_mean.lmp - min_lmp_clamp) / (max_lmp_clamp - min_lmp_clamp) * 256
-    )
+    lmp_mean["lmp_norm"] = (lmp_mean.lmp - lmp_min) / (lmp_max - lmp_min) * 256
     bus_map = pd.concat([bus_map, lmp_mean], axis=1)
     bus_map_agg = group_lat_lon(bus_map)
 
@@ -88,14 +75,15 @@ def group_lat_lon(bus_map):
     return bus_map2
 
 
-def _construct_shadowprice_visuals(lmp_split_points, bus_segments, us_states_dat):
+def _construct_shadowprice_visuals(bus_segments, us_states_dat, lmp_min, lmp_max):
     """Uses bokeh to plot formatted data. Make map showing lmp using color.
 
-    :param list(float) lmp_split_points: the lmp vals we have chosen to split bus data
     :param list(pandas.DataFrame) bus_segments: bus data split by lmp
     :param dict us_states_dat: us_states data file, imported from bokeh
     :param str file_name: name for output png file
-    return: (bokeh.layout.row) bokeh map in row layout
+    :param inf/float lmp_min: minimum LMP to clamp plot range to.
+    :param inf/float lmp_max: maximum LMP to clamp plot range to.
+    :return: (*bokeh.models.layout.Row*) bokeh map visual in row layout
     """
 
     tools = "pan,wheel_zoom,reset,save"
@@ -113,7 +101,7 @@ def _construct_shadowprice_visuals(lmp_split_points, bus_segments, us_states_dat
     # Add USA map
     p.add_tile(get_provider(Vendors.CARTODBPOSITRON))
     # state borders
-    a, b = get_borders(us_states_dat.copy())
+    a, b = project_borders(us_states_dat)
     p.patches(a, b, fill_alpha=0.0, line_color="gray", line_width=1)
     # Add colored circles for bus locations
 
@@ -138,20 +126,20 @@ def _construct_shadowprice_visuals(lmp_split_points, bus_segments, us_states_dat
     )
     p.add_tools(hover)
     # Add legend
-    bus_legend = _construct_bus_legend(lmp_split_points)
+    bus_legend = _construct_bus_legend(lmp_min, lmp_max)
     return row(bus_legend, p)
 
 
-def _construct_bus_legend(lmp_split_points):
+def _construct_bus_legend(lmp_min, lmp_max):
     """Constructs the legend for lmp at each bus
 
-    :param list(float) lmp_split_points: the lmp values we have chosen to
-        split the bus data
+    :param inf/float lmp_min: minimum LMP to clamp plot range to.
+    :param inf/float lmp_max: maximum LMP to clamp plot range to.
     :return: (bokeh.plotting.figure) the legend showing lmp for each bus
     """
     x_range = [""]
     bars, bar_len_sum, labels = _get_bus_legend_bars_and_labels(
-        lmp_split_points, x_range
+        x_range, lmp_min, lmp_max
     )
 
     # Make legend
@@ -184,14 +172,16 @@ def _construct_bus_legend(lmp_split_points):
     return p
 
 
-def _get_bus_legend_bars_and_labels(lmp_split_points, x_range):
+def _get_bus_legend_bars_and_labels(x_range, lmp_min, lmp_max):
     """Gets the bar lengths and labels for the bus legend
 
-    :param list(float) lmp_split_points: the lmp vs we have chosen to split the bus data
     :param list(string) x_range: the x-range for the vbar_stack
+    :param inf/float lmp_min: minimum LMP to clamp plot range to.
+    :param inf/float lmp_max: maximum LMP to clamp plot range to.
     :return: (dict, float, dict) bar lengths and labels for the bus legend
     """
     bars = {"x_range": x_range}
+    lmp_split_points = list(range(0, 256, 1))
     bar_length_sum = 0
     labels = {}  # { y-position: label_text, ... }
     for i in range(len(lmp_split_points) - 2):
@@ -208,7 +198,7 @@ def _get_bus_legend_bars_and_labels(lmp_split_points, x_range):
             bar_length = max(1, round(lmp_diff, 1))
 
         labels[round(bar_length_sum, -1)] = str(
-            round(((lmp_split_points[i] - 1) * (45 - 20) / 256 + 20), 0)
+            round(((lmp_split_points[i] - 1) * (lmp_max - lmp_min) / 256 + lmp_min), 0)
         )
         if i != len(lmp_split_points) - 1:
             bars[str(i)] = [bar_length]

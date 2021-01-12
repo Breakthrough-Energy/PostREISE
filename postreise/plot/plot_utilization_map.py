@@ -1,3 +1,6 @@
+# This plotting module has a corresponding demo notebook in
+#   PostREISE/postreise/plot/demo: utilization_map_demo.ipynb
+
 import numpy as np
 import pandas as pd
 from bokeh.models import ColorBar, ColumnDataSource, HoverTool
@@ -6,8 +9,7 @@ from bokeh.sampledata import us_states
 from bokeh.tile_providers import Vendors, get_provider
 from bokeh.transform import linear_cmap
 
-from postreise.plot import plot_carbon_map
-from postreise.plot.projection_helpers import project_branch
+from postreise.plot.projection_helpers import project_borders, project_branch
 
 traffic_palette = [
     "darkgreen",
@@ -25,14 +27,20 @@ traffic_palette = [
 ]
 
 
-def map_risk_bind(risk_or_bind, congestion_stats, branch, us_states_dat=None):
+def map_risk_bind(
+    risk_or_bind, congestion_stats, branch, us_states_dat=None, vmin=None, vmax=None
+):
     """Makes map showing risk or binding incidents on US states map.
 
     :param str risk_or_bind: specify plotting "risk" or "bind"
     :param pandas.DataFrame congestion_stats: data frame as returned by
-        :func:`postreise.analyze.transmission.generate_cong_stats`.
+        :func:`postreise.analyze.transmission.utilization.generate_cong_stats`.
     :param pandas.DataFrame branch: branch data frame.
-    :param dict us_states_dat: if None default to us_states data file, imported from bokeh.
+    :param dict us_states_dat: state border coordinates to be passed to
+        :func:`postreise.plot.projection_helpers.project_borders`.
+        If None, default to bokeh.sampledata.us_states.
+    :param int/float vmin: minimum value for color range. If None, use data minimum.
+    :param int/float vmax: maximum value for color range. If None, use data maximum.
     :return:  -- map of lines with risk and bind incidents color coded
     """
     if us_states_dat is None:
@@ -56,14 +64,14 @@ def map_risk_bind(risk_or_bind, congestion_stats, branch, us_states_dat=None):
             "cap": branch_map_all["rateA"] / 2000 + 0.2,
         }
     )
-    a, b = plot_carbon_map.get_borders(us_states_dat.copy())
+    a, b = project_borders(us_states_dat)
     tools: str = "pan,wheel_zoom,reset,save"
 
     branch_congestion = branch_congestion[branch_congestion[risk_or_bind] > 0]
     branch_congestion.sort_values(by=[risk_or_bind])
     branch_map = project_branch(branch_congestion)
-    min_val = branch_congestion[risk_or_bind].min()
-    max_val = branch_congestion[risk_or_bind].max()
+    min_val = branch_congestion[risk_or_bind].min() if vmin is None else vmin
+    max_val = branch_congestion[risk_or_bind].max() if vmax is None else vmax
     mapper = linear_cmap(
         field_name=risk_or_bind, palette=traffic_palette, low=min_val, high=max_val
     )
@@ -123,32 +131,32 @@ def map_risk_bind(risk_or_bind, congestion_stats, branch, us_states_dat=None):
     return p
 
 
-def map_utilization(utilization_df, branch, us_states_dat=None):
+def map_utilization(utilization_df, branch, us_states_dat=None, vmin=None, vmax=None):
     """Makes map showing utilization. Utilization input can either be medians
     only, or can be normalized utilization dataframe
 
-    :param us_states_dat: if None default to us_states data file, imported from bokeh.
     :param pandas.DataFrame utilization_df: utilization returned by
         :func:`postreise.analyze.transmission.utilization.get_utilization`
     :param pandas.DataFrame branch: branch data frame.
+    :param dict us_states_dat: state border coordinates to be passed to
+        :func:`postreise.plot.projection_helpers.project_borders`.
+        If None, default to bokeh.sampledata.us_states.
+    :param int/float vmin: minimum value for color range. If None, use data minimum.
+    :param int/float vmax: maximum value for color range. If None, use data maximum.
     :return:  -- map of lines with median utilization color coded
     """
     if us_states_dat is None:
         us_states_dat = us_states.data
 
+    branch_mask = branch.rateA != 0
+    median_util = utilization_df[branch.loc[branch_mask].index].median()
     branch_utilization = pd.concat(
-        [
-            branch.loc[branch.rateA != 0],
-            utilization_df[branch.loc[branch.rateA != 0].index]
-            .median()
-            .rename("median_utilization"),
-        ],
-        axis=1,
+        [branch.loc[branch_mask], median_util.rename("median_utilization")], axis=1
     )
     lines = branch_utilization.loc[(branch_utilization["branch_device_type"] == "Line")]
 
-    min_val = lines["median_utilization"].min()
-    max_val = lines["median_utilization"].max()
+    min_val = lines["median_utilization"].min() if vmin is None else vmin
+    max_val = lines["median_utilization"].max() if vmax is None else vmax
 
     mapper1 = linear_cmap(
         field_name="median_utilization",
@@ -172,7 +180,7 @@ def map_utilization(utilization_df, branch, us_states_dat=None):
     branch_map = branch_map[~branch_map.isin([np.nan, np.inf, -np.inf]).any(1)]
 
     # state borders
-    a, b = plot_carbon_map.get_borders(us_states_dat.copy())
+    a, b = project_borders(us_states_dat)
 
     multi_line_source = ColumnDataSource(
         {

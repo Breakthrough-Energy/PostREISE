@@ -7,8 +7,7 @@ from bokeh.tile_providers import Vendors, get_provider
 from powersimdata.network.usa_tamu.constants import zones
 from powersimdata.utility import distance
 
-from postreise.plot import plot_carbon_map
-from postreise.plot.projection_helpers import project_branch
+from postreise.plot.projection_helpers import project_borders, project_branch
 
 
 def count_nodes_per_state(grid):
@@ -92,9 +91,7 @@ def map_interconnections(
     )
 
     # state borders
-    a, b = plot_carbon_map.get_borders(
-        us_states_dat.copy(), state_list=list(state_counts["state"])
-    )
+    a, b = project_borders(us_states_dat, state_list=list(state_counts["state"]))
 
     # transmission data sources
     line_width_const = 0.000225

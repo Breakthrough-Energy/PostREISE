@@ -47,7 +47,8 @@ def _flag(statistics, utilname, thresh, uflagname):
 
 def generate_cong_stats(pf, grid_branch, util=None, thresh=None):
     """Generates congestion/utilization statistics from powerflow data (WECC congestion
-    reports' analyses are the inspiration for these analyses and are the source of the default parameters).
+    reports' analyses are the inspiration for these analyses and are the source of the
+    default parameters).
 
     :param pandas.DataFrame pf: power flow data frame
     :param pandas.DataFrame grid_branch: grid.branch branch info
@@ -56,8 +57,8 @@ def generate_cong_stats(pf, grid_branch, util=None, thresh=None):
     :param list thresh: threshold for proportion time, for flag level 1, 2, 3. Default
         values are values used by WECC: 0.5, 0.2, 0.05.
     :return: (*pandas.DataFrame*) -- congestion statistics.
-        *'per_util1'*,*'per_util2'*, *'per_util3'*, *'u1flag'*,*'u2flag'*,
-        *'u3flag'*,*'sumflag'*, *'risk'*.
+        *'per_util1'*, *'per_util2'*, *'per_util3'*, *'u1flag'*, *'u2flag'*,
+        *'u3flag'*, *'sumflag'*, *'bind'*, *'risk'*.
     """
 
     if util is None:
