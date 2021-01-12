@@ -28,7 +28,13 @@ traffic_palette = [
 
 
 def map_risk_bind(
-    risk_or_bind, congestion_stats, branch, us_states_dat=None, vmin=None, vmax=None
+    risk_or_bind,
+    congestion_stats,
+    branch,
+    us_states_dat=None,
+    vmin=None,
+    vmax=None,
+    is_website=False,
 ):
     """Makes map showing risk or binding incidents on US states map.
 
@@ -41,6 +47,7 @@ def map_risk_bind(
         If None, default to bokeh.sampledata.us_states.
     :param int/float vmin: minimum value for color range. If None, use data minimum.
     :param int/float vmax: maximum value for color range. If None, use data maximum.
+    :param bool is_website: changes text/legend formatting to look better on the website
     :return:  -- map of lines with risk and bind incidents color coded
     """
     if us_states_dat is None:
@@ -77,7 +84,7 @@ def map_risk_bind(
     )
     color_bar = ColorBar(
         color_mapper=mapper["transform"],
-        width=500,
+        width=385 if is_website else 500,
         height=5,
         location=(0, 0),
         title=risk_or_bind_units,
@@ -131,7 +138,9 @@ def map_risk_bind(
     return p
 
 
-def map_utilization(utilization_df, branch, us_states_dat=None, vmin=None, vmax=None):
+def map_utilization(
+    utilization_df, branch, us_states_dat=None, vmin=None, vmax=None, is_website=False
+):
     """Makes map showing utilization. Utilization input can either be medians
     only, or can be normalized utilization dataframe
 
@@ -143,6 +152,7 @@ def map_utilization(utilization_df, branch, us_states_dat=None, vmin=None, vmax=
         If None, default to bokeh.sampledata.us_states.
     :param int/float vmin: minimum value for color range. If None, use data minimum.
     :param int/float vmax: maximum value for color range. If None, use data maximum.
+    :param bool is_website: changes text/legend formatting to look better on the website
     :return:  -- map of lines with median utilization color coded
     """
     if us_states_dat is None:
@@ -167,7 +177,7 @@ def map_utilization(utilization_df, branch, us_states_dat=None, vmin=None, vmax=
 
     color_bar = ColorBar(
         color_mapper=mapper1["transform"],
-        width=500,
+        width=385 if is_website else 500,
         height=5,
         location=(0, 0),
         title="median utilization",
