@@ -26,7 +26,7 @@ def resample_time_series(ts, freq, agg="sum"):
     :param pandas.DataFrame/pandas.Series ts: time series to resample.
     :param str freq: frequency. Either *'D'* (day), *'W'* (week), *'M'* (month).
     :param str agg: aggregation method. Either *'sum'* or *'mean'*.
-    :return: (*pandas.DataFrame*/pandas.Series) -- the resampled time series.
+    :return: (*pandas.DataFrame/pandas.Series*) -- the resampled time series.
     :raises ValueError: if freq is not one of *'D'*, *'W'*, *'M'* or agg is not one of
         *'sum'* or *'mean'* or ts is time zone aware with DST.
 
@@ -35,11 +35,11 @@ def resample_time_series(ts, freq, agg="sum"):
 
         * the left side of the bin interval is closed.
         * the left bin edge is used to label the interval.
-        * intervals start at midnight when freq=*'D'*.
-        * intervals start on Sunday when freq=*'W'*.
-        * incomplete days, weeks and months are clipped when agg=*'sum'*.
+        * intervals start at midnight when freq is *'D'*.
+        * intervals start on Sunday when freq is *'W'*.
+        * incomplete days, weeks and months are clipped when agg is *'sum'*.
         * incomplete days, weeks and months are calculated using available data
-        samples when agg=*'mean'*.
+          samples when agg is *'mean'*.
     """
     _check_time_series(ts, "time series")
     if is_dst(ts):
