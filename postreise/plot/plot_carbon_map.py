@@ -3,10 +3,10 @@ import pandas as pd
 from bokeh.layouts import row
 from bokeh.models import ColumnDataSource, HoverTool, Label, LabelSet
 from bokeh.plotting import figure
-from bokeh.sampledata import us_states
 from bokeh.tile_providers import Vendors, get_provider
 
 from postreise.plot.colors import be_green, be_purple, be_red
+from postreise.plot.plot_states import get_state_borders
 from postreise.plot.projection_helpers import project_borders, project_bus
 
 
@@ -77,7 +77,8 @@ def map_carbon_emission_bar(
     """Makes map of carbon emissions, color code by fuel type. Size/area
         indicates emissions.
 
-    :param dict us_states_dat: if None default to us_states data file, imported from bokeh
+    :param dict us_states_dat: dictionary of state border lats/lons. If None, get
+        from :func:`postreise.plot.plot_states.get_state_borders`.
     :param pandas.DataFrame bus_info_and_emission: info and
         emission of buses by :func:`combine_bus_info_and_emission`.
     :param str scenario_name: name of scenario for labeling.
@@ -87,7 +88,7 @@ def map_carbon_emission_bar(
     """
 
     if us_states_dat is None:
-        us_states_dat = us_states.data
+        us_states_dat = get_state_borders()
 
     bus_map = project_bus(bus_info_and_emission)
     bus_map = group_zone(bus_map)
@@ -282,7 +283,8 @@ def map_carbon_emission(
     :param str color_coal: color associated with coal, default to black/gray
     :param str label_coal: label for legend associated with coal.
     :param str label_ng: label for legend associated with ng.
-    :param dict us_states_dat: if None default to us_states data file, imported from bokeh
+    :param dict us_states_dat: dictionary of state border lats/lons. If None, get
+        from :func:`postreise.plot.plot_states.get_state_borders`.
     :param float size_factor: scaling factor for size of emissions circles glyphs
     :param boolean web: if true, optimizes figure for web-based presentation
     :param boolean agg: if true, aggregates points by lat lon within a given radius
@@ -294,7 +296,7 @@ def map_carbon_emission(
 
     # us states borders, prepare data
     if us_states_dat is None:
-        us_states_dat = us_states.data
+        us_states_dat = get_state_borders()
     a, b = project_borders(us_states_dat)
 
     # prepare data frame for emissions data

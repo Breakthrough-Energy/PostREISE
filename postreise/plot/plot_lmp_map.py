@@ -6,9 +6,9 @@ from bokeh.layouts import row
 from bokeh.models import ColumnDataSource, HoverTool
 from bokeh.palettes import Turbo256
 from bokeh.plotting import figure
-from bokeh.sampledata import us_states
 from bokeh.tile_providers import Vendors, get_provider
 
+from postreise.plot.plot_states import get_state_borders
 from postreise.plot.projection_helpers import project_borders, project_bus
 
 
@@ -17,14 +17,15 @@ def map_lmp(s_grid, lmp, us_states_dat=None, lmp_min=20, lmp_max=45, is_website=
 
     :param powersimdata.input.grid.Grid s_grid: scenario grid
     :param pandas.DataFrame lmp: locational marginal prices calculated for the scenario
-    :param dict us_states_dat: if None default to us_states data file, imported from bokeh
+    :param dict us_states_dat: dictionary of state border lats/lons. If None, get
+        from :func:`postreise.plot.plot_states.get_state_borders`.
     :param inf/float lmp_min: minimum LMP to clamp plot range to.
     :param inf/float lmp_max: maximum LMP to clamp plot range to.
     :param bool is_website: changes text/legend formatting to look better on the website
     :return: (*bokeh.models.layout.Row*) bokeh map visual in row layout
     """
     if us_states_dat is None:
-        us_states_dat = us_states.data
+        us_states_dat = get_state_borders()
 
     bus = project_bus(s_grid.bus)
     bus_segments = _construct_bus_data(bus, lmp, lmp_min, lmp_max)
@@ -84,7 +85,7 @@ def _construct_shadowprice_visuals(
     """Uses bokeh to plot formatted data. Make map showing lmp using color.
 
     :param list(pandas.DataFrame) bus_segments: bus data split by lmp
-    :param dict us_states_dat: us_states data file, imported from bokeh
+    :param dict us_states_dat: dictionary of state border lats/lons
     :param str file_name: name for output png file
     :param inf/float lmp_min: minimum LMP to clamp plot range to.
     :param inf/float lmp_max: maximum LMP to clamp plot range to.

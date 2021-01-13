@@ -5,10 +5,10 @@ import numpy as np
 import pandas as pd
 from bokeh.models import ColorBar, ColumnDataSource, HoverTool
 from bokeh.plotting import figure
-from bokeh.sampledata import us_states
 from bokeh.tile_providers import Vendors, get_provider
 from bokeh.transform import linear_cmap
 
+from postreise.plot.plot_states import get_state_borders
 from postreise.plot.projection_helpers import project_borders, project_branch
 
 traffic_palette = [
@@ -42,16 +42,15 @@ def map_risk_bind(
     :param pandas.DataFrame congestion_stats: data frame as returned by
         :func:`postreise.analyze.transmission.utilization.generate_cong_stats`.
     :param pandas.DataFrame branch: branch data frame.
-    :param dict us_states_dat: state border coordinates to be passed to
-        :func:`postreise.plot.projection_helpers.project_borders`.
-        If None, default to bokeh.sampledata.us_states.
+    :param dict us_states_dat: dictionary of state border lats/lons. If None, get
+        from :func:`postreise.plot.plot_states.get_state_borders`.
     :param int/float vmin: minimum value for color range. If None, use data minimum.
     :param int/float vmax: maximum value for color range. If None, use data maximum.
     :param bool is_website: changes text/legend formatting to look better on the website
     :return:  -- map of lines with risk and bind incidents color coded
     """
     if us_states_dat is None:
-        us_states_dat = us_states.data
+        us_states_dat = get_state_borders()
 
     if risk_or_bind == "risk":
         risk_or_bind_units = "Risk (MWH)"
@@ -147,16 +146,15 @@ def map_utilization(
     :param pandas.DataFrame utilization_df: utilization returned by
         :func:`postreise.analyze.transmission.utilization.get_utilization`
     :param pandas.DataFrame branch: branch data frame.
-    :param dict us_states_dat: state border coordinates to be passed to
-        :func:`postreise.plot.projection_helpers.project_borders`.
-        If None, default to bokeh.sampledata.us_states.
+    :param dict us_states_dat: dictionary of state border lats/lons. If None, get
+        from :func:`postreise.plot.plot_states.get_state_borders`.
     :param int/float vmin: minimum value for color range. If None, use data minimum.
     :param int/float vmax: maximum value for color range. If None, use data maximum.
     :param bool is_website: changes text/legend formatting to look better on the website
     :return:  -- map of lines with median utilization color coded
     """
     if us_states_dat is None:
-        us_states_dat = us_states.data
+        us_states_dat = get_state_borders()
 
     branch_mask = branch.rateA != 0
     median_util = utilization_df[branch.loc[branch_mask].index].median()
