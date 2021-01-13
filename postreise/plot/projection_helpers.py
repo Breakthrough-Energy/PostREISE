@@ -46,12 +46,12 @@ def project_borders(us_states_dat, state_list=None):
     :param dict us_states_dat: keys are state abbrevs, values are dicts with keys of
         {"lats", "lons"}, values of coordinates.
     :param iterable state_list: abbrevs of states to project, defaults to the keys of
-        us_states_dat minus AK, HI, & DC.
+        us_states_dat minus AK, HI, DC, & PR.
     :return: (*tuple*) -- reprojected coordinates for use on map.
     """
     transformer = Transformer.from_crs("epsg:4326", "epsg:3857")
     if state_list is None:
-        state_list = set(us_states_dat.keys()) - {"AK", "HI", "DC"}
+        state_list = set(us_states_dat.keys()) - {"AK", "HI", "DC", "PR"}
     state_xys = [
         transformer.transform(us_states_dat[s]["lats"], us_states_dat[s]["lons"])
         for s in state_list

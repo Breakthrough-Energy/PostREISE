@@ -1,4 +1,7 @@
-# This file taken from github/gitignore
+# Location in which shapefiles will be downloaded as necessary
+postreise/plot/shapes/
+
+# Everything below taken from github/gitignore
 # https://github.com/github/gitignore/blob/master/Python.gitignore
 
 
