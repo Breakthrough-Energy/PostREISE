@@ -20,7 +20,8 @@ def map_plant_capacity(
     size_factor=1,
 ):
     """Makes map of renewables from change table 'new plants'. Size/area
-        indicates capacity
+    indicates capacity
+
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param dict us_states_dat: us_states data file, imported from bokeh
     :param float size_factor: scale size of glyphs
