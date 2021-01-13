@@ -1,3 +1,5 @@
+import numpy as np
+from powersimdata.utility.helpers import _check_import
 from pyproj import Transformer
 
 
@@ -59,3 +61,38 @@ def project_borders(us_states_dat, state_list=None):
     all_state_xs, all_state_ys = zip(*state_xys)
 
     return all_state_xs, all_state_ys
+
+
+def convert_shapefile_to_latlon_dict(filename, key):
+    """Converts a shapefile to a dictionary of lat/lon data.
+
+    :param str filename: the location of the shapefile to interpret.
+    :param str key: the shapefile column values used as dictionary keys.
+    :return: (*dict*) -- dictionary with keys from the specified shapefile column,
+        values are dict with keys of {"lat", "lon"}, values are coordinates, padded by
+        nan values to indicate the end of each polygon before the start of the next one.
+    :raises ValueError: if the specified key is not present in the shapefile, or the
+        shapefile contains at least one polygon with a hole.
+    """
+    gpd = _check_import("geopandas")
+    shapes = gpd.read_file(filename)
+    if key not in shapes.columns:
+        raise ValueError("key must be present in the columns of the shapefile")
+    exploded_shapes = shapes.explode()
+    if sum([len(g.interiors) for g in exploded_shapes.geometry]) > 0:
+        raise ValueError("Cannot convert shapes with holes")
+    keys_to_latlon_dicts = {}
+    for i in shapes.index:
+        latlon_arrays_list = [np.array(g.xy) for g in exploded_shapes.exterior.loc[i]]
+        # Join individual arrays, padding inbetween with (nan, nan) coordinate point
+        nanpadded_array = np.concatenate(
+            [
+                np.concatenate([s.T, np.empty((1, 2)) * np.nan])
+                if i < (len(latlon_arrays_list) - 1)
+                else s.T
+                for i, s in enumerate(latlon_arrays_list)
+            ]
+        ).T
+        latlon_dict = {"lats": nanpadded_array[1], "lons": nanpadded_array[0]}
+        keys_to_latlon_dicts[shapes.loc[i, key]] = latlon_dict
+    return keys_to_latlon_dicts
