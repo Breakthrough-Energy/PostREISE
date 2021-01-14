@@ -38,8 +38,7 @@ def group_zone(bus_map):
     of each state, the midway point between the max and min
     for lat and lon are calculated.
 
-    :param pandas.DataFrame bus_map: data frame with
-     coal, ng, and zone id per bus
+    :param pandas.DataFrame bus_map: data frame with coal, ng, and zone id per bus.
     :return: (pandas.DataFrame) -- data frame, aggregated by us state
         coordinates
     """
@@ -75,7 +74,7 @@ def map_carbon_emission_bar(
     size_factor=1.0,
 ):
     """Makes map of carbon emissions, color code by fuel type. Size/area
-        indicates emissions.
+    indicates emissions.
 
     :param dict us_states_dat: dictionary of state border lats/lons. If None, get
         from :func:`postreise.plot.plot_states.get_state_borders`.
