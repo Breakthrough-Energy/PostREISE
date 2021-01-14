@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-from bokeh.io import output_notebook, show
 from bokeh.layouts import row
 from bokeh.models import ColorBar, ColumnDataSource
 from bokeh.plotting import figure
@@ -24,6 +23,7 @@ def plot_shadowprice(scenario_id, hour, lmp_split_points=None):
         Must have 10 items or fewer. defaults to None
         example: [-1, 1, 20, 25, 30, 35, 40, 100]
     :type lmp_split_points: list(float), optional
+    :return: (*bokeh.models.layout.Row*) -- bokeh map visual in row layout.
     :raises ValueError: lmp_split_points must have 10 items or fewer
     """
     if lmp_split_points is not None and len(lmp_split_points) > 10:
@@ -34,7 +34,7 @@ def plot_shadowprice(scenario_id, hour, lmp_split_points=None):
         bus, lmp, lmp_split_points, hour
     )
     branches_selected = _construct_branch_data(branch, cong, hour)
-    _construct_shadowprice_visuals(
+    return _construct_shadowprice_visuals(
         interconnect, lmp_split_points, bus_segments, branches_selected
     )
 
@@ -185,6 +185,7 @@ def _construct_shadowprice_visuals(
     :type bus_segments: list(pandas.DataFrame)
     :param branch_data: branch data
     :type branch_data: pandas.DataFrame
+    :return: (*bokeh.models.layout.Row*) -- bokeh map visual in row layout.
     """
 
     tools = "pan,wheel_zoom,reset,hover,save"
@@ -243,8 +244,7 @@ def _construct_shadowprice_visuals(
 
     p.add_layout(branch_legend, "right")
 
-    output_notebook()
-    show(row(bus_legend, p))
+    return row(bus_legend, p)
 
 
 def _construct_bus_legend(lmp_split_points):
