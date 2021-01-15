@@ -3,139 +3,11 @@ import pandas as pd
 from bokeh.layouts import row
 from bokeh.models import ColumnDataSource, HoverTool, Label, LabelSet
 from bokeh.plotting import figure
-from bokeh.sampledata import us_states
 from bokeh.tile_providers import Vendors, get_provider
 
+from postreise.plot.colors import be_green, be_purple, be_red
+from postreise.plot.plot_states import get_state_borders
 from postreise.plot.projection_helpers import project_borders, project_bus
-
-# breakthrough energy (be) color names
-be_purple = "#8B36FF"
-be_green = "#78D911"
-be_red = "#FF8563"
-
-
-def plot_states(
-    state_list,
-    col_list,
-    labels_list,
-    leg_color,
-    leg_label,
-    font_size,
-    web=True,
-    us_states_dat=None,
-):
-    """Plots US state borders and allows color coding by state,
-        for example to represent different emissions goals.
-
-    :param list state_list: list of us states to color code.
-    :param list col_list: list of colors associated with states in state_list.
-    :param list labels_list: list of labels for us states.
-    :param list leg_color: list of colors for legend
-    :param list leg_label: list of labels for colors in legend
-    :param float font_size: citation font size, for non web version only
-    :param boolean web: if true, formats for website with hover tips
-    :param dict us_states_dat: if None default to us_states data file, imported from bokeh.
-    :return:  -- map of us states with option to color by value.
-    """
-    if us_states_dat is None:
-        us_states_dat = us_states.data
-
-    # warn if inputs diff lengths
-    if len(state_list) != len(col_list):
-        print("warning: state_list and col_list must be same length")
-    if len(state_list) != len(labels_list):
-        print("warning: state_list and labels_list must be same length")
-
-    a, b = project_borders(us_states_dat)
-
-    tools: str = "pan,wheel_zoom,reset,save"
-    p = figure(
-        tools=tools,
-        x_axis_location=None,
-        y_axis_location=None,
-        plot_width=800,
-        plot_height=800,
-        output_backend="webgl",
-        sizing_mode="stretch_both",
-        match_aspect=True,
-    )
-
-    # legend squares, plot behind graph so hidden
-    for i in range(len(leg_color)):
-        p.square(
-            -8.1e6,
-            [5.2e6, 5.3e6],
-            fill_color=leg_color[i],
-            color=leg_color[i],
-            size=300,
-            legend_label=leg_label[i],
-        )
-
-    p.add_tile(get_provider(Vendors.CARTODBPOSITRON_RETINA))
-
-    # plot state borders
-    p.patches(a, b, fill_alpha=0, fill_color="blue", line_color="gray", line_width=2)
-
-    a1, b1 = project_borders(us_states_dat, state_list=state_list)
-    source = ColumnDataSource(
-        dict(
-            xs=a1,
-            ys=b1,
-            col=col_list,
-            col2=["gray" for i in range(48)],
-            label=labels_list,
-            state_name=state_list,
-        )
-    )
-
-    patch = p.patches(
-        "xs",
-        "ys",
-        source=source,
-        fill_alpha=0.8,
-        fill_color="col",
-        line_color="col2",
-    )
-
-    # loop through states and colors, plot patches
-    n = -1
-    # loop through states and colors, plot patches
-    for i in state_list:
-        n = n + 1
-        a1, b1 = project_borders(us_states_dat, state_list=[i])
-        citation = Label(
-            x=min(a1[0]) + 100000,
-            y=(max(b1[0]) + min(b1[0])) / 2,
-            x_units="data",
-            y_units="data",
-            text_font_size=font_size,
-            text=labels_list[n],
-            render_mode="css",
-            border_line_color="black",
-            border_line_alpha=0,
-            background_fill_color="white",
-            background_fill_alpha=0.8,
-        )
-        if not web:
-            p.add_layout(citation)
-
-    # specify parameters if making figure for website
-    if web:
-        hover = HoverTool(
-            tooltips=[
-                ("State", "@state_name"),
-                ("Goal", "@label"),
-            ],
-            renderers=[patch],
-        )  # only for circles
-        p.add_tools(hover)
-
-    p.legend.title = "Goals up to 2030"
-    p.legend.location = "bottom_right"
-    p.legend.label_text_font_size = "12pt"
-
-    p.legend.title_text_font_size = "12pt"
-    return p
 
 
 def group_lat_lon(bus_map, agg=True):
@@ -166,8 +38,7 @@ def group_zone(bus_map):
     of each state, the midway point between the max and min
     for lat and lon are calculated.
 
-    :param pandas.DataFrame bus_map: data frame with
-     coal, ng, and zone id per bus
+    :param pandas.DataFrame bus_map: data frame with coal, ng, and zone id per bus.
     :return: (pandas.DataFrame) -- data frame, aggregated by us state
         coordinates
     """
@@ -203,9 +74,10 @@ def map_carbon_emission_bar(
     size_factor=1.0,
 ):
     """Makes map of carbon emissions, color code by fuel type. Size/area
-        indicates emissions.
+    indicates emissions.
 
-    :param dict us_states_dat: if None default to us_states data file, imported from bokeh
+    :param dict us_states_dat: dictionary of state border lats/lons. If None, get
+        from :func:`postreise.plot.plot_states.get_state_borders`.
     :param pandas.DataFrame bus_info_and_emission: info and
         emission of buses by :func:`combine_bus_info_and_emission`.
     :param str scenario_name: name of scenario for labeling.
@@ -215,7 +87,7 @@ def map_carbon_emission_bar(
     """
 
     if us_states_dat is None:
-        us_states_dat = us_states.data
+        us_states_dat = get_state_borders()
 
     bus_map = project_bus(bus_info_and_emission)
     bus_map = group_zone(bus_map)
@@ -410,7 +282,8 @@ def map_carbon_emission(
     :param str color_coal: color associated with coal, default to black/gray
     :param str label_coal: label for legend associated with coal.
     :param str label_ng: label for legend associated with ng.
-    :param dict us_states_dat: if None default to us_states data file, imported from bokeh
+    :param dict us_states_dat: dictionary of state border lats/lons. If None, get
+        from :func:`postreise.plot.plot_states.get_state_borders`.
     :param float size_factor: scaling factor for size of emissions circles glyphs
     :param boolean web: if true, optimizes figure for web-based presentation
     :param boolean agg: if true, aggregates points by lat lon within a given radius
@@ -422,7 +295,7 @@ def map_carbon_emission(
 
     # us states borders, prepare data
     if us_states_dat is None:
-        us_states_dat = us_states.data
+        us_states_dat = get_state_borders()
     a, b = project_borders(us_states_dat)
 
     # prepare data frame for emissions data

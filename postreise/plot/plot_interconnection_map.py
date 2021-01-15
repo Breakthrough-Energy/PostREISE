@@ -2,11 +2,11 @@ import numpy as np
 import pandas as pd
 from bokeh.models import ColumnDataSource, HoverTool
 from bokeh.plotting import figure
-from bokeh.sampledata import us_states
 from bokeh.tile_providers import Vendors, get_provider
 from powersimdata.network.usa_tamu.constants import zones
 from powersimdata.utility import distance
 
+from postreise.plot.plot_states import get_state_borders
 from postreise.plot.projection_helpers import project_borders, project_branch
 
 
@@ -36,11 +36,12 @@ def map_interconnections(
     :param str hover_choice: "nodes" for state_counts nodes per state, otherwise hvdc
         capacity in hover over tool tips for hvdc lines only
     :param float hvdc_width: adjust width of HVDC lines on map
-    :param dict us_states_dat: if None default to us_states data file, imported from bokeh.
+    :param dict us_states_dat: dictionary of state border lats/lons. If None, get
+        from :func:`postreise.plot.plot_states.get_state_borders`.
     :return:  -- map of transmission lines
     """
     if us_states_dat is None:
-        us_states_dat = us_states.data
+        us_states_dat = get_state_borders()
 
     # projection steps for mapping
     branch = grid.branch

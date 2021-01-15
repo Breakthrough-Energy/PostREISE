@@ -107,3 +107,30 @@ The dataset is used to compare the generation level out of our simulations to va
 
 ##### Note
 Recommended citation: Cole, Wesley, Nathaniel Gates, Trieu Mai, Daniel Greer, and Paritosh Das. 2019. 2019 Standard Scenarios Report: A U.S. Electricity Sector Outlook, Golden, CO: National Renewable Energy Laboratory. NREL/TP-6A20-74110. https://www.nrel.gov/docs/fy20osti/74110.pdf.
+
+
+---
+### Shapefiles
+#### U.S. States
+##### Source
+* Name: Cartographic Boundary Files
+* Author: United States Census Bureau
+* Description: Outlines of the state borders
+* Source: https://www.census.gov
+* Exact source location: https://www.census.gov/geographies/mapping-files/time-series/geo/carto-boundary-file.html
+
+##### Destination 1
+* Modifications to source file(s): None (besides unzipping)
+* Location: hosted at https://besciences.blob.core.windows.net/us-shapefiles/
+  * ***cb_2018_us_state_20m.cpg***
+  * ***cb_2018_us_state_20m.dbf***
+  * ***cb_2018_us_state_20m.prj***
+  * ***cb_2018_us_state_20m.shp***
+  * ***cb_2018_us_state_20m.shx***
+
+##### Destination 2
+* Modifications to source file(s): Convert shapefile [multi-]polygon shapes for each state to JSON-formatted dict of arrays of lat/lon coordinates, padded by NaN values between polygons. Data should be virtually identical, subject to floating point precision.
+* Location: hosted at ***https://besciences.blob.core.windows.net/us-shapefiles/state_shapes.json***
+
+##### General Purpose
+These files are used when plotting map-based visualizations (e.g. maps of congestion, LMPs, etc.), to display state borders.

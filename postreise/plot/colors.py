@@ -1,0 +1,6 @@
+be_blue = "#006FF9"
+be_green = "#78D911"
+be_lightblue = "#01D4ED"
+be_magenta = "#FF3270"
+be_red = "#FF8563"
+be_purple = "#8B36FF"

@@ -4,27 +4,22 @@
 import pandas as pd
 from bokeh.models import ColumnDataSource, HoverTool
 from bokeh.plotting import figure
-from bokeh.sampledata import us_states
 from bokeh.tile_providers import Vendors, get_provider
 
 from postreise.analyze.check import _check_scenario_is_in_analyze_state
+from postreise.plot.colors import be_green
+from postreise.plot.plot_states import get_state_borders
 from postreise.plot.projection_helpers import project_borders, project_bus
 
-# green, breakthrough energy colors (be)
-be_green = "#36D78C"
 
-
-def map_plant_capacity(
-    scenario,
-    us_states_dat=us_states.data,
-    size_factor=1,
-):
+def map_plant_capacity(scenario, us_states_dat=None, size_factor=1):
     """Makes map of renewables from change table 'new plants'. Size/area
-    indicates capacity
+    indicates capacity.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
-    :param dict us_states_dat: us_states data file, imported from bokeh
-    :param float size_factor: scale size of glyphs
+    :param dict us_states_dat: dictionary of state border lats/lons. If None, get
+        from :func:`postreise.plot.plot_states.get_state_borders`.
+    :param float/int size_factor: scale size of glyphs.
     """
 
     _check_scenario_is_in_analyze_state(scenario)
@@ -36,6 +31,8 @@ def map_plant_capacity(
         raise ValueError(
             "There are no new plants added in the selected scenario. Please choose a different scenario."
         )
+    if us_states_dat is None:
+        us_states_dat = get_state_borders()
 
     newplant = pd.DataFrame(ct["new_plant"])
     newplant = newplant.set_index("bus_id")
