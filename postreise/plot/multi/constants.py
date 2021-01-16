@@ -1,5 +1,3 @@
-import seaborn as sns
-
 ZONES = {
     "Western": [
         "Arizona",
@@ -53,18 +51,18 @@ RESOURCE_LABELS = {
     "biomass": "Biomass",
 }
 RESOURCE_COLORS = {
-    "wind": sns.xkcd_rgb["green"],
-    "solar": sns.xkcd_rgb["amber"],
-    "hydro": sns.xkcd_rgb["light blue"],
-    "ng": sns.xkcd_rgb["orchid"],
-    "nuclear": sns.xkcd_rgb["silver"],
-    "coal": sns.xkcd_rgb["light brown"],
-    "geothermal": sns.xkcd_rgb["hot pink"],
-    "dfo": sns.xkcd_rgb["royal blue"],
-    "storage": sns.xkcd_rgb["orange"],
+    "wind": "xkcd:green",
+    "solar": "xkcd:amber",
+    "hydro": "xkcd:light blue",
+    "ng": "xkcd:orchid",
+    "nuclear": "xkcd:silver",
+    "coal": "xkcd:light brown",
+    "geothermal": "xkcd:hot pink",
+    "dfo": "xkcd:royal blue",
+    "storage": "xkcd:orange",
     "other inc. biomass": "rebeccapurple",
-    "other": sns.xkcd_rgb["melon"],
-    "biomass": sns.xkcd_rgb["dark green"],
+    "other": "xkcd:melon",
+    "biomass": "xkcd:dark green",
 }
 SHADOW_PRICE_COLORS = [
     "darkmagenta",
