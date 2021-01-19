@@ -244,9 +244,7 @@ def _construct_bus_legend(lmp_split_points):
     :return: (*bokeh.plotting.figure*) -- the legend showing lmp for each bus
     """
     x_range = [""]
-    bars, bar_len_sum, labels = _get_bus_legend_bars_and_labels(
-        lmp_split_points, x_range
-    )
+    bars, bar_len_sum, labels = _get_bus_legend_bars_and_labels(lmp_split_points)
 
     # Make legend
     p = figure(
@@ -257,11 +255,11 @@ def _construct_bus_legend(lmp_split_points):
         tools="",
     )
     p.vbar_stack(
-        list(bars.keys())[1:],
+        [*bars],
         x="x_range",
         width=0.9,
-        color=shadow_price_pallette[: (len(bars) - 1)],
-        source=bars,
+        color=shadow_price_pallette[: len(bars)],
+        source={**{"x_range": [""]}, **bars},
     )
 
     p.y_range.start = -1
@@ -283,15 +281,14 @@ def _construct_bus_legend(lmp_split_points):
     return p
 
 
-def _get_bus_legend_bars_and_labels(lmp_split_points, x_range):
+def _get_bus_legend_bars_and_labels(lmp_split_points):
     """Get the bar lengths and labels for the bus legend
 
     :param list/tuple/set/numpy.array lmp_split_points: lmp values chosen to split
         the bus data
-    :param list x_range: the x-range for the vertical bar
     :return: (*tuple*) -- bar lengths and labels for the bus legend
     """
-    bars = {"x_range": x_range}
+    bars = {}
     bar_length_sum = 0
     labels = {}  # { y-position: label_text, ... }
     for i, (p, c) in enumerate(zip(lmp_split_points, lmp_split_points[1:])):
