@@ -166,20 +166,20 @@ def test_get_bus_legend_bars_and_labels_with_rounding():
         mock_split_points, [""]
     )
 
-    assert bars == {"x_range": [""], "0": [2], "1": [1], "2": [1], "3": [1]}
-    assert bar_length_sum == 5
-    assert labels == {0: "-1", 2: "1", 3: "1.9999", 4: "3", 5: "4"}
+    assert bars == {"x_range": [""], "0": [2], "1": [1], "2": [1.0001], "3": [1]}
+    assert bar_length_sum == 5.0001
+    assert labels == {0: "-1", 2: "1", 3: "1.9999", 4.0001: "3", 5.0001: "4"}
 
 
-def test_get_bus_legend_bars_and_labels_clamps_large_numbers_on_end():
+def test_get_bus_legend_bars_and_labels_clamps_large_numbers():
     mock_split_points = [-500, 100, 200, 300, 400]
     bars, bar_length_sum, labels = _get_bus_legend_bars_and_labels(
         mock_split_points, [""]
     )
 
-    assert bars == {"x_range": [""], "0": [5], "1": [100], "2": [100], "3": [5]}
-    assert bar_length_sum == 210
-    assert labels == {0: "-500", 5: "100", 105: "200", 205: "300", 210: "400"}
+    assert bars == {"x_range": [""], "0": [5], "1": [5], "2": [5], "3": [5]}
+    assert bar_length_sum == 20
+    assert labels == {0: "-500", 5: "100", 10: "200", 15: "300", 20: "400"}
 
 
 def test_get_bus_legend_bars_and_labels_min_bar_len_is_one():
