@@ -7,46 +7,52 @@ from bokeh.tile_providers import Vendors, get_provider
 from bokeh.transform import linear_cmap
 from powersimdata.scenario.scenario import Scenario
 
-from postreise.plot.multi.constants import SHADOW_PRICE_COLORS
+from postreise.analyze.check import _check_date
+from postreise.plot.colors import shadow_price_pallette
 from postreise.plot.projection_helpers import project_branch, project_bus
 
 
-def plot_shadowprice(scenario_id, hour, lmp_split_points=None):
-    """Makes map lmp variation and shadow prices
+def plot_shadowprice(scenario_id, datetime, lmp_split_points=None):
+    """Map lmp variation and shadow prices
 
-    :param scenario_id: the id of the scenario to gather data from
-    :type scenario_id: string
-    :param hour: the hour we will be analyzing
-    :type hour: string
-    :param lmp_split_points: the locational marginal pricing (lmp) values
-        we have chosen to split the bus data. Includes min and max values.
-        Must have 10 items or fewer. defaults to None
-        example: [-1, 1, 20, 25, 30, 35, 40, 100]
-    :type lmp_split_points: list(float), optional
+    :param str/int scenario_id: scenario id
+    :param pandas.Timestamp/numpy.datetime64/datetime.datetime datetime: timestamp of
+        the hour to analyze
+    :param list/tuple/set/numpy.array lmp_split_points: the locational marginal
+        pricing (lmp) values we have chosen to split the bus data. Includes min and
+        max values. Must have 10 items or fewer. defaults to None. Example: [-1, 1,
+        20, 25, 30, 35, 40, 100]
     :return: (*bokeh.models.layout.Row*) -- bokeh map visual in row layout.
-    :raises ValueError: lmp_split_points must have 10 items or fewer
+    :raises TypeError: if *'scenario_id'* is not a str/int, *'datetime'* is not a str
+        or *'lmp_split_points'* is not a list
+    :raises ValueError: if *'lmp_split_points'* array has more than 10 elements
     """
-    if lmp_split_points is not None and len(lmp_split_points) > 10:
-        raise ValueError("ERROR: lmp_split_points must have 10 items or fewer")
+    if not isinstance(scenario_id, (str, int)):
+        raise TypeError("scenario_id must be a str/int")
+    _check_date(datetime)
+    if lmp_split_points is not None:
+        if not isinstance(lmp_split_points, list):
+            raise TypeError("lmp_split_points must be a list")
+        if len(lmp_split_points) > 10:
+            raise ValueError("lmp_split_points must have 10 items or fewer")
 
     interconnect, bus, lmp, branch, cong = _get_shadowprice_data(scenario_id)
     lmp_split_points, bus_segments = _construct_bus_data(
-        bus, lmp, lmp_split_points, hour
+        bus, lmp, lmp_split_points, datetime
     )
-    branches_selected = _construct_branch_data(branch, cong, hour)
+    branches_selected = _construct_branch_data(branch, cong, datetime)
     return _construct_shadowprice_visuals(
         interconnect, lmp_split_points, bus_segments, branches_selected
     )
 
 
 def _get_shadowprice_data(scenario_id):
-    """Gets data necessary for plotting shadowprice
+    """Gets data necessary for plotting shadow price
 
-    :param scenario_id: the id of the scenario to gather data from
-    :type scenario_id: string
-    :return: interconnect, bus data, lmp data, branch data, congestion data
-    :rtype: string, pandas.DataFrame, pandas.DataFrame, pandas.DataFrame,
-        pandas.DataFrame
+    :param str/int scenario_id: scenario id
+    :return: (*tuple*) -- interconnect as a str, bus data as a data frame, lmp data
+        as a data frame, branch data as a data frame and congestion data as a data
+        frame
     """
     s = Scenario(scenario_id)
 
@@ -73,27 +79,22 @@ def _get_shadowprice_data(scenario_id):
     return interconnect, bus_map, s.state.get_lmp(), branch_map, cong_abs
 
 
-def _construct_bus_data(bus_map, lmp, user_set_split_points, hour):
+def _construct_bus_data(bus_map, lmp, user_set_split_points, datetime):
     """Adds lmp data to each bus, splits buses into 9 segments by lmp
 
-    :param bus_map: bus dataframe with location data
-    :type bus_map: pandas.DataFrame
-    :param lmp: lmp dataframe
-    :type lmp: pandas.DataFrame
-    :param user_set_split_points: user-set lmp values to split the bus data.
-        Must have 10 items or fewer
-        example: [-1, 1, 20, 25, 30, 35, 40, 100]
-    :type user_set_split_points: list(float), None
-    :param hour: the hour we will be analyzing
-    :type hour: string
-    :return: the lmp vals we have chosen to split the bus data,
-        bus data split into segments
-    :rtype: list(float), list(pandas.DataFrame)
+    :param pandas.DataFrame bus_map: bus data frame with location data
+    :param pandas.DataFrame lmp: lmp data frame
+    :param list/tuple/set/numpy.array user_set_split_points: user-set lmp values to
+        split the bus data. Must have 10 items or fewer. Example: [-1, 1, 20, 25, 30,
+        35, 40, 100]
+    :param pandas.Timestamp/numpy.datetime64/datetime.datetime datetime: timestamp of
+        the hour to analyze
+    :return: (*tuple*) -- the lmp vals we have chosen to split the bus data, bus data
+        split into segments
     """
-    # Add lmp to bus dataframe
-    lmp_hour = lmp[lmp.index == hour]
+    lmp_hour = lmp.loc[datetime]
     lmp_hour = lmp_hour.T
-    lmp_hour = lmp_hour.rename(columns={lmp_hour.columns[0]: "lmp"})
+    lmp_hour.name = "lmp"
     bus_map = pd.concat([bus_map, lmp_hour], axis=1)
 
     lmp_split_points = (
@@ -101,28 +102,21 @@ def _construct_bus_data(bus_map, lmp, user_set_split_points, hour):
         if user_set_split_points is not None
         else _get_lmp_split_points(bus_map)
     )
-
-    bus_segments = []
-    for i in range(len(lmp_split_points) - 1):
-        bus_segment = bus_map[
-            (bus_map["lmp"] > lmp_split_points[i])
-            & (bus_map["lmp"] <= lmp_split_points[i + 1])
-        ]
-        bus_segments.append(bus_segment)
+    bus_segments = [
+        bus_map[(bus_map["lmp"] > p) & (bus_map["lmp"] <= c)]
+        for p, c in zip(lmp_split_points, lmp_split_points[1:])
+    ]
 
     return lmp_split_points, bus_segments
 
 
 def _get_lmp_split_points(bus_map):
-    """Determines up to ten points to split the bus data (inc. min and max lmp).
-        Always split on lmp -1 and 1 if possible
-        Split the rest of the buses into groups
-        with an equal number of members
+    """Determine up to ten points to split the bus data (inc. min and max lmp).
+    Always split on lmp -1 and 1 if possible. Split the rest of the buses into groups
+    with an equal number of members
 
-    :param bus_map: bus data with lmp
-    :type bus_map: pandas.DataFrame
-    :return: the lmp vals we have chosen to split the bus data
-    :rtype: list(float)
+    :param pandas.DataFrame bus_map: bus data with lmp
+    :return: (*list*) -- lmp values for split points
     """
     min_lmp = round(bus_map["lmp"].min(), 2)
     max_lmp = round(bus_map["lmp"].max(), 2)
@@ -146,22 +140,20 @@ def _get_lmp_split_points(bus_map):
     return split_points + [max_lmp]
 
 
-def _construct_branch_data(branch_map, cong, hour):
-    """Adds congestion data for each branch
+def _construct_branch_data(branch_map, cong, datetime):
+    """Add congestion data for each branch
 
-    :param branch_map: dataframe of branch data
-    :type branch_map: pandas.DataFrame
-    :param cong: dataframe of congestion data for the selected hour
-    :type cong: pandas.DataFrame
-    :param hour: the hour we will be analyzing
-    :type hour: string
-    :return: modified branch data adding congestion data for each branch
-    :rtype: pandas.DataFrame
+    :param pandas.DataFrame branch_map: data frame of branch data
+    :param pandas.DataFrame cong: data frame of congestion data for the selected hour
+    :param pandas.Timestamp/numpy.datetime64/datetime.datetime datetime: timestamp of
+        the hour to analyze
+    :return: (*pandas.DataFrame*) -- modified branch data with congestion data added
+        for each branch
     """
     # Add congestion to branch dataframe
-    cong_hour = cong.iloc[cong.index == hour]
+    cong_hour = cong.loc[datetime]
     cong_hour = cong_hour.T
-    cong_hour = cong_hour.rename(columns={cong_hour.columns[0]: "medianval"})
+    cong_hour.name = "medianval"
     branch_map = pd.concat([branch_map, cong_hour], axis=1)
 
     # select branches that have a binding constraint and are of type Line
@@ -177,14 +169,11 @@ def _construct_shadowprice_visuals(
 ):
     """Use bokeh to plot variation in lmp and shadow prices
 
-    :param interconnect: the scenario interconnect
-    :type interconnect: string
-    :param lmp_split_points: the lmp vals we have chosen to split the bus data
-    :type lmp_split_points: list(float)
-    :param bus_segments: bus data split into 9 segments
-    :type bus_segments: list(pandas.DataFrame)
-    :param branch_data: branch data
-    :type branch_data: pandas.DataFrame
+    :param str interconnect: scenario interconnect
+    :param list/tuple/set/numpy.array lmp_split_points: lmp values chosen to split
+        the bus data
+    :param list bus_segments: bus data split into 9 segments
+    :param pandas.DataFrame branch_data: branch data
     :return: (*bokeh.models.layout.Row*) -- bokeh map visual in row layout.
     """
 
@@ -213,7 +202,7 @@ def _construct_shadowprice_visuals(
             }
         )
         p.circle(
-            "x", "y", color=SHADOW_PRICE_COLORS[i], alpha=0.4, size=11, source=bus_cds
+            "x", "y", color=shadow_price_pallette[i], alpha=0.4, size=11, source=bus_cds
         )
 
     # Add branches
@@ -227,7 +216,7 @@ def _construct_shadowprice_visuals(
     # branch outline
     p.multi_line("xs", "ys", color="black", line_width=14, source=branch_cds)
     # branch color
-    palette = SHADOW_PRICE_COLORS[-5:]
+    palette = shadow_price_pallette[-5:]
     mapper = linear_cmap(field_name="medianval", palette=palette, low=0, high=2000)
     p.multi_line("xs", "ys", color=mapper, line_width=9, source=branch_cds)
 
@@ -248,18 +237,14 @@ def _construct_shadowprice_visuals(
 
 
 def _construct_bus_legend(lmp_split_points):
-    """Constructs the legend for lmp at each bus
+    """Construct the legend for lmp at each bus
 
-    :param lmp_split_points: the lmp values we have chosen to
-        split the bus data
-    :type lmp_split_points: list(float)
-    :return: the legend showing lmp for each bus
-    :rtype: bokeh.plotting.figure
+    :param list/tuple/set/numpy.array lmp_split_points: lmp values chosen to split
+        the bus data
+    :return: (*bokeh.plotting.figure*) -- the legend showing lmp for each bus
     """
     x_range = [""]
-    bars, bar_len_sum, labels = _get_bus_legend_bars_and_labels(
-        lmp_split_points, x_range
-    )
+    bars, bar_len_sum, labels = _get_bus_legend_bars_and_labels(lmp_split_points)
 
     # Make legend
     p = figure(
@@ -270,11 +255,11 @@ def _construct_bus_legend(lmp_split_points):
         tools="",
     )
     p.vbar_stack(
-        list(bars.keys())[1:],
+        [*bars],
         x="x_range",
         width=0.9,
-        color=SHADOW_PRICE_COLORS[: (len(bars) - 1)],
-        source=bars,
+        color=shadow_price_pallette[: len(bars)],
+        source={**{"x_range": [""]}, **bars},
     )
 
     p.y_range.start = -1
@@ -282,7 +267,7 @@ def _construct_bus_legend(lmp_split_points):
     p.xgrid.grid_line_color = None
     p.axis.minor_tick_line_color = None
     p.outline_line_color = None
-    p.yaxis.ticker = list(labels.keys())
+    p.yaxis.ticker = [*labels]
     p.yaxis.major_label_overrides = labels
 
     p.text(
@@ -296,35 +281,21 @@ def _construct_bus_legend(lmp_split_points):
     return p
 
 
-def _get_bus_legend_bars_and_labels(lmp_split_points, x_range):
-    """Gets the bar lengths and labels for the bus legend
+def _get_bus_legend_bars_and_labels(lmp_split_points):
+    """Get the bar lengths and labels for the bus legend
 
-    :param lmp_split_points: the lmp vs we have chosen to split the bus data
-    :type lmp_split_points: list(float)
-    :param x_range: the x-range for the vbar_stack
-    :type x_range: list(string)
-    :return: bar lengths and labels for the bus legend
-    :rtype: dict, float, dict
+    :param list/tuple/set/numpy.array lmp_split_points: lmp values chosen to split
+        the bus data
+    :return: (*tuple*) -- bar lengths and labels for the bus legend
     """
-    bars = {"x_range": x_range}
+    bars = {}
     bar_length_sum = 0
     labels = {}  # { y-position: label_text, ... }
-    for i in range(len(lmp_split_points)):
-        bar_length = 0
-        if i == 0 or i == len(lmp_split_points) - 2:
-            # For first and last bars, clamp bar length between 1 and 5
-            # to prevent extreme min and max vals from overwhelming the legend
-            lmp_diff = lmp_split_points[i + 1] - lmp_split_points[i]
-            bar_length = 1 if lmp_diff < 1 else 5 if lmp_diff > 5 else lmp_diff
-        elif i != len(lmp_split_points) - 1:
-            # max_lmp has a label but no bar
-            lmp_diff = lmp_split_points[i + 1] - lmp_split_points[i]
-            # Min bar length of 1 to ensure small bars are visible
-            bar_length = max(1, round(lmp_diff, 1))
+    for i, (p, c) in enumerate(zip(lmp_split_points, lmp_split_points[1:])):
+        bar_length = max(1, min(5, c - p))
+        bars[str(i)] = [bar_length]
+        labels[bar_length_sum] = str(p)
+        bar_length_sum += bar_length
 
-        labels[round(bar_length_sum, 1)] = str(lmp_split_points[i])
-        if i != len(lmp_split_points) - 1:
-            bars[str(i)] = [bar_length]
-            bar_length_sum += bar_length
-
+    labels[bar_length_sum] = str(c)
     return bars, bar_length_sum, labels
