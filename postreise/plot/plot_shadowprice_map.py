@@ -8,7 +8,7 @@ from bokeh.transform import linear_cmap
 from powersimdata.scenario.scenario import Scenario
 
 from postreise.analyze.check import _check_date
-from postreise.plot.multi.constants import SHADOW_PRICE_COLORS
+from postreise.plot.colors import shadow_price_pallette
 from postreise.plot.projection_helpers import project_branch, project_bus
 
 
@@ -202,7 +202,7 @@ def _construct_shadowprice_visuals(
             }
         )
         p.circle(
-            "x", "y", color=SHADOW_PRICE_COLORS[i], alpha=0.4, size=11, source=bus_cds
+            "x", "y", color=shadow_price_pallette[i], alpha=0.4, size=11, source=bus_cds
         )
 
     # Add branches
@@ -216,7 +216,7 @@ def _construct_shadowprice_visuals(
     # branch outline
     p.multi_line("xs", "ys", color="black", line_width=14, source=branch_cds)
     # branch color
-    palette = SHADOW_PRICE_COLORS[-5:]
+    palette = shadow_price_pallette[-5:]
     mapper = linear_cmap(field_name="medianval", palette=palette, low=0, high=2000)
     p.multi_line("xs", "ys", color=mapper, line_width=9, source=branch_cds)
 
@@ -260,7 +260,7 @@ def _construct_bus_legend(lmp_split_points):
         list(bars.keys())[1:],
         x="x_range",
         width=0.9,
-        color=SHADOW_PRICE_COLORS[: (len(bars) - 1)],
+        color=shadow_price_pallette[: (len(bars) - 1)],
         source=bars,
     )
 
