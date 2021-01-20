@@ -9,12 +9,12 @@ def get_demand_time_series(scenario, area, area_type=None):
     """Get time series demand in certain area of a scenario
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
-    :param str area: one of: *loadzone*, *state*, *state abbreviation*,
+    :param str area: one of *loadzone*, *state*, *state abbreviation*,
         *interconnect*, *'all'*
-    :param str area_type: one of: *'loadzone'*, *'state'*,
-        *'state_abbr'*, *'interconnect'*
+    :param str area_type: one of *'loadzone'*, *'state'*, *'state_abbr'*,
+        *'interconnect'*
     :return: (*pandas.Series*) -- time series of total demand, index: time stamps,
-        column demand values
+        column: demand values
     """
     grid = scenario.state.get_grid()
     loadzone_set = area_to_loadzone(grid, area, area_type=area_type)
@@ -27,12 +27,12 @@ def get_net_demand_time_series(scenario, area, area_type=None):
     """Get time series net demand in certain area of a scenario
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
-    :param str area: one of: *loadzone*, *state*, *state abbreviation*,
+    :param str area: one of *loadzone*, *state*, *state abbreviation*,
         *interconnect*, *'all'*
-    :param str area_type: one of: *'loadzone'*, *'state'*,
-        *'state_abbr'*, *'interconnect'*
+    :param str area_type: one of *'loadzone'*, *'state'*, *'state_abbr'*,
+        *'interconnect'*
     :return: (*pandas.Series*) -- time series of total demand, index: time stamps,
-        column net demand values
+        column: net demand values
     """
     renewables = ["wind", "wind_offshore", "solar"]
     renewable_pg = get_generation_time_series_by_resources(

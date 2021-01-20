@@ -277,7 +277,7 @@ def summarize_plant_to_location(df, grid):
 
     all_locations = grid.plant[["lat", "lon"]]
     locations_in_df = all_locations.loc[df.columns].to_records(index=False)
-    location_data = df.T.groupby(locations_in_df).sum().T
+    location_data = df.groupby(locations_in_df, axis=1).sum()
 
     return location_data
 
@@ -287,17 +287,14 @@ def get_plant_id_for_resources_in_area(scenario, area, resources, area_type=None
     scenario.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
-    :param str area: one of: *loadzone*, *state*, *state abbreviation*,
+    :param str area: one of *loadzone*, *state*, *state abbreviation*,
         *interconnect*, *'all'*
     :param str/list resources: one or a list of resources
-    :param str area_type: one of: *'loadzone'*, *'state'*,
-        *'state_abbr'*, *'interconnect'*
+    :param str area_type: one of *'loadzone'*, *'state'*, *'state_abbr'*,
+        *'interconnect'*
     :return: (*list*) -- list of plant id
     """
-    if isinstance(resources, str):
-        resource_set = set([resources])
-    else:
-        resource_set = set(resources)
+    resource_set = set([resources]) if isinstance(resources, str) else set(resources)
     grid = scenario.state.get_grid()
     loadzone_set = area_to_loadzone(grid, area, area_type=area_type)
     plant_id = grid.plant[
@@ -312,24 +309,19 @@ def get_storage_id_in_area(scenario, area, area_type=None):
     """Get the list of storage ids in the specific area of a scenario
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
-    :param str area: one of: *loadzone*, *state*, *state abbreviation*,
+    :param str area: one of *loadzone*, *state*, *state abbreviation*,
         *interconnect*, *'all'*
-    :param str area_type: one of: *'loadzone'*, *'state'*,
-        *'state_abbr'*, *'interconnect'*
+    :param str area_type: one of *'loadzone'*, *'state'*, *'state_abbr'*,
+        *'interconnect'*
     :return: (*list*) -- list of storage id
     """
     grid = scenario.state.get_grid()
     loadzone_set = area_to_loadzone(grid, area, area_type=area_type)
     loadzone_id_set = {grid.zone2id[lz] for lz in loadzone_set if lz in grid.zone2id}
 
-    storage_id = (
-        grid.storage["gen"]
-        .loc[
-            grid.storage["gen"]["bus_id"]
-            .apply(lambda x: grid.bus.loc[x, "zone_id"])
-            .isin(loadzone_id_set)
-        ]
-        .index.tolist()
-    )
+    gen = grid.storage["gen"]
+    storage_id = gen.loc[
+        gen["bus_id"].apply(lambda x: grid.bus.loc[x, "zone_id"]).isin(loadzone_id_set)
+    ].index.tolist()
 
     return storage_id

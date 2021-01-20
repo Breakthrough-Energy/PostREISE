@@ -11,7 +11,7 @@ def slice_time_series(ts, start, end):
     """Slice a time series.
 
     :param pandas.DataFrame/pandas.Series ts: time series to slice.
-    :param pandas.Timestamp/numpy.datetime64/datetime.datetime end: start date.
+    :param pandas.Timestamp/numpy.datetime64/datetime.datetime start: start date.
     :param pandas.Timestamp/numpy.datetime64/datetime.datetime end: end date.
     :return: (*pandas.DataFrame/pandas.Series*) -- the sliced time series.
     """

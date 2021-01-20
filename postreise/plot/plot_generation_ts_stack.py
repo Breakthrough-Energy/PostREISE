@@ -1,3 +1,5 @@
+import os
+
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -56,15 +58,16 @@ def plot_generation_time_series_stack(
     """Generate time series generation stack plot in a certain area of a scenario.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
-    :param str area: one of: *loadzone*, *state*, *state abbreviation*,
+    :param str area: one of *loadzone*, *state*, *state abbreviation*,
         *interconnect*, *'all'*
     :param str/list resources: one or a list of resources. *'solar_curtailment'*,
         *'wind_curtailment'*, *'wind_offshore_curtailment'* are valid entries together
         with all available generator types in the area. The order of the resources
         determines the stack order in the figure.
-    :param str area_type: one of: *'loadzone'*, *'state'*,
-        *'state_abbr'*, *'interconnect'*
-    :param tuple time_range: (start time stamp, end time stamp). If None, the entire
+    :param str area_type: one of *'loadzone'*, *'state'*, *'state_abbr'*,
+        *'interconnect'*
+    :param tuple time_range: [start_timestamp, end_timestamp] where each time stamp
+        is pandas.Timestamp/numpy.datetime64/datetime.datetime. If None, the entire
         time range is used for the given scenario.
     :param str time_zone: new time zone.
     :param str time_freq: frequency. Either *'D'* (day), *'W'* (week), *'M'* (month).
@@ -200,9 +203,9 @@ def plot_generation_time_series_stack(
         net_demand = net_demand.divide(capacity_ts, axis="index")
         ax.set_ylabel("Normalized Generation", fontsize=label_fontsize)
     else:
-        pg_stack = pg_stack.divide(1000000, axis="index")
-        demand = demand.divide(1000000, axis="index")
-        net_demand = net_demand.divide(1000000, axis="index")
+        pg_stack = pg_stack.divide(1e6, axis="index")
+        demand = demand.divide(1e6, axis="index")
+        net_demand = net_demand.divide(1e6, axis="index")
         ax.set_ylabel("Daily Energy TWh", fontsize=label_fontsize)
 
     available_resources = [r for r in resources if r in pg_stack.columns]
@@ -276,5 +279,5 @@ def plot_generation_time_series_stack(
         if not filename:
             filename = area
         if not filepath:
-            filepath = "./"
-        plt.savefig(f"{filepath + filename}.pdf", bbox_inches="tight", pad_inches=0)
+            filepath = os.path.join(os.getcwd(), filename)
+        plt.savefig(f"{filepath}.pdf", bbox_inches="tight", pad_inches=0)

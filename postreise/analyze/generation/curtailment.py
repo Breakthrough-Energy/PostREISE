@@ -234,33 +234,25 @@ def get_curtailment_time_series(scenario, area, area_type=None):
     a scenario
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
-    :param str area: one of: *loadzone*, *state*, *state abbreviation*,
+    :param str area: one of *loadzone*, *state*, *state abbreviation*,
         *interconnect*, *'all'*
-    :param str area_type: one of: *'loadzone'*, *'state'*,
-        *'state_abbr'*, *'interconnect'*
+    :param str area_type: one of *'loadzone'*, *'state'*, *'state_abbr'*,
+        *'interconnect'*
     :return: (*pandas.DataFrame*) -- index: time stamps, columns: available resources
     """
     renewables = ["wind", "wind_offshore", "solar"]
     curtailment = get_generation_time_series_by_resources(
         scenario, area, renewables, area_type=area_type
     )
-    renewable_profiles = {
-        "wind": scenario.state.get_wind(),
-        "solar": scenario.state.get_solar(),
-    }
+    renewable_profiles = pd.concat(
+        [scenario.state.get_wind(), scenario.state.get_solar()], axis=1
+    )
     for r in renewables:
         if r in curtailment.columns:
             plant_id = get_plant_id_for_resources_in_area(
                 scenario, area, r, area_type=area_type
             )
-            if r == "wind_offshore":
-                curtailment[r] = (
-                    renewable_profiles["wind"][plant_id].sum(axis=1) - curtailment[r]
-                )
-            else:
-                curtailment[r] = (
-                    renewable_profiles[r][plant_id].sum(axis=1) - curtailment[r]
-                )
+            curtailment[r] = renewable_profiles[plant_id].sum(axis=1) - curtailment[r]
     curtailment.rename(lambda x: x + "_curtailment", axis="columns", inplace=True)
 
     return curtailment.clip(lower=0)

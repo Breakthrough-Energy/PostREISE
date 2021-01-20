@@ -68,11 +68,11 @@ def get_capacity_by_resources(scenario, area, resources, area_type=None):
     scenario.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
-    :param str area: one of: *loadzone*, *state*, *state abbreviation*,
+    :param str area: one of *loadzone*, *state*, *state abbreviation*,
         *interconnect*, *'all'*
     :param str/list resources: one or a list of resources
-    :param str area_type: one of: *'loadzone'*, *'state'*,
-        *'state_abbr'*, *'interconnect'*
+    :param str area_type: one of *'loadzone'*, *'state'*, *'state_abbr'*,
+        *'interconnect'*
     :return: (*pandas.Series*) -- index: resources, column: total capacity values
     """
     plant_id = get_plant_id_for_resources_in_area(
@@ -87,13 +87,13 @@ def get_storage_capacity(scenario, area, area_type=None):
     """Get total storage capacity value in the specific area of a scenario.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
-    :param str area: one of: *loadzone*, *state*, *state abbreviation*,
+    :param str area: one of *loadzone*, *state*, *state abbreviation*,
         *interconnect*, *'all'*
-    :param str area_type: one of: *'loadzone'*, *'state'*,
-        *'state_abbr'*, *'interconnect'*
+    :param str area_type: one of *'loadzone'*, *'state'*, *'state_abbr'*,
+        *'interconnect'*
     :return: (*float*) -- total storage capacity value
     """
     grid = scenario.state.get_grid()
     storage_id = get_storage_id_in_area(scenario, area, area_type)
 
-    return sum(grid.storage["gen"].loc[storage_id].Pmax.values)
+    return grid.storage["gen"].loc[storage_id].Pmax.sum()

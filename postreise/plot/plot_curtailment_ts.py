@@ -1,3 +1,5 @@
+import os
+
 import matplotlib.pyplot as plt
 import pandas as pd
 from powersimdata.network.usa_tamu.constants.plants import (
@@ -48,12 +50,13 @@ def plot_curtailment_time_series(
     area of a scenario.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
-    :param str area: one of: *loadzone*, *state*, *state abbreviation*,
+    :param str area: one of *loadzone*, *state*, *state abbreviation*,
         *interconnect*, *'all'*
     :param str/list resources: one or a list of resources.
-    :param str area_type: one of: *'loadzone'*, *'state'*,
-        *'state_abbr'*, *'interconnect'*
-    :param tuple time_range: (start time stamp, end time stamp). If None, the entire
+    :param str area_type: one of *'loadzone'*, *'state'*, *'state_abbr'*,
+        *'interconnect'*
+    :param tuple time_range: [start_timestamp, end_timestamp] where each time stamp
+        is pandas.Timestamp/numpy.datetime64/datetime.datetime. If None, the entire
         time range is used for the given scenario.
     :param str time_zone: new time zone.
     :param str time_freq: frequency. Either *'D'* (day), *'W'* (week), *'M'* (month).
@@ -82,14 +85,14 @@ def plot_curtailment_time_series(
     if t2l:
         type2label.update(t2l)
 
-    pg = get_generation_time_series_by_resources(
+    resource_pg = get_generation_time_series_by_resources(
         scenario, area, resources, area_type=area_type
     )
     demand = get_demand_time_series(scenario, area, area_type=area_type)
     curtailment = get_curtailment_time_series(scenario, area, area_type=area_type)
 
     if time_zone != "utc":
-        pg = change_time_zone(pg, time_zone)
+        resource_pg = change_time_zone(resource_pg, time_zone)
         demand = change_time_zone(demand, time_zone)
         curtailment = change_time_zone(curtailment, time_zone)
     if not time_range:
@@ -97,19 +100,19 @@ def plot_curtailment_time_series(
             pd.Timestamp(scenario.info["start_date"]),
             pd.Timestamp(scenario.info["end_date"]),
         )
-    pg = slice_time_series(pg, time_range[0], time_range[1])
+    resource_pg = slice_time_series(resource_pg, time_range[0], time_range[1])
     demand = slice_time_series(demand, time_range[0], time_range[1])
     curtailment = slice_time_series(curtailment, time_range[0], time_range[1])
     if time_freq != "H":
-        pg = resample_time_series(pg, time_freq)
+        resource_pg = resample_time_series(resource_pg, time_freq)
         demand = resample_time_series(demand, time_freq)
         curtailment = resample_time_series(curtailment, time_freq)
 
-    for r in pg.columns:
+    for r in resource_pg.columns:
         curtailment[r + "_curtailment" + "_mean"] = curtailment[
             r + "_curtailment"
         ].mean()
-        curtailment[r + "_available"] = curtailment[r + "_curtailment"] + pg[r]
+        curtailment[r + "_available"] = curtailment[r + "_curtailment"] + resource_pg[r]
         curtailment[r + "_curtailment" + "_percentage"] = (
             curtailment[r + "_curtailment"] / curtailment[r + "_available"] * 100
         )
@@ -118,49 +121,34 @@ def plot_curtailment_time_series(
         ].mean()
 
     for r in resources:
-        if r not in pg.columns:
+        if r not in resource_pg.columns:
             raise ValueError(f"{r} is invalid in {area}!")
         fig = plt.figure(figsize=(20, 10))
         ax = fig.gca()
 
-        if title:
-            plt.title(title, fontsize=title_fontsize)
-        else:
-            plt.title(f"{area} {r.capitalize()}", fontsize=title_fontsize)
+        title_text = f"{area} {r.capitalize()}" if not title else title
+        plt.title(title_text, fontsize=title_fontsize)
 
         cr = r + "_curtailment"
         if percentage:
-            curtailment[cr + "_percentage"].plot(
-                ax=ax,
-                lw=4,
-                alpha=0.7,
-                color=type2color[cr],
-                label=type2label[cr],
-            )
-            curtailment[cr + "_percentage" + "_mean"].plot(
-                ax=ax,
-                ls="--",
-                lw=4,
-                alpha=0.7,
-                color=type2color[cr],
-                label=type2label[cr] + " Mean",
-            )
+            key1, key2 = f"{cr}_percentage", f"{cr}_percentage_mean"
         else:
-            curtailment[cr].plot(
-                ax=ax,
-                lw=4,
-                alpha=0.7,
-                color=type2color[cr],
-                label=type2label[cr],
-            )
-            curtailment[cr + "_mean"].plot(
-                ax=ax,
-                ls="--",
-                lw=4,
-                alpha=0.7,
-                color=type2color[cr],
-                label=type2label[cr] + " Mean",
-            )
+            key1, key2 = cr, f"{cr}_mean"
+        curtailment[key1].plot(
+            ax=ax,
+            lw=4,
+            alpha=0.7,
+            color=type2color[cr],
+            label=type2label[cr],
+        )
+        curtailment[key2].plot(
+            ax=ax,
+            ls="--",
+            lw=4,
+            alpha=0.7,
+            color=type2color[cr],
+            label=type2label[cr] + " Mean",
+        )
 
         ax_twin = ax.twinx()
         curtailment[r + "_available"].plot(
@@ -174,6 +162,7 @@ def plot_curtailment_time_series(
         if show_demand:
             demand.plot(ax=ax_twin, lw=4, alpha=0.7, color="red", label="Demand")
 
+        # Erase year in xticklabels
         xt_with_year = list(ax_twin.__dict__["date_axis_info"][0])
         xt_with_year[-1] = b"%b"
         ax_twin.__dict__["date_axis_info"][0] = tuple(xt_with_year)
@@ -197,5 +186,5 @@ def plot_curtailment_time_series(
             if not filename:
                 filename = f"{area.lower()}_{r}_curtailment"
             if not filepath:
-                filepath = "./"
-            plt.savefig(f"{filepath + filename}.pdf", bbox_inches="tight", pad_inches=0)
+                filepath = os.path.join(os.getcwd(), filename)
+            plt.savefig(f"{filepath}.pdf", bbox_inches="tight", pad_inches=0)

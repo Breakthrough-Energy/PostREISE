@@ -139,13 +139,13 @@ def get_generation_time_series_by_resources(scenario, area, resources, area_type
     """Get time series generation for each resource in certain area of a scenario
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
-    :param str area: one of: *loadzone*, *state*, *state abbreviation*,
+    :param str area: one of *loadzone*, *state*, *state abbreviation*,
         *interconnect*, *'all'*
     :param str/list resources: one or a list of resources
-    :param str area_type: one of: *'loadzone'*, *'state'*,
-        *'state_abbr'*, *'interconnect'*
-    :return: (*pandas.DataFrame*) -- data frame of time series generation for each
-        resource, index: time stamps, columns: resources
+    :param str area_type: one of *'loadzone'*, *'state'*, *'state_abbr'*,
+        *'interconnect'*
+    :return: (*pandas.DataFrame*) -- times series of generation for each resource,
+        index: time stamps, columns: resources
     """
     _check_scenario_is_in_analyze_state(scenario)
     plant_id = get_plant_id_for_resources_in_area(
@@ -154,17 +154,17 @@ def get_generation_time_series_by_resources(scenario, area, resources, area_type
     pg = scenario.state.get_pg()[plant_id]
     grid = scenario.state.get_grid()
 
-    return pg.T.groupby(grid.plant["type"]).agg(sum).T
+    return pg.groupby(grid.plant.loc[plant_id, "type"].values, axis=1).sum()
 
 
 def get_storage_time_series(scenario, area, area_type=None):
     """Get time series total storage energy in certain area of a scenario.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
-    :param str area: one of: *loadzone*, *state*, *state abbreviation*,
+    :param str area: one of *loadzone*, *state*, *state abbreviation*,
         *interconnect*, *'all'*
-    :param str area_type: one of: *'loadzone'*, *'state'*,
-        *'state_abbr'*, *'interconnect'*
+    :param str area_type: one of *'loadzone'*, *'state'*, *'state_abbr'*,
+    *'interconnect'*
     :return: (*pandas.Series*) -- time series of total storage energy, index: time
         stamps, column: storage energy
     """
