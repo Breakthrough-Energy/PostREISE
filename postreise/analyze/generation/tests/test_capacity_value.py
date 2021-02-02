@@ -6,11 +6,25 @@ from pytest import approx
 from postreise.analyze.generation.capacity_value import (
     calculate_net_load_peak,
     calculate_NLDC,
+    get_capacity_by_resources,
+    get_storage_capacity,
 )
 
 mock_plant = {
     "plant_id": [101, 102, 103],
     "type": ["solar", "wind", "wind"],
+    "Pmax": [9000, 5000, 4000],
+    "zone_name": ["zone1", "zone1", "zone2"],
+}
+
+mock_bus = {
+    "bus_id": [1, 2, 3, 4],
+    "zone_id": [1, 1, 2, 2],
+}
+
+mock_storage = {
+    "bus_id": [1, 2, 3],
+    "Pmax": [10, 10, 10],
 }
 
 mock_demand = pd.DataFrame(
@@ -100,10 +114,16 @@ mock_pg = pd.DataFrame(
 )
 
 scenario = MockScenario(
-    grid_attrs={"plant": mock_plant}, demand=mock_demand, pg=mock_pg
+    grid_attrs={"plant": mock_plant, "bus": mock_bus, "storage_gen": mock_storage},
+    demand=mock_demand,
+    pg=mock_pg,
 )
 scenario.info["start_date"] = "2016-01-01 00:00:00"
 scenario.info["end_date"] = "2016-01-01 10:00:00"
+scenario.state.grid.zone2id = {
+    "zone1": 1,
+    "zone2": 2,
+}
 
 
 def test_NLDC_calculation_wind_str():
@@ -202,3 +222,17 @@ def test_failure_zero_hours():
 def test_failure_too_many_hours():
     with pytest.raises(ValueError):
         calculate_net_load_peak(scenario, ["solar"], hours=100)
+
+
+def test_get_capacity_by_resources():
+    arg = [(scenario, "zone2", "wind"), (scenario, "all", "wind")]
+    expected = [4000, 9000]
+    for a, e in zip(arg, expected):
+        assert get_capacity_by_resources(*a).values == e
+
+
+def test_get_storage_capacity():
+    arg = [(scenario, "zone1"), (scenario, "all")]
+    expected = [20, 30]
+    for a, e in zip(arg, expected):
+        assert get_storage_capacity(*a) == e

@@ -7,9 +7,11 @@ from powersimdata.tests.mock_scenario import MockScenario
 from postreise.analyze.generation.curtailment import (
     calculate_curtailment_percentage_by_resources,
     calculate_curtailment_time_series_by_resources,
+    get_curtailment_time_series,
     summarize_curtailment_by_bus,
     summarize_curtailment_by_location,
 )
+from postreise.analyze.tests.test_helpers import check_dataframe_matches
 
 # plant_id is the index
 mock_plant = {
@@ -18,6 +20,7 @@ mock_plant = {
     "lat": [47.6, 47.6, 37.8, 37.8],
     "lon": [122.3, 122.3, 122.4, 122.4],
     "type": ["solar", "solar", "wind", "wind_offshore"],
+    "zone_name": ["zone1", "zone1", "zone2", "zone2"],
 }
 
 mock_pg = pd.DataFrame(
@@ -196,3 +199,37 @@ class TestSummarizeCurtailmentByLocation(unittest.TestCase):
         }
         location_curtailment = summarize_curtailment_by_location(scenario)
         self.assertEqual(location_curtailment, expected_return)
+
+
+class TestGetCurtailmentTimeSeries(unittest.TestCase):
+    def test_get_curtailment_time_series(self):
+        arg = [(scenario, "zone1"), (scenario, "zone2"), (scenario, "all")]
+        expected_return = [
+            pd.DataFrame(
+                {
+                    "solar_curtailment": mock_curtailment["solar"].sum(axis=1).values,
+                },
+                index=mock_solar.index,
+            ),
+            pd.DataFrame(
+                {
+                    "wind_curtailment": mock_curtailment["wind"].sum(axis=1).values,
+                    "wind_offshore_curtailment": mock_curtailment["wind_offshore"]
+                    .sum(axis=1)
+                    .values,
+                },
+                index=mock_wind.index,
+            ),
+            pd.DataFrame(
+                {
+                    "solar_curtailment": mock_curtailment["solar"].sum(axis=1).values,
+                    "wind_curtailment": mock_curtailment["wind"].sum(axis=1).values,
+                    "wind_offshore_curtailment": mock_curtailment["wind_offshore"]
+                    .sum(axis=1)
+                    .values,
+                },
+                index=mock_pg.index,
+            ),
+        ]
+        for a, e in zip(arg, expected_return):
+            check_dataframe_matches(get_curtailment_time_series(*a), e)

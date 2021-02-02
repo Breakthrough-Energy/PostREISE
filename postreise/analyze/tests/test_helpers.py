@@ -5,10 +5,12 @@ import pytest
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 from powersimdata.input.grid import Grid
 from powersimdata.tests.mock_grid import MockGrid
+from powersimdata.tests.mock_scenario import MockScenario
 
 from postreise.analyze.helpers import (
     get_active_resources_in_grid,
     get_plant_id_for_resources,
+    get_plant_id_for_resources_in_area,
     get_plant_id_for_resources_in_interconnects,
     get_plant_id_for_resources_in_loadzones,
     get_plant_id_for_resources_in_states,
@@ -16,6 +18,7 @@ from postreise.analyze.helpers import (
     get_plant_id_in_loadzones,
     get_plant_id_in_states,
     get_resources_in_grid,
+    get_storage_id_in_area,
     summarize_plant_to_bus,
     summarize_plant_to_location,
 )
@@ -29,6 +32,7 @@ mock_plant = {
     "type": ["coal", "ng", "coal", "solar"],
     "Pmin": [0, 50, 0, 0],
     "Pmax": [0, 300, 0, 50],
+    "zone_name": ["zone1", "zone1", "zone2", "zone2"],
 }
 
 # bus_id is the index
@@ -36,6 +40,7 @@ mock_bus = {
     "bus_id": [1, 2, 3, 4],
     "lat": [47.6, 37.8, 37.8, 40.7],
     "lon": [122.3, 122.4, 122.4, 74],
+    "zone_id": [101, 102, 102, 103],
 }
 
 mock_pg = pd.DataFrame(
@@ -47,7 +52,18 @@ mock_pg = pd.DataFrame(
     }
 )
 
-grid_attrs = {"plant": mock_plant, "bus": mock_bus}
+mock_storage = {
+    "bus_id": [1, 2, 3],
+    "Pmax": [10, 10, 10],
+}
+
+grid_attrs = {"plant": mock_plant, "bus": mock_bus, "storage_gen": mock_storage}
+scenario = MockScenario(grid_attrs)
+scenario.state.grid.zone2id = {
+    "zone1": 101,
+    "zone2": 102,
+    "zone3": 103,
+}
 
 
 def check_dataframe_matches(received_return, expected_return):
@@ -343,3 +359,19 @@ def test_get_plant_id_for_resources_in_states(grid):
         plant_id = get_plant_id_for_resources_in_states(a[0], a[1], a[2])
         assert set(grid.plant.loc[plant_id].type) == set(e[0])
         assert set(grid.plant.loc[plant_id].zone_id) == set(e[1])
+
+
+def test_get_plant_id_for_resources_in_area():
+    arg = [(scenario, "zone1", "coal"), (scenario, "all", "coal")]
+    expected = [["A"], ["A", "C"]]
+    for a, e in zip(arg, expected):
+        plant_id = get_plant_id_for_resources_in_area(*a)
+        assert e == plant_id
+
+
+def test_get_storage_id_in_area():
+    arg = [(scenario, "zone2"), (scenario, "all")]
+    expected = [[1, 2], [0, 1, 2]]
+    for a, e in zip(arg, expected):
+        storage_id = get_storage_id_in_area(*a)
+        assert e == storage_id

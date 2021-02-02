@@ -16,6 +16,10 @@ from postreise.analyze.check import (
     _check_resources_and_format,
     _check_scenario_is_in_analyze_state,
 )
+from postreise.analyze.helpers import (
+    get_plant_id_for_resources_in_area,
+    get_storage_id_in_area,
+)
 
 
 def sum_generation_by_type_zone(scenario: Scenario) -> pd.DataFrame:
@@ -129,3 +133,42 @@ def summarize_hist_gen(hist_gen_raw: pd.DataFrame, all_resources: list) -> pd.Da
     result.rename(columns=type2label, inplace=True)
 
     return result
+
+
+def get_generation_time_series_by_resources(scenario, area, resources, area_type=None):
+    """Get time series generation for each resource in certain area of a scenario
+
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
+    :param str area: one of *loadzone*, *state*, *state abbreviation*,
+        *interconnect*, *'all'*
+    :param str/list resources: one or a list of resources
+    :param str area_type: one of *'loadzone'*, *'state'*, *'state_abbr'*,
+        *'interconnect'*
+    :return: (*pandas.DataFrame*) -- times series of generation for each resource,
+        index: time stamps, columns: resources
+    """
+    _check_scenario_is_in_analyze_state(scenario)
+    plant_id = get_plant_id_for_resources_in_area(
+        scenario, area, resources, area_type=area_type
+    )
+    pg = scenario.state.get_pg()[plant_id]
+    grid = scenario.state.get_grid()
+
+    return pg.groupby(grid.plant.loc[plant_id, "type"].values, axis=1).sum()
+
+
+def get_storage_time_series(scenario, area, area_type=None):
+    """Get time series total storage energy in certain area of a scenario.
+
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
+    :param str area: one of *loadzone*, *state*, *state abbreviation*,
+        *interconnect*, *'all'*
+    :param str area_type: one of *'loadzone'*, *'state'*, *'state_abbr'*,
+    *'interconnect'*
+    :return: (*pandas.Series*) -- time series of total storage energy, index: time
+        stamps, column: storage energy
+    """
+    _check_scenario_is_in_analyze_state(scenario)
+    storage_id = get_storage_id_in_area(scenario, area, area_type)
+
+    return scenario.state.get_storage_pg()[storage_id].sum(axis=1)
