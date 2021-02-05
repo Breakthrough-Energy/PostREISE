@@ -4,10 +4,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from pandas.plotting import scatter_matrix
-from powersimdata.network.usa_tamu.constants.plants import (
-    type2color,
-    type2label,
-)
+from powersimdata.network.usa_tamu.constants.plants import type2color, type2label
 
 plt.ioff()
 

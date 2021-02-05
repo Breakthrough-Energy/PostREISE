@@ -1,10 +1,7 @@
 import pandas as pd
 import pytz
 
-from postreise.analyze.check import (
-    _check_date_range_in_time_series,
-    _check_time_series,
-)
+from postreise.analyze.check import _check_date_range_in_time_series, _check_time_series
 
 
 def slice_time_series(ts, start, end):

@@ -2,19 +2,14 @@ import os
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from powersimdata.network.usa_tamu.constants.plants import (
-    type2color,
-    type2label,
-)
+from powersimdata.network.usa_tamu.constants.plants import type2color, type2label
 
 from postreise.analyze.check import (
     _check_resources_and_format,
     _check_scenario_is_in_analyze_state,
 )
 from postreise.analyze.demand import get_demand_time_series
-from postreise.analyze.generation.curtailment import (
-    get_curtailment_time_series,
-)
+from postreise.analyze.generation.curtailment import get_curtailment_time_series
 from postreise.analyze.generation.summarize import (
     get_generation_time_series_by_resources,
 )
