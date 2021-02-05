@@ -1,0 +1,8 @@
+version: '3.7'
+
+services:
+  postreise:
+    image: postreise:latest
+    build: .
+    volumes:
+      - ~/ScenarioData:/root/ScenarioData
