@@ -2,10 +2,7 @@ import pandas as pd
 from numpy.testing import assert_array_equal
 from powersimdata.tests.mock_scenario import MockScenario
 
-from postreise.analyze.demand import (
-    get_demand_time_series,
-    get_net_demand_time_series,
-)
+from postreise.analyze.demand import get_demand_time_series, get_net_demand_time_series
 
 mock_plant = {
     "plant_id": ["1001", "1002", "1003"],

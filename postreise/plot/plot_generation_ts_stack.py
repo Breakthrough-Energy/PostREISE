@@ -10,17 +10,12 @@ from powersimdata.network.usa_tamu.constants.plants import (
 )
 
 from postreise.analyze.check import _check_scenario_is_in_analyze_state
-from postreise.analyze.demand import (
-    get_demand_time_series,
-    get_net_demand_time_series,
-)
+from postreise.analyze.demand import get_demand_time_series, get_net_demand_time_series
 from postreise.analyze.generation.capacity_value import (
     get_capacity_by_resources,
     get_storage_capacity,
 )
-from postreise.analyze.generation.curtailment import (
-    get_curtailment_time_series,
-)
+from postreise.analyze.generation.curtailment import get_curtailment_time_series
 from postreise.analyze.generation.summarize import (
     get_generation_time_series_by_resources,
     get_storage_time_series,
