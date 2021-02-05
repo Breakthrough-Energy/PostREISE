@@ -2,13 +2,9 @@ import unittest
 
 import numpy as np
 import pandas as pd
-from powersimdata.tests.mock_grid import MockGrid
 from powersimdata.tests.mock_scenario import MockScenario
 
-from postreise.analyze.transmission.congestion import (
-    calculate_congestion_surplus,
-    map_demand_to_buses,
-)
+from postreise.analyze.transmission import congestion
 
 mock_plant = {
     "plant_id": ["A", "B", "C", "D"],
@@ -49,7 +45,7 @@ class TestCalculateCongestionSurplus(unittest.TestCase):
         )
         expected_return.rename_axis("UTC")
 
-        surplus = calculate_congestion_surplus(mock_scenario)
+        surplus = congestion.calculate_congestion_surplus(mock_scenario)
         self._check_return(expected_return, surplus)
 
     def test_calculate_congestion_surplus_three_times(self):
@@ -83,30 +79,5 @@ class TestCalculateCongestionSurplus(unittest.TestCase):
         )
         expected_return.rename_axis("UTC")
 
-        surplus = calculate_congestion_surplus(mock_scenario)
+        surplus = congestion.calculate_congestion_surplus(mock_scenario)
         self._check_return(expected_return, surplus)
-
-
-class TestMappingHelpers(unittest.TestCase):
-    def _check_expected(self, test_return, expected_return, name):
-        self.assertIsInstance(test_return, pd.DataFrame)
-        msg = "Index mismatch for " + name
-        np.testing.assert_array_equal(test_return.index, expected_return.index, msg)
-        msg = "Column mismatch for " + name
-        np.testing.assert_array_equal(test_return.columns, expected_return.columns, msg)
-        msg = "Values mismatch for " + name
-        np.testing.assert_array_almost_equal(
-            test_return.to_numpy(), expected_return.to_numpy(), err_msg=msg
-        )
-
-    def test_map_demand_to_buses(self):
-        grid = MockGrid(grid_attrs)
-        demand = pd.DataFrame({"UTC": ["t1", "t2"], 1: [410] * 2, 2: [0] * 2})
-        demand.set_index("UTC", inplace=True)
-        expected_return = pd.DataFrame(
-            {"UTC": ["t1", "t2"], 1: [50] * 2, 2: [60] * 2, 3: [300] * 2}
-        )
-        expected_return.set_index("UTC", inplace=True)
-
-        bus_demand = map_demand_to_buses(grid, demand)
-        self._check_expected(bus_demand, expected_return, name="bus_demand")
