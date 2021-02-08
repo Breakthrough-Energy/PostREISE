@@ -64,7 +64,7 @@ def calculate_net_load_peak(scenario, resources, hours=100):
 
 
 def get_capacity_by_resources(scenario, area, resources, area_type=None):
-    """Get total capacity value of certain resources in the specific area of a
+    """Get total nameplate Pmax capacity of certain resources in the specific area of a
     scenario.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
@@ -84,7 +84,7 @@ def get_capacity_by_resources(scenario, area, resources, area_type=None):
 
 
 def get_storage_capacity(scenario, area, area_type=None):
-    """Get total storage capacity value in the specific area of a scenario.
+    """Get total storage nameplate Pmax capacity in the specific area of a scenario.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
     :param str area: one of *loadzone*, *state*, *state abbreviation*,

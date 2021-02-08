@@ -157,18 +157,23 @@ def get_generation_time_series_by_resources(scenario, area, resources, area_type
     return pg.groupby(grid.plant.loc[plant_id, "type"].values, axis=1).sum()
 
 
-def get_storage_time_series(scenario, area, area_type=None):
+def get_storage_time_series(scenario, area, area_type=None, storage_e=False):
     """Get time series total storage energy in certain area of a scenario.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
     :param str area: one of *loadzone*, *state*, *state abbreviation*,
         *interconnect*, *'all'*
     :param str area_type: one of *'loadzone'*, *'state'*, *'state_abbr'*,
-    *'interconnect'*
+        *'interconnect'*
+    :param bool storage_e: if set, return time series energy of storage devices
+        instead of power generation. Default to False.
     :return: (*pandas.Series*) -- time series of total storage energy, index: time
         stamps, column: storage energy
     """
     _check_scenario_is_in_analyze_state(scenario)
     storage_id = get_storage_id_in_area(scenario, area, area_type)
 
-    return scenario.state.get_storage_pg()[storage_id].sum(axis=1)
+    if storage_e:
+        return scenario.state.get_storage_e()[storage_id].sum(axis=1)
+    else:
+        return scenario.state.get_storage_pg()[storage_id].sum(axis=1)
