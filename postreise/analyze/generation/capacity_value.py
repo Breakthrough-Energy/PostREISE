@@ -97,3 +97,17 @@ def get_storage_capacity(scenario, area, area_type=None):
     storage_id = get_storage_id_in_area(scenario, area, area_type)
 
     return grid.storage["gen"].loc[storage_id].Pmax.sum()
+
+
+def sum_capacity_by_type_zone(scenario):
+    """Sum generator capacity for a Scenario in Analyze state by {type, zone}.
+
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
+    :return: (*pandas.DataFrame*) -- total generation, indexed by {type, zone}.
+    """
+    _check_scenario_is_in_analyze_state(scenario)
+
+    grid = scenario.state.get_grid()
+    plant = grid.plant
+
+    return plant.groupby(["type", "zone_id"])["Pmax"].sum().unstack().fillna(0)
