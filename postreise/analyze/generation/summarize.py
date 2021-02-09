@@ -20,17 +20,28 @@ from postreise.analyze.helpers import (
     get_plant_id_for_resources_in_area,
     get_storage_id_in_area,
 )
+from postreise.analyze.time import change_time_zone, slice_time_series
 
 
-def sum_generation_by_type_zone(scenario: Scenario) -> pd.DataFrame:
+def sum_generation_by_type_zone(
+    scenario: Scenario, time_range=None, time_zone=None
+) -> pd.DataFrame:
     """Sum generation for a Scenario in Analyze state by {type, zone}.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
+    :param tuple time_range: [start_timestamp, end_timestamp] where each time stamp
+        is pandas.Timestamp/numpy.datetime64/datetime.datetime. If None, the entire
+        time range is used for the given scenario.
+    :param str time_zone: new time zone.
     :return: (*pandas.DataFrame*) -- total generation, indexed by {type, zone}.
     """
     _check_scenario_is_in_analyze_state(scenario)
 
     pg = scenario.state.get_pg()
+    if time_zone:
+        pg = change_time_zone(pg, time_zone)
+    if time_range:
+        pg = slice_time_series(pg, time_range[0], time_range[1])
     grid = scenario.state.get_grid()
     plant = grid.plant
 
