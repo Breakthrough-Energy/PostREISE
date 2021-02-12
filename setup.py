@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="postreise",
-    version="0.3",
+    version="0.4",
     description="Extract, analyze and plot data from scenario",
     url="https://github.com/Breakthrough-Energy/PostREISE",
     author="Kaspar Mueller",
