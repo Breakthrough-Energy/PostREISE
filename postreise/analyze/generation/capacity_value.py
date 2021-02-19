@@ -100,13 +100,11 @@ def get_storage_capacity(scenario, area, area_type=None):
 
 
 def sum_capacity_by_type_zone(scenario):
-    """Sum generator capacity for a Scenario in Analyze state by {type, zone}.
+    """Sum generator capacity for a Scenario by {type, zone}.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
-    :return: (*pandas.DataFrame*) -- total generation, indexed by {type, zone}.
+    :return: (*pandas.DataFrame*) -- total capacity, indexed by {type, zone}.
     """
-    _check_scenario_is_in_analyze_state(scenario)
-
     grid = scenario.state.get_grid()
     plant = grid.plant
 

@@ -178,8 +178,9 @@ def get_storage_time_series(scenario, area, area_type=None, storage_e=False):
         *'interconnect'*
     :param bool storage_e: if set, return time series energy of storage devices
         instead of power generation. Default to False.
-    :return: (*pandas.Series*) -- time series of total storage energy, index: time
-        stamps, column: storage energy
+    :return: (*pandas.Series*) -- time series of total storage power generation,
+        if storage_e is not set, otherwise, time series of total storage energy,
+        index: time stamps, column: storage power/storage energy
     """
     _check_scenario_is_in_analyze_state(scenario)
     storage_id = get_storage_id_in_area(scenario, area, area_type)
