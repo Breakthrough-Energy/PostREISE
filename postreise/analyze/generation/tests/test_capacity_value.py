@@ -8,13 +8,16 @@ from postreise.analyze.generation.capacity_value import (
     calculate_NLDC,
     get_capacity_by_resources,
     get_storage_capacity,
+    sum_capacity_by_type_zone,
 )
+from postreise.analyze.tests.test_helpers import check_dataframe_matches
 
 mock_plant = {
     "plant_id": [101, 102, 103],
     "type": ["solar", "wind", "wind"],
     "Pmax": [9000, 5000, 4000],
     "zone_name": ["zone1", "zone1", "zone2"],
+    "zone_id": [1, 1, 2],
 }
 
 mock_bus = {
@@ -236,3 +239,11 @@ def test_get_storage_capacity():
     expected = [20, 30]
     for a, e in zip(arg, expected):
         assert get_storage_capacity(*a) == e
+
+
+def test_sum_capacity_by_type_zone():
+    expected_df = pd.DataFrame(
+        {1: [9000, 5000], 2: [0, 4000]},
+        index=["solar", "wind"],
+    )
+    check_dataframe_matches(expected_df, sum_capacity_by_type_zone(scenario))
