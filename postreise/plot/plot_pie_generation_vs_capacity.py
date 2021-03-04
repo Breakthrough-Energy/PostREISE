@@ -41,23 +41,23 @@ def plot_pie_generation_vs_capacity(
         :func:`postreise.plot_bar_generation_vs_capacity.make_gen_cap_custom_data`,
         defaults to None.
     :param dict resource_labels: a dictionary with keys being resource types and values
-        being labels, which uses to customize resource labels for selected resource
+        being labels, which is used to customize resource labels for selected resource
         types to show in the plots. Defaults to None, in which case a default set of
         labels is used.
     :param dict resource_colors: a dictionary with keys being resource types and values
-        being colors, which uses to customize resource colors for selected resource
+        being colors, which is used to customize resource colors for selected resource
         types to show in the plots. Defaults to None, in which case a default set of
         colors is used.
     :param float min_percentage: roll up small pie pieces into a single category,
         resources with percentage less than the set value will be pooled together,
         defaults to 0.
     :raises ValueError:
-        if area_types are provided in a different length of areas and/or
-        if scenario_names are provided in a different length of scenario_ids and/or
-        if less than two scenario_ids and/or custom_data in total is provided and/or
+        if length of area_types and areas is different and/or
+        if length of scenario_names and scenario_ids is different and/or
+        if less than two scenario_ids and/or custom_data in total is provided.
     :raises TypeError:
         if resource_labels are provided but not in a dictionary format and/or
-        if resource_colors are provided but not in a dictionary format and/or
+        if resource_colors are provided but not in a dictionary format.
 
     .. note::
         if one wants to plot scenario data and custom data together, custom data MUST be
@@ -72,7 +72,7 @@ def plot_pie_generation_vs_capacity(
         area_types = [None] * len(areas)
     if len(areas) != len(area_types):
         raise ValueError(
-            "ERROR: if area_types are provided, it should have the same number of entries with areas."
+            "ERROR: if area_types are provided, number of area_types must match number of areas"
         )
 
     if not scenario_ids:
@@ -207,8 +207,8 @@ def _construct_pie_visuals(zone, ax_data_list):
     """Plot formatted data.
 
     :param str zone: the zone name
-    :param list ax_data_list: a list of labels, values, and colors for each axis of the
-        plot.
+    :param list ax_data_list: a list of dictionaries with keys being labels,
+        values and colors.
     """
     rows = int(len(ax_data_list) / 2)
     fig, axes = plt.subplots(rows, 2, figsize=(20, 12 * rows))
