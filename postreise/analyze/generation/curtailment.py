@@ -82,7 +82,7 @@ def calculate_curtailment_time_series_by_areas(scenario, areas=None):
     areas = (
         _check_areas_are_in_grid_and_format(areas, grid)
         if areas is not None
-        else {"interconnecy": grid.interconnect}
+        else {"interconnect": grid.interconnect}
     )
 
     curtailment_by_areas = decompose_plant_data_frame_into_areas(
@@ -140,7 +140,7 @@ def calculate_curtailment_time_series_by_areas_and_resources(
     areas = (
         _check_areas_are_in_grid_and_format(areas, grid)
         if areas is not None
-        else {"interconnecy": grid.interconnect}
+        else {"interconnect": grid.interconnect}
     )
 
     if resources is None:
@@ -177,7 +177,7 @@ def calculate_curtailment_time_series_by_resources_and_areas(
     areas = (
         _check_areas_are_in_grid_and_format(areas, grid)
         if areas is not None
-        else {"interconnecy": grid.interconnect}
+        else {"interconnect": grid.interconnect}
     )
 
     if resources is None:
