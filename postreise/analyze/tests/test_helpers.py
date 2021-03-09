@@ -28,19 +28,19 @@ mock_plant = {
     "plant_id": ["A", "B", "C", "D"],
     "bus_id": [1, 1, 2, 3],
     "lat": [47.6, 47.6, 37.8, 37.8],
-    "lon": [122.3, 122.3, 122.4, 122.4],
+    "lon": [-122.3, -122.3, -122.4, -122.4],
     "type": ["coal", "ng", "coal", "solar"],
     "Pmin": [0, 50, 0, 0],
     "Pmax": [0, 300, 0, 50],
-    "zone_name": ["zone1", "zone1", "zone2", "zone2"],
+    "zone_name": ["Washington", "Washington", "Bay Area", "Bay Area"],
 }
 
 # bus_id is the index
 mock_bus = {
     "bus_id": [1, 2, 3, 4],
     "lat": [47.6, 37.8, 37.8, 40.7],
-    "lon": [122.3, 122.4, 122.4, 74],
-    "zone_id": [101, 102, 102, 103],
+    "lon": [-122.3, -122.4, -122.4, -74],
+    "zone_id": [201, 204, 204, 7],
 }
 
 mock_pg = pd.DataFrame(
@@ -60,9 +60,9 @@ mock_storage = {
 grid_attrs = {"plant": mock_plant, "bus": mock_bus, "storage_gen": mock_storage}
 scenario = MockScenario(grid_attrs)
 scenario.state.grid.zone2id = {
-    "zone1": 101,
-    "zone2": 102,
-    "zone3": 103,
+    "Washington": 201,
+    "Bay Area": 204,
+    "New York City": 7,
 }
 
 
@@ -134,8 +134,8 @@ class TestSummarizePlantToLocation(unittest.TestCase):
     def test_summarize_location(self):
         expected_return = pd.DataFrame(
             {
-                (47.6, 122.3): [2, 4, 7, 12],
-                (37.8, 122.4): [2, 4, 7, 10],
+                (47.6, -122.3): [2, 4, 7, 12],
+                (37.8, -122.4): [2, 4, 7, 10],
             }
         )
         loc_data = summarize_plant_to_location(mock_pg, self.grid)
@@ -362,7 +362,7 @@ def test_get_plant_id_for_resources_in_states(grid):
 
 
 def test_get_plant_id_for_resources_in_area():
-    arg = [(scenario, "zone1", "coal"), (scenario, "all", "coal")]
+    arg = [(scenario, "Washington", "coal"), (scenario, "all", "coal")]
     expected = [["A"], ["A", "C"]]
     for a, e in zip(arg, expected):
         plant_id = get_plant_id_for_resources_in_area(*a)
@@ -370,7 +370,7 @@ def test_get_plant_id_for_resources_in_area():
 
 
 def test_get_storage_id_in_area():
-    arg = [(scenario, "zone2"), (scenario, "all")]
+    arg = [(scenario, "Bay Area"), (scenario, "all")]
     expected = [[1, 2], [0, 1, 2]]
     for a, e in zip(arg, expected):
         storage_id = get_storage_id_in_area(*a)

@@ -1,4 +1,4 @@
-from powersimdata.network.usa_tamu.usa_tamu_model import area_to_loadzone
+from powersimdata.network.model import area_to_loadzone
 
 from postreise.analyze.generation.summarize import (
     get_generation_time_series_by_resources,
@@ -17,7 +17,9 @@ def get_demand_time_series(scenario, area, area_type=None):
         column: demand values
     """
     grid = scenario.state.get_grid()
-    loadzone_set = area_to_loadzone(grid, area, area_type=area_type)
+    loadzone_set = area_to_loadzone(
+        scenario.info["grid_model"], area, area_type=area_type
+    )
     loadzone_id_set = {grid.zone2id[lz] for lz in loadzone_set if lz in grid.zone2id}
 
     return scenario.state.get_demand()[loadzone_id_set].sum(axis=1)

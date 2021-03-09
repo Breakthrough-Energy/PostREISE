@@ -1,8 +1,7 @@
 from collections import defaultdict
 
 import pandas as pd
-from powersimdata.network.usa_tamu.constants import zones
-from powersimdata.network.usa_tamu.usa_tamu_model import area_to_loadzone
+from powersimdata.network.model import area_to_loadzone
 
 from postreise.analyze.check import (
     _check_areas_are_in_grid_and_format,
@@ -70,7 +69,10 @@ def get_plant_id_in_interconnects(interconnects, grid):
     """
     areas = _check_areas_are_in_grid_and_format({"interconnect": interconnects}, grid)
     loadzones = set.union(
-        *(zones.interconnect2loadzone[i] for i in areas["interconnect"])
+        *(
+            grid.model_immutables.zones["interconnect2loadzone"][i]
+            for i in areas["interconnect"]
+        )
     )
 
     plant = grid.plant
@@ -85,9 +87,10 @@ def get_plant_id_in_states(states, grid):
     :param powersimdata.input.grid.Grid grid: Grid instance.
     :return: (*set*) -- list of plant id.
     """
-
     areas = _check_areas_are_in_grid_and_format({"state": states}, grid)
-    loadzones = set.union(*(zones.state2loadzone[i] for i in areas["state"]))
+    loadzones = set.union(
+        *(grid.model_immutables.zones["state2loadzone"][i] for i in areas["state"])
+    )
 
     plant = grid.plant
     plant_id = plant[(plant.zone_name.isin(loadzones))].index
@@ -296,7 +299,9 @@ def get_plant_id_for_resources_in_area(scenario, area, resources, area_type=None
     """
     resource_set = set([resources]) if isinstance(resources, str) else set(resources)
     grid = scenario.state.get_grid()
-    loadzone_set = area_to_loadzone(grid, area, area_type=area_type)
+    loadzone_set = area_to_loadzone(
+        scenario.info["grid_model"], area, area_type=area_type
+    )
     plant_id = grid.plant[
         (grid.plant["zone_name"].isin(loadzone_set))
         & (grid.plant["type"].isin(resource_set))
@@ -316,7 +321,9 @@ def get_storage_id_in_area(scenario, area, area_type=None):
     :return: (*list*) -- list of storage id
     """
     grid = scenario.state.get_grid()
-    loadzone_set = area_to_loadzone(grid, area, area_type=area_type)
+    loadzone_set = area_to_loadzone(
+        scenario.info["grid_model"], area, area_type=area_type
+    )
     loadzone_id_set = {grid.zone2id[lz] for lz in loadzone_set if lz in grid.zone2id}
 
     gen = grid.storage["gen"]

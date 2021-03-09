@@ -16,13 +16,13 @@ mock_plant = {
     "plant_id": [101, 102, 103],
     "type": ["solar", "wind", "wind"],
     "Pmax": [9000, 5000, 4000],
-    "zone_name": ["zone1", "zone1", "zone2"],
-    "zone_id": [1, 1, 2],
+    "zone_name": ["Washington", "Washington", "Oregon"],
+    "zone_id": [201, 201, 202],
 }
 
 mock_bus = {
     "bus_id": [1, 2, 3, 4],
-    "zone_id": [1, 1, 2, 2],
+    "zone_id": [201, 201, 202, 202],
 }
 
 mock_storage = {
@@ -32,7 +32,7 @@ mock_storage = {
 
 mock_demand = pd.DataFrame(
     {
-        "zone 1": [
+        "201": [
             133335,
             133630,
             131964,
@@ -124,8 +124,8 @@ scenario = MockScenario(
 scenario.info["start_date"] = "2016-01-01 00:00:00"
 scenario.info["end_date"] = "2016-01-01 10:00:00"
 scenario.state.grid.zone2id = {
-    "zone1": 1,
-    "zone2": 2,
+    "Washington": 201,
+    "Oregon": 202,
 }
 
 
@@ -228,14 +228,14 @@ def test_failure_too_many_hours():
 
 
 def test_get_capacity_by_resources():
-    arg = [(scenario, "zone2", "wind"), (scenario, "all", "wind")]
+    arg = [(scenario, "Oregon", "wind"), (scenario, "all", "wind")]
     expected = [4000, 9000]
     for a, e in zip(arg, expected):
         assert get_capacity_by_resources(*a).values == e
 
 
 def test_get_storage_capacity():
-    arg = [(scenario, "zone1"), (scenario, "all")]
+    arg = [(scenario, "Washington"), (scenario, "all")]
     expected = [20, 30]
     for a, e in zip(arg, expected):
         assert get_storage_capacity(*a) == e
@@ -243,7 +243,7 @@ def test_get_storage_capacity():
 
 def test_sum_capacity_by_type_zone():
     expected_df = pd.DataFrame(
-        {1: [9000, 5000], 2: [0, 4000]},
+        {201: [9000, 5000], 202: [0, 4000]},
         index=["solar", "wind"],
     )
     check_dataframe_matches(expected_df, sum_capacity_by_type_zone(scenario))

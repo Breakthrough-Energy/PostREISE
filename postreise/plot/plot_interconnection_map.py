@@ -3,7 +3,7 @@ import pandas as pd
 from bokeh.models import ColumnDataSource, HoverTool
 from bokeh.plotting import figure
 from bokeh.tile_providers import Vendors, get_provider
-from powersimdata.network.usa_tamu.constants import zones
+from powersimdata.network.model import ModelImmutables
 from powersimdata.utility import distance
 
 from postreise.plot.plot_states import get_state_borders
@@ -11,13 +11,13 @@ from postreise.plot.projection_helpers import project_borders, project_branch
 
 
 def count_nodes_per_state(grid):
-    """
-    count nodes per state to add as hover-over info in map_interconnections
+    """Count nodes per state to add as hover-over info in :func`map_interconnections`
 
-    :param powersimdata.input.grid.Grid grid: grid object
-    :return:  -- dataframe containing state names and count of nodes per state
+    :param powersimdata.input.grid.Grid grid: grid object.
+    :return: (*pandas.DataFrame*) -- dataframe containing state names and count of nodes per state.
     """
-    grid.bus["state"] = grid.bus["zone_id"].map(zones.id2state)
+    id2state = ModelImmutables(grid.get_grid_model()).zones["id2abv"]
+    grid.bus["state"] = grid.bus["zone_id"].map(id2state)
     liststates = grid.bus["state"].value_counts()
     state_counts = pd.DataFrame(liststates)
     state_counts.reset_index(inplace=True)
@@ -29,16 +29,17 @@ def count_nodes_per_state(grid):
 def map_interconnections(
     grid, state_counts, hover_choice, hvdc_width=1, us_states_dat=None
 ):
-    """Maps transmission lines color coded by interconnection
+    """Maps transmission lines color coded by interconnection.
 
-    :param powersimdata.input.grid.Grid grid: grid object
-    :param pandas.DataFrame state_counts: state names and node counts, created by count_nodes_per_state
-    :param str hover_choice: "nodes" for state_counts nodes per state, otherwise hvdc
-        capacity in hover over tool tips for hvdc lines only
-    :param float hvdc_width: adjust width of HVDC lines on map
+    :param powersimdata.input.grid.Grid grid: grid object.
+    :param pandas.DataFrame state_counts: state names and node counts, created by
+        :func:`count_nodes_per_state`.
+    :param str hover_choice: "nodes" for state_counts nodes per state, otherwise HVDC
+        capacity in hover over tool tips for hvdc lines only.
+    :param float hvdc_width: adjust width of HVDC lines on map.
     :param dict us_states_dat: dictionary of state border lats/lons. If None, get
         from :func:`postreise.plot.plot_states.get_state_borders`.
-    :return:  -- map of transmission lines
+    :return: (*bokeh.plotting.figure*) -- map of transmission lines.
     """
     if us_states_dat is None:
         us_states_dat = get_state_borders()

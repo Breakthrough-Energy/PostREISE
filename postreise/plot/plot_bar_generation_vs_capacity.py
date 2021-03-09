@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import pandas as pd
-from powersimdata.input.grid import Grid
-from powersimdata.network.usa_tamu.usa_tamu_model import area_to_loadzone
+from powersimdata.network.model import ModelImmutables, area_to_loadzone
 from powersimdata.scenario.scenario import Scenario
 
 from postreise.analyze.generation.capacity_value import sum_capacity_by_type_zone
@@ -79,26 +78,30 @@ def plot_bar_generation_vs_capacity(
     if not isinstance(resource_labels, dict):
         raise TypeError("ERROR: resource_labels should be a dictionary")
 
-    grid = Grid(["USA"])
-    id2loadzone = grid.id2zone
     all_loadzone_data = {}
     scenario_data = {}
     for i, sid in enumerate(scenario_ids):
         scenario = Scenario(sid)
+        mi = ModelImmutables(scenario.info["grid_model"])
         all_loadzone_data[sid] = {
             "gen": sum_generation_by_type_zone(scenario, time_range, time_zone).rename(
-                columns=id2loadzone
+                columns=mi.zones["id2loadzone"]
             ),
-            "cap": sum_capacity_by_type_zone(scenario).rename(columns=id2loadzone),
+            "cap": sum_capacity_by_type_zone(scenario).rename(
+                columns=mi.zones["id2loadzone"]
+            ),
         }
         scenario_data[sid] = {
             "name": scenario_names[i] if scenario_names else scenario.info["name"],
+            "grid_model": mi.model,
             "gen": {"label": "Generation", "unit": "TWh", "data": {}},
             "cap": {"label": "Capacity", "unit": "GW", "data": {}},
         }
     for area, area_type in zip(areas, area_types):
-        loadzone_set = area_to_loadzone(grid, area, area_type)
         for sid in scenario_ids:
+            loadzone_set = area_to_loadzone(
+                scenario_data[sid]["grid_model"], area, area_type
+            )
             scenario_data[sid]["gen"]["data"][area] = (
                 all_loadzone_data[sid]["gen"][loadzone_set]
                 .sum(axis=1)

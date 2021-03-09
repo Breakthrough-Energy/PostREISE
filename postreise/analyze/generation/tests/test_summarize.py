@@ -20,13 +20,13 @@ mock_plant = {
     "plant_id": ["A", "B", "C", "D"],
     "zone_id": [1, 1, 2, 2],
     "type": ["solar", "wind", "hydro", "hydro"],
-    "zone_name": ["zone1", "zone1", "zone2", "zone2"],
+    "zone_name": ["Washington", "Washington", "Oregon", "Oregon"],
 }
 
 # bus_id is the index
 mock_bus = {
     "bus_id": [1, 2, 3, 4],
-    "zone_id": [1, 1, 2, 2],
+    "zone_id": [201, 201, 202, 202],
 }
 
 mock_storage = {
@@ -54,8 +54,8 @@ mock_storage_pg = pd.DataFrame(
 grid_attrs = {"plant": mock_plant, "bus": mock_bus, "storage_gen": mock_storage}
 scenario = MockScenario(grid_attrs, pg=mock_pg, storage_pg=mock_storage_pg)
 scenario.state.grid.zone2id = {
-    "zone1": 1,
-    "zone2": 2,
+    "Washington": 201,
+    "Oregon": 202,
 }
 
 
@@ -149,7 +149,7 @@ def test_summarize_hist_gen_shape(hist_gen_raw):
 
 
 def test_get_generation_time_series_by_resources():
-    arg = [(scenario, "zone1", "wind"), (scenario, "zone2", "hydro")]
+    arg = [(scenario, "Washington", "wind"), (scenario, "Oregon", "hydro")]
     expected = [
         pd.DataFrame({"wind": mock_pg["B"]}),
         pd.DataFrame({"hydro": mock_pg[["C", "D"]].sum(axis=1)}),
@@ -159,7 +159,7 @@ def test_get_generation_time_series_by_resources():
 
 
 def test_get_storage_time_series():
-    arg = [(scenario, "zone2"), (scenario, "all")]
+    arg = [(scenario, "Oregon"), (scenario, "all")]
     expected = [mock_storage_pg[2], mock_storage_pg.sum(axis=1)]
     for a, e in zip(arg, expected):
         assert_array_almost_equal(get_storage_time_series(*a), e)
