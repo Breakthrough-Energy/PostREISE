@@ -71,6 +71,7 @@ def plot_states(
     leg_color,
     leg_label,
     font_size,
+    bokeh_figure=None,
     web=True,
     us_states_dat=None,
 ):
@@ -83,6 +84,8 @@ def plot_states(
     :param list leg_color: list of colors for legend
     :param list leg_label: list of labels for colors in legend
     :param float font_size: citation font size, for non web version only
+    :param bokeh.plotting.figure.Figure bokeh_figure: figure to plot onto, if provided.
+        If not, a new figure will be created.
     :param bool web: if true, formats for website with hover tips
     :param dict us_states_dat: dictionary of state border lats/lons. If None, get
         from :func:`postreise.plot.plot_states.get_state_borders`.
@@ -98,17 +101,20 @@ def plot_states(
     if us_states_dat is None:
         us_states_dat = get_state_borders()
     all_state_xs, all_state_ys = project_borders(us_states_dat, state_list=state_list)
-    # Initialize figure
-    p = figure(
-        tools="pan,wheel_zoom,reset,save",
-        x_axis_location=None,
-        y_axis_location=None,
-        plot_width=800,
-        plot_height=800,
-        output_backend="webgl",
-        sizing_mode="stretch_both",
-        match_aspect=True,
-    )
+    # Initialize figure if necessary
+    if bokeh_figure is None:
+        p = figure(
+            tools="pan,wheel_zoom,reset,save",
+            x_axis_location=None,
+            y_axis_location=None,
+            plot_width=800,
+            plot_height=800,
+            output_backend="webgl",
+            sizing_mode="stretch_both",
+            match_aspect=True,
+        )
+    else:
+        p = bokeh_figure
     # legend squares, plot behind graph so hidden
     for i in range(len(leg_color)):
         p.square(
