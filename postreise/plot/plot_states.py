@@ -65,109 +65,156 @@ def get_state_borders():
 
 
 def plot_states(
-    state_list,
-    color_list,
-    labels_list,
-    leg_color,
-    leg_label,
-    font_size,
+    state_list=None,
+    colors=None,
+    line_color="grey",
+    line_width=1,
+    fill_alpha=1,
+    labels_list=None,
+    legend_colors=None,
+    legend_labels=None,
+    legend_title=None,
+    font_size="10pt",
+    bokeh_figure=None,
     web=True,
     us_states_dat=None,
+    background_map=True,
 ):
     """Plots US state borders and allows color coding by state,
         for example to represent different emissions goals.
 
     :param list state_list: list of us states to color code.
-    :param list color_list: list of colors associated with states in state_list.
-    :param list labels_list: list of labels for us states.
-    :param list leg_color: list of colors for legend
-    :param list leg_label: list of labels for colors in legend
+    :param str/iterable colors: color or colors associated with states in state_list.
+    :param str line_color: color of state outlines.
+    :param int/float line_width: thickness of state outlines.
+    :param int/float fill_alpha: fill opaqueness for state patches.
+    :param iterable labels_list: list of labels for us states.
+    :param iterable legend_colors: list of colors for legend.
+    :param iterable legend_labels: list of labels for colors in legend.
+    :param str legend_title: title for legend.
     :param float font_size: citation font size, for non web version only
+    :param bokeh.plotting.figure.Figure bokeh_figure: figure to plot onto, if provided.
+        If not, a new figure will be created.
     :param bool web: if true, formats for website with hover tips
     :param dict us_states_dat: dictionary of state border lats/lons. If None, get
         from :func:`postreise.plot.plot_states.get_state_borders`.
+    :param bool background_map: if True, plot a map background behind state borders.
+    :raises TypeError: if inputs are wrong type.
+    :raises ValueError: if inputs have wrong values.
     :return: (*bokeh.plotting.figure.Figure*) -- map of us states with option to color
         by value.
     """
-    # warn if inputs diff lengths
-    if len(state_list) != len(color_list):
-        print("warning: state_list and color_list must be same length")
-    if len(state_list) != len(labels_list):
-        print("warning: state_list and labels_list must be same length")
-    # Get state borders if necessary, and project to "EPSG:3857" either way
+    # Get state borders data if necessary
     if us_states_dat is None:
         us_states_dat = get_state_borders()
+    if state_list is None:
+        # Default to continental US from state borders data, w/ no colors, no labels.
+        if labels_list is not None:
+            raise TypeError("Cannot specify labels_list without state_list")
+        if colors is not None and not isinstance(colors, str):
+            raise TypeError("Cannot specify list of colors without state_list")
+        state_list = list(set(us_states_dat.keys()) - {"AK", "HI", "DC", "PR"})
+    else:
+        if colors is not None:
+            if not isinstance(colors, str):
+                try:
+                    if len(state_list) != len(colors):
+                        raise ValueError("state_list and colors must be same length")
+                except TypeError:
+                    raise TypeError("colors must be str or iterable")
+        if labels_list is not None:
+            try:
+                if len(state_list) != len(labels_list):
+                    raise ValueError("State_list and labels_list must be same length")
+            except TypeError:
+                raise TypeError("labels_list must be an iterable")
+    if legend_colors is not None or legend_labels is not None:
+        try:
+            if len(legend_colors) != len(legend_labels):
+                raise ValueError("Length of legend_colors and legend_labels must match")
+        except TypeError:
+            raise TypeError("legend_colors and legend_labels must be iterables or None")
+    # If no color specified, default to white. Either way, apply to all states.
+    colors = "white" if colors is None else colors
+    colors = [colors for s in state_list] if isinstance(colors, str) else colors
     all_state_xs, all_state_ys = project_borders(us_states_dat, state_list=state_list)
-    # Initialize figure
-    p = figure(
-        tools="pan,wheel_zoom,reset,save",
-        x_axis_location=None,
-        y_axis_location=None,
-        plot_width=800,
-        plot_height=800,
-        output_backend="webgl",
-        sizing_mode="stretch_both",
-        match_aspect=True,
-    )
-    # legend squares, plot behind graph so hidden
-    for i in range(len(leg_color)):
-        p.square(
-            -8.1e6,
-            [5.2e6, 5.3e6],
-            fill_color=leg_color[i],
-            color=leg_color[i],
-            size=300,
-            legend_label=leg_label[i],
+    # Initialize figure if necessary
+    if bokeh_figure is None:
+        p = figure(
+            tools="pan,wheel_zoom,reset,save",
+            x_axis_location=None,
+            y_axis_location=None,
+            plot_width=800,
+            plot_height=800,
+            output_backend="webgl",
+            sizing_mode="stretch_both",
+            match_aspect=True,
         )
+    else:
+        p = bokeh_figure
+    # if legend info is passed, plot legend squares behind graph so they're hidden
+    if legend_colors is not None:
+        for i, c in enumerate(legend_colors):
+            p.square(
+                -8.1e6,
+                [5.2e6, 5.3e6],
+                fill_color=c,
+                color=c,
+                size=300,
+                legend_label=legend_labels[i],
+            )
     # Tiles for map background
-    p.add_tile(get_provider(Vendors.CARTODBPOSITRON_RETINA))
+    if background_map:
+        p.add_tile(get_provider(Vendors.CARTODBPOSITRON_RETINA))
     # State patches
     state_patch_info = {
         "xs": all_state_xs,
         "ys": all_state_ys,
-        "color": color_list,
-        "label": labels_list,
+        "color": colors,
         "state_name": state_list,
     }
+    if labels_list is not None:
+        state_patch_info["label"] = labels_list
     patch = p.patches(
         "xs",
         "ys",
         source=ColumnDataSource(state_patch_info),
-        fill_alpha=0.8,
+        fill_alpha=fill_alpha,
         fill_color="color",
-        line_color="gray",
+        line_color=line_color,
+        line_width=line_width,
     )
-    if web:
-        # For the web, add hover-over functionality
-        hover = HoverTool(
-            tooltips=[
-                ("State", "@state_name"),
-                ("Goal", "@label"),
-            ],
-            renderers=[patch],
-        )  # only for circles
-        p.add_tools(hover)
-    else:
-        # For not the web, add static labels
-        for i, state in enumerate(state_list):
-            a1, b1 = project_borders(us_states_dat, state_list=[state])
-            citation = Label(
-                x=min(a1[0]) + 100000,
-                y=(max(b1[0]) + min(b1[0])) / 2,
-                x_units="data",
-                y_units="data",
-                text_font_size=font_size,
-                text=labels_list[i],
-                render_mode="css",
-                border_line_color="black",
-                border_line_alpha=0,
-                background_fill_color="white",
-                background_fill_alpha=0.8,
+    if labels_list is not None:
+        if web:
+            # For the web, add hover-over functionality
+            hover = HoverTool(
+                tooltips=[("State", "@state_name"), ("Goal", "@label")],
+                renderers=[patch],
             )
-            p.add_layout(citation)
+            p.add_tools(hover)
+        else:
+            # For not the web, add static labels
+            for i, state in enumerate(state_list):
+                a1, b1 = project_borders(us_states_dat, state_list=[state])
+                citation = Label(
+                    x=min(a1[0]) + 100000,
+                    y=(max(b1[0]) + min(b1[0])) / 2,
+                    x_units="data",
+                    y_units="data",
+                    text_font_size=font_size,
+                    text=labels_list[i],
+                    render_mode="css",
+                    border_line_color="black",
+                    border_line_alpha=0,
+                    background_fill_color="white",
+                    background_fill_alpha=0.8,
+                )
+                p.add_layout(citation)
 
-    p.legend.title = "Goals up to 2030"
-    p.legend.location = "bottom_right"
-    p.legend.label_text_font_size = "12pt"
-    p.legend.title_text_font_size = "12pt"
+    if legend_colors is not None:
+        if legend_title is not None:
+            p.legend.title = legend_title
+        p.legend.location = "bottom_right"
+        p.legend.label_text_font_size = "12pt"
+        p.legend.title_text_font_size = "12pt"
     return p
