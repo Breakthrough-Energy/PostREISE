@@ -3,11 +3,7 @@ import datetime
 import numpy as np
 import pandas as pd
 from powersimdata.input.grid import Grid
-from powersimdata.network.usa_tamu.constants import zones
-from powersimdata.network.usa_tamu.constants.plants import (
-    all_resources,
-    renewable_resources,
-)
+from powersimdata.network.model import ModelImmutables
 from powersimdata.scenario.analyze import Analyze
 from powersimdata.scenario.scenario import Scenario
 
@@ -71,17 +67,19 @@ def _check_scenario_is_in_analyze_state(scenario):
         raise ValueError("scenario must in analyze state")
 
 
-def _check_areas_and_format(areas):
+def _check_areas_and_format(areas, grid_model="usa_tamu"):
     """Ensure that areas are valid. Duplicates are removed and state abbreviations are
     converted to their actual name.
 
     :param str/list/tuple/set areas: areas(s) to check. Could be load zone name(s),
         state name(s)/abbreviation(s) or interconnect(s).
+    :param str grid_model: grid model.
     :raises TypeError: if areas is not a list/tuple/set of str.
     :raises ValueError: if areas is empty or not valid.
     :return: (*set*) -- areas as a set. State abbreviations are converted to state
         names.
     """
+    mi = ModelImmutables(grid_model)
     if isinstance(areas, str):
         areas = {areas}
     elif isinstance(areas, (list, set, tuple)):
@@ -92,27 +90,34 @@ def _check_areas_and_format(areas):
         raise TypeError("areas must be a str or a list/tuple/set of str")
     if len(areas) == 0:
         raise ValueError("areas must be non-empty")
-    all_areas = zones.loadzone | zones.abv | zones.state | zones.interconnect
+    all_areas = (
+        mi.zones["loadzone"]
+        | mi.zones["abv"]
+        | mi.zones["state"]
+        | mi.zones["interconnect"]
+    )
     if not areas <= all_areas:
         diff = areas - all_areas
         raise ValueError("invalid area(s): %s" % " | ".join(diff))
 
-    abv_in_areas = [z for z in areas if z in zones.abv]
+    abv_in_areas = [z for z in areas if z in mi.zones["abv"]]
     for a in abv_in_areas:
         areas.remove(a)
-        areas.add(zones.abv2state[a])
+        areas.add(mi.zones["abv2state"][a])
 
     return areas
 
 
-def _check_resources_and_format(resources):
+def _check_resources_and_format(resources, grid_model="usa_tamu"):
     """Ensure that resources are valid and convert variable to a set.
 
     :param str/list/tuple/set resources: resource(s) to check.
+    :param str grid_model: grid model.
     :raises TypeError: if resources is not a list/tuple/set of str.
     :raises ValueError: if resources is empty or not valid.
     :return: (*set*) -- resources as a set.
     """
+    mi = ModelImmutables(grid_model)
     if isinstance(resources, str):
         resources = {resources}
     elif isinstance(resources, (list, set, tuple)):
@@ -123,23 +128,25 @@ def _check_resources_and_format(resources):
         raise TypeError("resources must be a str or a list/tuple/set of str")
     if len(resources) == 0:
         raise ValueError("resources must be non-empty")
-    if not resources <= all_resources:
-        diff = resources - all_resources
+    if not resources <= mi.plants["all_resources"]:
+        diff = resources - mi.plants["all_resources"]
         raise ValueError("invalid resource(s): %s" % " | ".join(diff))
     return resources
 
 
-def _check_resources_are_renewable_and_format(resources):
+def _check_resources_are_renewable_and_format(resources, grid_model="usa_tamu"):
     """Ensure that resources are valid renewable resources and convert variable to
     a set.
 
     :param str/list/tuple/set resources: resource(s) to analyze.
+    :param str grid_model: grid model.
     :raises ValueError: if resources are not renewables.
     return: (*set*) -- resources as a set
     """
-    resources = _check_resources_and_format(resources)
-    if not resources <= renewable_resources:
-        diff = resources - all_resources
+    mi = ModelImmutables(grid_model)
+    resources = _check_resources_and_format(resources, grid_model=grid_model)
+    if not resources <= mi.plants["renewable_resources"]:
+        diff = resources - mi.plants["all_resources"]
         raise ValueError("invalid renewable resource(s): %s" % " | ".join(diff))
     return resources
 
@@ -161,6 +168,7 @@ def _check_areas_are_in_grid_and_format(areas, grid):
     if not isinstance(areas, dict):
         raise TypeError("areas must be a dict")
 
+    mi = grid.model_immutables
     areas_formatted = {}
     for a in areas.keys():
         if a in ["loadzone", "state", "interconnect"]:
@@ -174,7 +182,7 @@ def _check_areas_are_in_grid_and_format(areas, grid):
             interconnects = _check_areas_and_format(v)
             for i in interconnects:
                 try:
-                    all_loadzones.update(zones.interconnect2loadzone[i])
+                    all_loadzones.update(mi.zones["interconnect2loadzone"][i])
                 except KeyError:
                     raise ValueError("invalid interconnect: %s" % i)
             areas_formatted["interconnect"].update(interconnects)
@@ -182,14 +190,14 @@ def _check_areas_are_in_grid_and_format(areas, grid):
             states = _check_areas_and_format(v)
             for s in states:
                 try:
-                    all_loadzones.update(zones.state2loadzone[s])
+                    all_loadzones.update(mi.zones["state2loadzone"][s])
                 except KeyError:
                     raise ValueError("invalid state: %s" % s)
             areas_formatted["state"].update(states)
         elif k == "loadzone":
             loadzones = _check_areas_and_format(v)
             for l in loadzones:
-                if l not in zones.loadzone:
+                if l not in mi.zones["loadzone"]:
                     raise ValueError("invalid load zone: %s" % l)
             all_loadzones.update(loadzones)
             areas_formatted["loadzone"].update(loadzones)

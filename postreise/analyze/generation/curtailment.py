@@ -1,5 +1,4 @@
 import pandas as pd
-from powersimdata.network.usa_tamu.constants.plants import renewable_resources
 
 from postreise.analyze.check import (
     _check_areas_are_in_grid_and_format,
@@ -32,7 +31,10 @@ def calculate_curtailment_time_series(scenario):
     pg = scenario.state.get_pg()
 
     plant_id = get_plant_id_for_resources(
-        renewable_resources.intersection(set(grid.plant.type)), grid
+        grid.model_immutables.plants["renewable_resources"].intersection(
+            set(grid.plant.type)
+        ),
+        grid,
     )
     profiles = pd.concat(
         [scenario.state.get_solar(), scenario.state.get_wind()], axis=1
@@ -55,9 +57,13 @@ def calculate_curtailment_time_series_by_resources(scenario, resources=None):
     grid = scenario.state.get_grid()
 
     if resources is None:
-        resources = renewable_resources.intersection(set(grid.plant.type))
+        resources = grid.model_immutables.plants["renewable_resources"].intersection(
+            set(grid.plant.type)
+        )
     else:
-        resources = _check_resources_are_renewable_and_format(resources)
+        resources = _check_resources_are_renewable_and_format(
+            resources, grid_model=scenario.info["grid_model"]
+        )
 
     curtailment_by_resources = decompose_plant_data_frame_into_resources(
         curtailment, resources, grid
@@ -144,9 +150,13 @@ def calculate_curtailment_time_series_by_areas_and_resources(
     )
 
     if resources is None:
-        resources = renewable_resources.intersection(set(grid.plant.type))
+        resources = grid.model_immutables.plants["renewable_resources"].intersection(
+            set(grid.plant.type)
+        )
     else:
-        resources = _check_resources_are_renewable_and_format(resources)
+        resources = _check_resources_are_renewable_and_format(
+            resources, grid_model=scenario.info["grid_model"]
+        )
 
     curtailment_by_areas_and_resources = (
         decompose_plant_data_frame_into_areas_and_resources(
@@ -181,9 +191,13 @@ def calculate_curtailment_time_series_by_resources_and_areas(
     )
 
     if resources is None:
-        resources = renewable_resources.intersection(set(grid.plant.type))
+        resources = grid.model_immutables.plants["renewable_resources"].intersection(
+            set(grid.plant.type)
+        )
     else:
-        resources = _check_resources_are_renewable_and_format(resources)
+        resources = _check_resources_are_renewable_and_format(
+            resources, grid_model=scenario.info["grid_model"]
+        )
 
     curtailment_by_resources_and_areas = (
         decompose_plant_data_frame_into_resources_and_areas(

@@ -18,9 +18,9 @@ mock_plant = {
     "plant_id": ["A", "B", "C", "D"],
     "bus_id": [1, 2, 3, 4],
     "lat": [47.6, 47.6, 37.8, 37.8],
-    "lon": [122.3, 122.3, 122.4, 122.4],
+    "lon": [-122.3, -122.3, -122.4, -122.4],
     "type": ["solar", "solar", "wind", "wind_offshore"],
-    "zone_name": ["zone1", "zone1", "zone2", "zone2"],
+    "zone_name": ["Washington", "Washington", "Bay Area", "Bay Area"],
 }
 
 mock_pg = pd.DataFrame(
@@ -193,9 +193,9 @@ class TestSummarizeCurtailmentByBus(unittest.TestCase):
 class TestSummarizeCurtailmentByLocation(unittest.TestCase):
     def test_summarize_curtailment_by_location(self):
         expected_return = {
-            "solar": {(47.6, 122.3): 3.5},
-            "wind": {(37.8, 122.4): 0.5},
-            "wind_offshore": {(37.8, 122.4): 2.5},
+            "solar": {(47.6, -122.3): 3.5},
+            "wind": {(37.8, -122.4): 0.5},
+            "wind_offshore": {(37.8, -122.4): 2.5},
         }
         location_curtailment = summarize_curtailment_by_location(scenario)
         self.assertEqual(location_curtailment, expected_return)
@@ -203,7 +203,7 @@ class TestSummarizeCurtailmentByLocation(unittest.TestCase):
 
 class TestGetCurtailmentTimeSeries(unittest.TestCase):
     def test_get_curtailment_time_series(self):
-        arg = [(scenario, "zone1"), (scenario, "zone2"), (scenario, "all")]
+        arg = [(scenario, "Washington"), (scenario, "Bay Area"), (scenario, "all")]
         expected_return = [
             pd.DataFrame(
                 {

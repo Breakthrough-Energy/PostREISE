@@ -2,7 +2,7 @@ import os
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from powersimdata.network.usa_tamu.constants.plants import type2color, type2label
+from powersimdata.network.model import ModelImmutables
 
 from postreise.analyze.check import (
     _check_resources_and_format,
@@ -73,8 +73,13 @@ def plot_curtailment_time_series(
         directory if None.
     """
     _check_scenario_is_in_analyze_state(scenario)
-    resources = _check_resources_and_format(resources)
+    resources = _check_resources_and_format(
+        resources, grid_model=scenario.info["grid_model"]
+    )
 
+    mi = ModelImmutables(scenario.info["grid_model"])
+    type2color = mi.plants["type2color"]
+    type2label = mi.plants["type2label"]
     if t2c:
         type2color.update(t2c)
     if t2l:

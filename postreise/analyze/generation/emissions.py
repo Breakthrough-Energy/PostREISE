@@ -1,16 +1,11 @@
 import numpy as np
 import pandas as pd
 from numpy.polynomial.polynomial import polyval
-from powersimdata.network.usa_tamu.constants.plants import (
-    carbon_per_mmbtu,
-    carbon_per_mwh,
-    carbon_resources,
-    nox_per_mwh,
-    so2_per_mwh,
-)
+from powersimdata.network.model import ModelImmutables
 
 from postreise.analyze.check import (
     _check_gencost,
+    _check_grid,
     _check_scenario_is_in_analyze_state,
     _check_time_series,
 )
@@ -29,16 +24,16 @@ def generate_emissions_stats(scenario, pollutant="carbon", method="simple"):
     :return: (*pandas.DataFrame*) -- emissions data frame.
     """
     _check_scenario_is_in_analyze_state(scenario)
-
+    mi = ModelImmutables(scenario.info["grid_model"])
     allowed_methods = {
         "carbon": {"simple", "always-on", "decommit"},
         "nox": {"simple"},
         "so2": {"simple"},
     }
     emissions_per_mwh = {
-        "carbon": carbon_per_mwh,
-        "nox": nox_per_mwh,
-        "so2": so2_per_mwh,
+        "carbon": mi.plants["carbon_per_mwh"],
+        "nox": mi.plants["nox_per_mwh"],
+        "so2": mi.plants["so2_per_mwh"],
     }
 
     if pollutant not in allowed_methods.keys():
@@ -63,7 +58,7 @@ def generate_emissions_stats(scenario, pollutant="carbon", method="simple"):
         costs = calc_costs(pg, grid.gencost["before"], decommit=decommit)
         heat = np.zeros_like(costs)
 
-        for fuel, val in carbon_per_mmbtu.items():
+        for fuel, val in mi.plants["carbon_per_mmbtu"].items():
             indices = (grid.plant["type"] == fuel).to_numpy()
             heat[:, indices] = (
                 costs[:, indices] / grid.plant["GenFuelCost"].values[indices]
@@ -75,34 +70,40 @@ def generate_emissions_stats(scenario, pollutant="carbon", method="simple"):
     return emissions
 
 
-def summarize_emissions_by_bus(emissions, plant):
+def summarize_emissions_by_bus(emissions, grid):
     """Summarize time series emissions dataframe by type and bus.
 
-    :param pandas.DataFrame emissions: Hourly emissions by generator.
-    :param pandas.DataFrame plant: Generator specification table.
-    :return: (*dict*) -- Annual emissions by fuel and bus.
+    :param pandas.DataFrame emissions: hourly emissions by generator.
+    :param powersimdata.input.grid.Grid grid: grid object.
+    :return: (*dict*) -- annual emissions by fuel and bus.
     """
 
     _check_time_series(emissions, "emissions")
     if (emissions < -1e-3).any(axis=None):
         raise ValueError("emissions must be non-negative")
 
+    _check_grid(grid)
+    plant = grid.plant
+
     # sum by generator
     plant_totals = emissions.sum()
     # set up output data structure
     plant_buses = plant["bus_id"].unique()
-    bus_totals_by_type = {f: {b: 0 for b in plant_buses} for f in carbon_resources}
+    bus_totals_by_type = {
+        f: {b: 0 for b in plant_buses}
+        for f in grid.model_immutables.plants["carbon_resources"]
+    }
     # sum by fuel by bus
     for p in plant_totals.index:
         plant_type = plant.loc[p, "type"]
-        if plant_type not in carbon_resources:
+        if plant_type not in grid.model_immutables.plants["carbon_resources"]:
             continue
         plant_bus = plant.loc[p, "bus_id"]
         bus_totals_by_type[plant_type][plant_bus] += plant_totals.loc[p]
     # filter out buses whose emissions are zero
     bus_totals_by_type = {
         r: {b: v for b, v in bus_totals_by_type[r].items() if v > 0}
-        for r in carbon_resources
+        for r in grid.model_immutables.plants["carbon_resources"]
     }
 
     return bus_totals_by_type

@@ -1,9 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from powersimdata.input.grid import Grid
-from powersimdata.network.usa_tamu.constants.plants import type2color, type2label
-from powersimdata.network.usa_tamu.usa_tamu_model import area_to_loadzone
+from powersimdata.network.model import ModelImmutables, area_to_loadzone
 from powersimdata.scenario.scenario import Scenario
 
 from postreise.analyze.generation.capacity_value import sum_capacity_by_type_zone
@@ -100,29 +98,32 @@ def plot_pie_generation_vs_capacity(
     if not isinstance(resource_colors, dict):
         raise TypeError("ERROR: resource_colors should be a dictionary")
 
-    type2label.update(resource_labels)
-    type2color.update(resource_colors)
-
-    grid = Grid(["USA"])
-    id2loadzone = grid.id2zone
     all_loadzone_data = {}
     scenario_data = {}
     for i, sid in enumerate(scenario_ids):
         scenario = Scenario(sid)
+        mi = ModelImmutables(scenario.info["grid_model"])
         all_loadzone_data[sid] = {
             "gen": sum_generation_by_type_zone(scenario, time_range, time_zone).rename(
-                columns=id2loadzone
+                columns=mi.zones["id2loadzone"]
             ),
-            "cap": sum_capacity_by_type_zone(scenario).rename(columns=id2loadzone),
+            "cap": sum_capacity_by_type_zone(scenario).rename(
+                columns=mi.zones["id2loadzone"]
+            ),
         }
         scenario_data[sid] = {
             "name": scenario_names[i] if scenario_names else scenario.info["name"],
+            "grid_model": mi.model,
+            "type2color": {**mi.plants["type2color"], **resource_colors},
+            "type2label": {**mi.plants["type2label"], **resource_labels},
             "gen": {"label": "Generation", "unit": "TWh", "data": {}},
             "cap": {"label": "Capacity", "unit": "GW", "data": {}},
         }
     for area, area_type in zip(areas, area_types):
-        loadzone_set = area_to_loadzone(grid, area, area_type)
         for sid in scenario_ids:
+            loadzone_set = area_to_loadzone(
+                scenario_data[sid]["grid_model"], area, area_type
+            )
             scenario_data[sid]["gen"]["data"][area] = (
                 all_loadzone_data[sid]["gen"][loadzone_set]
                 .sum(axis=1)
@@ -147,7 +148,7 @@ def plot_pie_generation_vs_capacity(
         for sd in scenario_data.values():
             for side in ["gen", "cap"]:
                 ax_data, labels = _roll_up_small_pie_wedges(
-                    sd[side]["data"][area], min_percentage
+                    sd[side]["data"][area], sd["type2label"], min_percentage
                 )
 
                 ax_data_list.append(
@@ -155,7 +156,7 @@ def plot_pie_generation_vs_capacity(
                         "title": "{0}\n{1}".format(sd["name"], sd[side]["label"]),
                         "labels": labels,
                         "values": list(ax_data.values()),
-                        "colors": [type2color[r] for r in ax_data.keys()],
+                        "colors": [sd["type2color"][r] for r in ax_data.keys()],
                         "unit": sd[side]["unit"],
                     }
                 )
@@ -163,15 +164,16 @@ def plot_pie_generation_vs_capacity(
         _construct_pie_visuals(area, ax_data_list)
 
 
-def _roll_up_small_pie_wedges(resource_data, min_percentage):
+def _roll_up_small_pie_wedges(resource_data, resource_label, min_percentage):
     """Combine small wedges into a single category. Removes wedges with value 0.
 
     :param dict resource_data: values for each resource type.
+    :param dict resource_label: labels for each resource type.
     :param float min_percentage: roll up small pie pieces into a single category,
         resources with percentage less than the set value will be pooled together,
         defaults to 0.
-    :return: (*dict*) -- returns updated axis data and a list of labels that includes
-        the small category label if it exists
+    :return: (*dict*) -- updated axis data and a list of labels that includes the small
+        category label if it exists
     """
     resource_list = list(resource_data.keys())
     total_resources = sum(resource_data.values())
@@ -186,7 +188,7 @@ def _roll_up_small_pie_wedges(resource_data, min_percentage):
         elif percentage <= min_percentage:
             small_categories.append(resource)
             small_category_label += "{0} {1}%\n".format(
-                type2label[resource], percentage
+                resource_label[resource], percentage
             )
             small_category_value += resource_data[resource]
 
@@ -194,7 +196,7 @@ def _roll_up_small_pie_wedges(resource_data, min_percentage):
         for resource in small_categories:
             resource_data.pop(resource)
 
-    labels = [type2label[resource] for resource in resource_data.keys()]
+    labels = [resource_label[resource] for resource in resource_data.keys()]
 
     if len(small_categories) > 1:
         resource_data["other"] = small_category_value

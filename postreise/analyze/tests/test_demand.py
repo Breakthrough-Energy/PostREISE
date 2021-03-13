@@ -6,7 +6,7 @@ from postreise.analyze.demand import get_demand_time_series, get_net_demand_time
 
 mock_plant = {
     "plant_id": ["1001", "1002", "1003"],
-    "zone_name": ["B", "B", "C"],
+    "zone_name": ["Oregon", "Oregon", "Southern California"],
     "type": ["solar", "wind", "hydro"],
 }
 
@@ -22,22 +22,22 @@ grid_attrs = {"plant": mock_plant}
 
 mock_demand = pd.DataFrame(
     {
-        101: [1, 2, 3, 4],
-        102: [4, 3, 2, 1],
-        103: [2, 2, 2, 2],
+        201: [1, 2, 3, 4],
+        202: [4, 3, 2, 1],
+        203: [2, 2, 2, 2],
     }
 )
 
 scenario = MockScenario(grid_attrs, pg=mock_pg, demand=mock_demand)
 scenario.state.grid.zone2id = {
-    "A": 101,
-    "B": 102,
-    "C": 103,
+    "Washington": 201,
+    "Oregon": 202,
+    "Northern California": 203,
 }
 
 
 def test_get_demand_time_series():
-    demand = get_demand_time_series(scenario, "A")
+    demand = get_demand_time_series(scenario, "Washington")
     expected_results = [1, 2, 3, 4]
     assert_array_equal(demand.to_numpy(), expected_results)
 

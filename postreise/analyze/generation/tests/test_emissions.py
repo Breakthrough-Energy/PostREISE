@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from numpy.testing import assert_array_almost_equal
+from powersimdata.tests.mock_grid import MockGrid
 from powersimdata.tests.mock_scenario import MockScenario
 
 from postreise.analyze.generation.emissions import (
@@ -196,7 +197,9 @@ class TestEmissionsSummarization:
         }
 
         # calculation
-        summation = summarize_emissions_by_bus(input_carbon, plant)
+        summation = summarize_emissions_by_bus(
+            input_carbon, MockGrid(grid_attrs={"plant": mock_plant})
+        )
 
         # checks
         err_msg = "summarize_emissions_by_bus didn't return a dict"

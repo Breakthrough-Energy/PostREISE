@@ -1,9 +1,9 @@
 # This plotting module has a corresponding demo notebook in
-#   PostREISE/postreise/plot/demo: plot_carbon_energy_carbon_stack.ipynb
+#   PostREISE/postreise/plot/demo: energy_emissions_stack_bar_demo.ipynb
 
 import matplotlib.pyplot as plt
 import numpy as np
-from powersimdata.network.usa_tamu.constants.plants import type2color
+from powersimdata.network.model import ModelImmutables
 from powersimdata.scenario.scenario import Scenario
 
 from postreise.analyze.generation.emissions import generate_emissions_stats
@@ -29,7 +29,9 @@ def plot_n_scenarios(*args):
     scenarios = {id: scen for (id, scen) in zip(scenario_numbers, args)}
     grid = {id: scenario.state.get_grid() for id, scenario in scenarios.items()}
     plant = {k: v.plant for k, v in grid.items()}
-    carbon_by_type, energy_by_type = {}, {}
+    # First scenario is chosen to set fuel colors
+    type2color = ModelImmutables(args[0].info["grid_model"]).plants["type2color"]
+    carbon_by_type, energy_by_type, type2color = {}, {}
     for id, scenario in scenarios.items():
         # Calculate raw numbers
         annual_plant_energy = scenario.state.get_pg().sum()
@@ -39,7 +41,7 @@ def plot_n_scenarios(*args):
         # Drop fuels with zero energy (e.g. all offshore_wind scaled to 0 MW)
         energy_by_type[id] = raw_energy_by_type[raw_energy_by_type != 0]
         carbon_by_type[id] = raw_carbon_by_type[raw_energy_by_type != 0]
-    # carbon multiplier is inverse of carbon intensity, to scale bar heights
+    # Carbon multiplier is inverse of carbon intensity, to scale bar heights
     carbon_multiplier = energy_by_type[first_id].sum() / carbon_by_type[first_id].sum()
 
     # Determine the fuel types with generation in either scenario

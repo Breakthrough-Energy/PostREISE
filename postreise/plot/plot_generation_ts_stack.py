@@ -3,11 +3,7 @@ import os
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import pandas as pd
-from powersimdata.network.usa_tamu.constants.plants import (
-    type2color,
-    type2hatchcolor,
-    type2label,
-)
+from powersimdata.network.model import ModelImmutables
 
 from postreise.analyze.check import _check_scenario_is_in_analyze_state
 from postreise.analyze.demand import get_demand_time_series, get_net_demand_time_series
@@ -90,6 +86,11 @@ def plot_generation_time_series_stack(
         directory if None.
     """
     _check_scenario_is_in_analyze_state(scenario)
+
+    mi = ModelImmutables(scenario.info["grid_model"])
+    type2color = mi.plants["type2color"]
+    type2label = mi.plants["type2label"]
+    type2hatchcolor = mi.plants["type2hatchcolor"]
     if t2c:
         type2color.update(t2c)
     if t2l:
