@@ -5,7 +5,7 @@ from postreise.plot.plot_pie_generation_vs_capacity import (
 )
 
 
-def test_handle_plot_inputs_throws_valueError_for_different_length_of_areas_and_area_types():
+def test_plot_pie_generation_vs_capacity_throws_error_for_different_length_of_areas_and_area_types():
     with pytest.raises(ValueError):
         plot_pie_generation_vs_capacity(
             areas=["all", "Western", "Texas", "Eastern"],
@@ -16,7 +16,7 @@ def test_handle_plot_inputs_throws_valueError_for_different_length_of_areas_and_
         )
 
 
-def test_handle_plot_inputs_throws_valueError_for_different_length_of_scenario_ids_and_scenario_names():
+def test_plot_pie_generation_vs_capacity_throws_error_for_different_length_of_scenario_ids_and_scenario_names():
     with pytest.raises(ValueError):
         plot_pie_generation_vs_capacity(
             areas=["all", "Western", "Texas", "Eastern"],
@@ -27,7 +27,7 @@ def test_handle_plot_inputs_throws_valueError_for_different_length_of_scenario_i
         )
 
 
-def test_handle_plot_inputs_throws_valueError_for_less_than_two_scenario_ids_and_custom_data_is_provided():
+def test_plot_pie_generation_vs_capacity_throws_error_for_less_than_two_scenario_ids_and_custom_data_is_provided():
     with pytest.raises(ValueError):
         plot_pie_generation_vs_capacity(
             areas=["all", "Western", "Texas", "Eastern"],
@@ -38,7 +38,7 @@ def test_handle_plot_inputs_throws_valueError_for_less_than_two_scenario_ids_and
         )
 
 
-def test_handle_plot_inputs_throws_typeError_for_resource_labels_not_in_a_dictionary_format():
+def test_plot_pie_generation_vs_capacity_throws_error_for_resource_labels_not_in_a_dictionary_format():
     with pytest.raises(TypeError):
         plot_pie_generation_vs_capacity(
             areas=["all", "Western", "Texas", "Eastern"],
@@ -50,7 +50,7 @@ def test_handle_plot_inputs_throws_typeError_for_resource_labels_not_in_a_dictio
         )
 
 
-def test_handle_plot_inputs_throws_typeError_for_resource_colors_not_in_a_dictionary_format():
+def test_plot_pie_generation_vs_capacity_throws_error_for_resource_colors_not_in_a_dictionary_format():
     with pytest.raises(TypeError):
         plot_pie_generation_vs_capacity(
             areas=["all", "Western", "Texas", "Eastern"],

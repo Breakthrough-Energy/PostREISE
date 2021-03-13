@@ -27,7 +27,8 @@ def plot_bar_shortfall(
         energy target fraction, allowed resources and external historical amount of
         qualified energy for each area.
     :param dict strategy: a dictionary with keys being scenario ids and values being
-        strategies, either *"collaborative"* or *"independent"*.
+        strategies, either *"collaborative"* or *"independent"*. *"collaborative"* is
+        used if None.
     :param list/str scenario_names: list of scenario name(s) of same len as scenario
         ids, defaults to None.
     :param str/int baseline_scenario: scenario id that serves as a baseline in the
@@ -49,19 +50,21 @@ def plot_bar_shortfall(
         scenario_ids = [scenario_ids]
     if not isinstance(target_df, pd.DataFrame):
         raise TypeError("ERROR: target_df must be a pandas.DataFrame")
-    if not strategy:
+    if strategy is None:
         strategy = dict()
     if not isinstance(strategy, dict):
         raise TypeError("ERROR: strategy must be a dictionary")
     if isinstance(scenario_names, str):
         scenario_names = [scenario_names]
-    if scenario_names and len(scenario_names) != len(scenario_ids):
+    if scenario_names is not None and len(scenario_names) != len(scenario_ids):
         raise ValueError(
             "ERROR: if scenario names are provided, number of scenario names must match number of scenario ids"
         )
-    if baseline_scenario and not isinstance(baseline_scenario, (str, int)):
+    if baseline_scenario is not None and not isinstance(baseline_scenario, (str, int)):
         raise TypeError("ERROR: baseline_scenario must be a string or integer")
-    if baseline_scenario_name and not isinstance(baseline_scenario_name, str):
+    if baseline_scenario_name is not None and not isinstance(
+        baseline_scenario_name, str
+    ):
         raise TypeError("ERROR: baseline_scenario_name must be a string")
 
     scenarios = dict()
@@ -77,6 +80,7 @@ def plot_bar_shortfall(
         targets[sid] = tmp_df
     for area in areas:
         if area not in target_df.index and area != "all":
+            print(f"{area} is skipped due to lack of target information in target_df!")
             continue
         ax_data = {}
         for i, sid in enumerate(scenario_ids):
