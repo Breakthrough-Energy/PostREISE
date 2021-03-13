@@ -134,3 +134,25 @@ Recommended citation: Cole, Wesley, Nathaniel Gates, Trieu Mai, Daniel Greer, an
 
 ##### General Purpose
 These files are used when plotting map-based visualizations (e.g. maps of congestion, LMPs, etc.), to display state borders.
+
+
+---
+### Clean Energy Target Files
+#### 2030 USA Clean Energy Targets
+##### Source
+* Name: Clean Energy Targets
+* Author: National Conference of State Legislatures
+* Description: State Renewable Portfolio Standards and Goals
+* Source: https://www.ncsl.org/
+* Exact source location: https://www.ncsl.org/research/energy/renewable-portfolio-standards.aspx
+
+##### Destination
+* Modifications to source file(s): Csv files are created to put down the target
+ numbers for each state.
+* Location
+  * ***postreise/data/2030_USA_Clean_Energy_Regular_Targets.csv***
+  * ***postreise/data/2030_USA_Clean_Energy_Ambitious_Targets.csv***
+
+##### General Purpose
+These files are used in demo notebook bar_shortfall_demo.ipynb to provide reference
+ targets in the bar charts. The user can pass any target info into the function.
