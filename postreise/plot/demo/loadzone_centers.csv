@@ -1,0 +1,77 @@
+zone_id,zone_name,lat,lon
+1,Maine,43.862,-69.8276
+2,New Hampshire,43.1406,-71.3562
+3,Vermont,43.5176,-73.172
+4,Massachusetts,41.9755,-70.7804
+5,Rhode Island,41.743,-71.5043
+6,Connecticut,41.2897,-73.0844
+7,New York City,41.2041,-73.994
+8,Upstate New York,43.2736,-75.443
+9,New Jersey,40.8144,-74.4635
+10,Pennsylvania Eastern,39.9526,-75.1652
+11,Pennsylvania Western,40.4406,-79.9959
+12,Delaware,39.8354,-75.4738
+13,Maryland,39.2583,-76.9798
+14,Virginia Mountains,36.8781,-82.7572
+15,Virginia Tidewater,39.1924,-77.5635
+16,North Carolina,35.1248,-80.7371
+17,Western North Carolina,35.8467,-82.4946
+18,South Carolina,34.0677,-81.2024
+19,Georgia North,33.7553,-83.05
+20,Georgia South,32.6924,-83.6644
+21,Florida Panhandle,30.7013,-86.623
+22,Florida North,28.4463,-81.3242
+23,Florida South,25.7617,-80.1918
+24,Alabama,34.7426,-87.0255
+25,Mississippi,32.6556,-89.1299
+26,Tennessee,35.1495,-90.049
+27,Kentucky,38.2927,-85.0039
+28,West Virginia,38.4503,-82.0369
+29,Ohio River,39.2026,-84.6578
+30,Ohio Lake Erie,41.4993,-81.6944
+31,Michigan Northern,45.042,-84.4291
+32,Michigan Southern,42.4437,-83.4609
+33,Indiana,39.7684,-86.1581
+34,Chicago North Illinois,41.8781,-87.6298
+35,Illinois Downstate,40.9526,-89.1022
+36,Wisconsin,43.2297,-87.9287
+37,Minnesota Northern,48.8047,-94.9368
+38,Minnesota Southern,44.9778,-93.265
+39,Iowa,41.6563,-90.663
+40,Missouri East,38.627,-90.1994
+41,Missouri West,39.0689,-94.5234
+42,Arkansas,34.7465,-90.5142
+43,Louisiana,30.1101,-90.0158
+44,East Texas,32.1617,-94.2252
+45,Texas Panhandle,36.0539,-101.729
+46,New Mexico Eastern,34.1456,-103.283
+47,Oklahoma,35.5635,-97.3722
+48,Kansas,39.5077,-100.751
+49,Nebraska,40.5361,-96.6364
+50,South Dakota,44.5998,-100.314
+51,North Dakota,46.5811,-98.6768
+52,Montana Eastern,47.6866,-104.71
+201,Washington,47.6062,-122.3321
+202,Oregon,45.4673,-122.467
+203,Northern California,39.9166,-120.397
+204,Bay Area,37.8908,-122.083
+205,Central California,37.5827,-118.781
+206,Southwest California,33.8185,-118.041
+207,Southeast California,32.6809,-117.103
+208,Nevada,36.0774,-115
+209,Arizona,32.1579,-111.063
+210,Utah,40.7926,-111.721
+211,New Mexico Western,31.8977,-106.977
+212,Colorado,39.7392,-104.9903
+213,Wyoming,42.8378,-105.777
+214,Idaho,42.9122,-112.247
+215,Montana Western,47.4459,-114.022
+216,El Paso,31.8035,-106.355
+301,Far West,30.5756,-101.331
+302,North,33.7991,-98.5098
+303,West,29.2347,-100.209
+304,South,27.7742,-97.4388
+305,North Central,32.7007,-97.387
+306,South Central,29.3504,-98.107
+307,Coast,29.7732,-95.3143
+308,East,32.4131,-95.4433
