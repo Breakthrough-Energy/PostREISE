@@ -1,3 +1,0 @@
-﻿ID,Source_Scenario_ID,Congestion_Model,Model_Region,Selected_Region,File_Location,Filename
-1,california2020Test01,Binomial,WECC,CA,L/RenewableEnergy/EnergyGridModeling/Data/Western/congestion_data,congestion_CA_only_california2020Test01_zscore_gte_1.csv
-2,california2030Test01,Binomial,WECC,CA,L/RenewableEnergy/EnergyGridModeling/Data/Western/congestion_data,congestion_CA_only_california2030Test01_zscore_gte_1.csv

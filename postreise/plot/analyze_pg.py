@@ -1,9 +1,10 @@
+import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-
 from pandas.plotting import scatter_matrix
+from powersimdata.network.usa_tamu.constants.plants import type2color, type2label
 
 plt.ioff()
 
@@ -15,15 +16,14 @@ class AnalyzePG:
     :param tuple time: time related parameters. 1st element is the starting
         date. 2nd element is the ending date (left out). 3rd element is the
         timezone, only *'utc'*, *'US/Pacific'* and *'local'* are possible. 4th
-        element is the frequency, which can be *'H'*, *'D'*, *'W'* or *'auto'*.
-    :param list zones: geographical zones. Any combinations of *'Arizona'*,
-        *'California'*, *'Bay Area'*, *'Central California'*,
-        *'Northern California'*, *'Southeast California'*,
-        *'Southwest California'*, *'Colorado'*, *'El Paso'*, *'Idaho'*,
-        *'Montana'*, *'Nevada'*, *'New Mexico'*, *'Oregon'*, *'Utah'*,
-        *'Washington'*, *'Western'*, *'Wyoming'*.
+        element is the frequency, which can be *'H'* (hour), *'D'* (day), *'W'*
+        (week) or *'auto'*.
+    :param list zones: geographical zones. Any combinations of load zones in the
+        Western interconnection or ERCOT plus *'California'*, *'Western'* or
+        *'Texas'*.
     :param list resources: energy resources. Can be any combinations of
-        *'coal'*, *'hydro'*, *'ng'*, *'nuclear'*, *'solar'*, *'wind'*.
+        *'coal'*, *'dfo'*, *'geothermal'*, *'hydro'*, *'ng'*, *'nuclear'*,
+        *'solar'*, *'wind'*.
     :param str kind: one of: *'stacked'*, *'comp'*, *'curtailment'*,
         *'correlation'*, *'chart'*, *'variability'* or *'yield'*.
     :param bool normalize: should generation be normalized by capacity.
@@ -35,12 +35,12 @@ class AnalyzePG:
             calculates time series of power generated and demand in one zone.
         * *'comp'*:
             calculates time series of power generated for one resource in
-                multiple zones.
+            multiple zones.
         * *'curtailment'*:
             calculates time series of curtailment for one resource in one zone.
         * *'correlation'*:
             calculates correlation coefficients of power generated between
-                multiple zones for one resource.
+            multiple zones for one resource.
         * *'chart'*:
             calculates proportion of resources and generation in one zone.
         * *'variability'*:
@@ -52,20 +52,56 @@ class AnalyzePG:
             calculates capacity factor of one resource in one zone.
     """
 
-    def __init__(self, scenario, time, zones, resources, kind,
-                 normalize=False, seed=0):
-        """Constructor.
-
-        """
-        plt.close('all')
+    def __init__(self, scenario, time, zones, resources, kind, normalize=False, seed=0):
+        """Constructor."""
+        plt.close("all")
 
         # Note: Data is downloaded even if not needed
-        self.pg = scenario.state.get_pg().tz_localize('utc')
+        self.pg = scenario.state.get_pg().tz_localize("utc")
         self.grid = scenario.state.get_grid()
-        self.demand = scenario.state.get_demand()
+        self.demand = scenario.state.get_demand(original=True)
         self.solar = scenario.state.get_solar()
         self.wind = scenario.state.get_wind()
         self.hydro = scenario.state.get_hydro()
+        self.interconnect = self.grid.interconnect
+
+        if self.grid.storage and "storage" in resources:
+            self.storage_pg = scenario.state.get_storage_pg().tz_localize("utc")
+        else:
+            self.storage_pg = None
+
+        # Zone to time zone
+        self.zone2time = {
+            "Arizona": "US/Mountain",
+            "Bay Area": "US/Pacific",
+            "California": "US/Pacific",
+            "Central California": "US/Pacific",
+            "Colorado": "US/Mountain",
+            "El Paso": "US/Mountain",
+            "Idaho": "US/Mountain",
+            "Montana Western": "US/Mountain",
+            "Nevada": "US/Mountain",
+            "New Mexico Western": "US/Mountain",
+            "Northern California": "US/Pacific",
+            "Oregon": "US/Pacific",
+            "Southeast California": "US/Pacific",
+            "Southwest California": "US/Pacific",
+            "Utah": "US/Mountain",
+            "Washington": "US/Pacific",
+            "Western": "US/Pacific",
+            "Wyoming": "US/Mountain",
+            "Coast": "US/Central",
+            "East": "US/Central",
+            "Far West": "US/Central",
+            "North": "US/Central",
+            "North Central": "US/Central",
+            "South": "US/Central",
+            "South Central": "US/Central",
+            "Texas": "US/Central",
+            "West": "US/Central",
+            "Eastern": "US/Eastern",
+            "USA": "US/Central",
+        }
 
         # Check parameters
         self._check_dates(time[0], time[1])
@@ -82,84 +118,23 @@ class AnalyzePG:
         self.kind = kind
         self.normalize = normalize
         self.seed = seed
-        self.zone2time = {'Arizona': 'US/Mountain',
-                          'Bay Area': 'US/Pacific',
-                          'California': 'US/Pacific',
-                          'Central California': 'US/Pacific',
-                          'Colorado': 'US/Mountain',
-                          'El Paso': 'US/Mountain',
-                          'Idaho': 'US/Mountain',
-                          'Montana': 'US/Mountain',
-                          'Nevada': 'US/Mountain',
-                          'New Mexico': 'US/Mountain',
-                          'Northern California': 'US/Pacific',
-                          'Oregon': 'US/Pacific',
-                          'Southeast California': 'US/Pacific',
-                          'Southwest California': 'US/Pacific',
-                          'Utah': 'US/Mountain',
-                          'Washington': 'US/Pacific',
-                          'Western': 'US/Pacific',
-                          'Wyoming': 'US/Mountain'}
-        self.zone2style = {
-            'Arizona':
-                {'color': 'maroon', 'alpha': 1, 'lw': 4, 'ls': '-'},
-            'Bay Area':
-                {'color': 'blue', 'alpha': 0.6, 'lw': 4, 'ls': ':'},
-            'California':
-                {'color': 'blue', 'alpha': 1, 'lw': 4, 'ls': '-'},
-            'Central California':
-                {'color': 'blue', 'alpha': 0.6, 'lw': 4, 'ls': '-.'},
-            'Colorado':
-                {'color': 'darkorchid', 'alpha': 1, 'lw': 4, 'ls': '-'},
-            'El Paso':
-                {'color': 'dodgerblue', 'alpha': 1, 'lw': 4, 'ls': '-'},
-            'Idaho':
-                {'color': 'magenta', 'alpha': 1, 'lw': 4, 'ls': '-'},
-            'Montana':
-                {'color': 'indigo', 'alpha': 1, 'lw': 4, 'ls': '-'},
-            'Nevada':
-                {'color': 'orange', 'alpha': 1, 'lw': 4, 'ls': '-'},
-            'New Mexico':
-                {'color': 'teal', 'alpha': 1, 'lw': 4, 'ls': '-'},
-            'Northern California':
-                {'color': 'blue', 'alpha': 0.6, 'lw': 4, 'ls': '--'},
-            'Oregon':
-                {'color': 'red', 'alpha': 1, 'lw': 4, 'ls': '-'},
-            'Southwest California':
-                {'color': 'blue', 'alpha': 0.6, 'lw': 4, 'ls': '-+'},
-            'Southeast California':
-                {'color': 'blue', 'alpha': 0.6, 'lw': 4, 'ls': '-o'},
-            'Utah':
-                {'color': 'tomato', 'alpha': 1, 'lw': 4, 'ls': '-'},
-            'Washington':
-                {'color': 'green', 'alpha': 1, 'lw': 4, 'ls': '-'},
-            'Western':
-                {'color': 'black', 'alpha': 1, 'lw': 4, 'ls': '-'},
-            'Wyoming':
-                {'color': 'goldenrod', 'alpha': 1, 'lw': 4, 'ls': '-'}}
-        self.type2label = {'nuclear': 'Nuclear',
-                           'hydro': 'Hydro',
-                           'coal': 'Coal',
-                           'ng': 'Natural Gas',
-                           'solar': 'Solar',
-                           'wind': 'Wind'}
 
-        if self.freq == 'auto':
+        if self.freq == "auto":
             self._set_frequency(time[0], time[1])
 
-        if kind == 'stacked':
+        if kind == "stacked":
             self._do_stacked(time[0], time[1], time[2])
-        elif kind == 'comp':
+        elif kind == "comp":
             self._do_comp(time[0], time[1], time[2])
-        elif kind == 'curtailment':
+        elif kind == "curtailment":
             self._do_curtailment(time[0], time[1], time[2])
-        elif kind == 'correlation':
+        elif kind == "correlation":
             self._do_correlation(time[0], time[1], time[2])
-        elif kind == 'chart':
+        elif kind == "chart":
             self._do_chart(time[0], time[1])
-        elif kind == 'variability':
+        elif kind == "variability":
             self._do_variability(time[0], time[1], time[2])
-        elif kind == 'yield':
+        elif kind == "yield":
             self._do_yield(time[0], time[1])
 
     @staticmethod
@@ -180,27 +155,33 @@ class AnalyzePG:
         :param list zones: geographical zones.
         :raise Exception: if zone(s) are invalid.
         """
-        possible = list(self.grid.id2zone.values()) + \
-            ['California', 'Western']
+        possible = list(self.grid.id2zone.values())
+        if "Western" in self.interconnect:
+            possible += ["California", "Western"]
+        if "Texas" in self.interconnect:
+            possible += ["Texas"]
+        if "Eastern" in self.interconnect:
+            possible += ["Eastern"]
+        if self.interconnect == ["Eastern", "Western", "Texas"]:
+            possible += ["USA"]
         for z in zones:
             if z not in possible:
-                print("%s is incorrect. Possible zones are: %s" %
-                      (z, possible))
-                raise Exception('Invalid zone(s)')
+                print("%s is incorrect. Possible zones are: %s" % (z, possible))
+                raise Exception("Invalid zone(s)")
 
-    @staticmethod
-    def _check_resources(resources):
+    def _check_resources(self, resources):
         """Test resources.
 
         :param list resources: type of generators.
         :raise Exception: if resource(s) are invalid.
         """
-        possible = ['nuclear', 'hydro', 'coal', 'ng', 'solar', 'wind']
         for r in resources:
-            if r not in possible:
-                print("%s is incorrect. Possible resources are: %s" %
-                      (r, possible))
-                raise Exception('Invalid resource(s)')
+            if r not in type2label.keys():
+                print(
+                    "%s is incorrect. Possible resources are: %s"
+                    % (r, type2label.keys())
+                )
+                raise Exception("Invalid resource(s)")
 
     @staticmethod
     def _check_tz(tz):
@@ -209,11 +190,10 @@ class AnalyzePG:
         :param str tz: time zone.
         :raise Exception: if time zone is invalid.
         """
-        possible = ['utc', 'US/Pacific', 'local']
+        possible = ["utc", "US/Pacific", "local"]
         if tz not in possible:
-            print("%s is incorrect. Possible time zones are: %s" %
-                  (tz, possible))
-            raise Exception('Invalid time zone')
+            print("%s is incorrect. Possible time zones are: %s" % (tz, possible))
+            raise Exception("Invalid time zone")
 
     @staticmethod
     def _check_freq(freq):
@@ -222,11 +202,10 @@ class AnalyzePG:
         :param str freq: frequency for re-sampling.
         :raise Exception: if frequency is invalid.
         """
-        possible = ['H', 'D', 'W', 'auto']
+        possible = ["H", "D", "W", "auto"]
         if freq not in possible:
-            print("%s is incorrect. Possible frequency are: %s" %
-                  (freq, possible))
-            raise Exception('Invalid frequency')
+            print("%s is incorrect. Possible frequency are: %s" % (freq, possible))
+            raise Exception("Invalid frequency")
 
     @staticmethod
     def _check_kind(kind):
@@ -235,12 +214,18 @@ class AnalyzePG:
         :param str kind: type of analysis.
         :raise Exception: if analysis is invalid.
         """
-        possible = ['chart', 'stacked', 'comp', 'curtailment', 'correlation',
-                    'variability', 'yield']
+        possible = [
+            "chart",
+            "stacked",
+            "comp",
+            "curtailment",
+            "correlation",
+            "variability",
+            "yield",
+        ]
         if kind not in possible:
-            print("%s is incorrect. Possible analysis are: %s" %
-                  (kind, possible))
-            raise Exception('Invalid Analysis')
+            print("%s is incorrect. Possible analysis are: %s" % (kind, possible))
+            raise Exception("Invalid Analysis")
 
     def _convert_tz(self, df_utc):
         """Convert data frame from UTC time zone to desired time zone.
@@ -264,11 +249,11 @@ class AnalyzePG:
         delta = pd.Timestamp(start_date) - pd.Timestamp(end_date)
 
         if delta.days < 7:
-            self.freq = 'H'
+            self.freq = "H"
         elif 31 < delta.days < 180:
-            self.freq = 'D'
+            self.freq = "D"
         else:
-            self.freq = 'W'
+            self.freq = "W"
 
     def _set_date_range(self, start_date, end_date):
         """Calculates the appropriate date range after resampling in order to
@@ -280,11 +265,16 @@ class AnalyzePG:
         first_available = self.pg.index[0].tz_convert(self.tz)
         last_available = self.pg.index[-1].tz_convert(self.tz)
 
-        timestep = pd.DataFrame(index=pd.date_range(
-            start_date, end_date, freq='H', tz=self.tz)).resample(
-            self.freq, label='left').size().rename('Number of Hours')
+        timestep = (
+            pd.DataFrame(
+                index=pd.date_range(start_date, end_date, freq="H", tz=self.tz)
+            )
+            .resample(self.freq, label="left")
+            .size()
+            .rename("Number of Hours")
+        )
 
-        if self.freq == 'H':
+        if self.freq == "H":
             if first_available > pd.Timestamp(start_date, tz=self.tz):
                 self.from_index = first_available
             else:
@@ -294,7 +284,7 @@ class AnalyzePG:
             else:
                 self.to_index = pd.Timestamp(end_date, tz=self.tz)
 
-        elif self.freq == 'D':
+        elif self.freq == "D":
             if timestep[0] == timestep[1]:
                 first_full = pd.Timestamp(timestep.index.values[0], tz=self.tz)
             else:
@@ -305,16 +295,15 @@ class AnalyzePG:
                 last_full = pd.Timestamp(timestep.index.values[-2], tz=self.tz)
 
             if first_available > first_full:
-                self.from_index = first_available.ceil('D')
+                self.from_index = first_available.ceil("D")
             else:
                 self.from_index = first_full
             if last_available < pd.Timestamp(end_date, tz=self.tz):
-                self.to_index = last_available.floor('D') - \
-                                pd.Timedelta('1 days')
+                self.to_index = last_available.floor("D") - pd.Timedelta("1 days")
             else:
                 self.to_index = last_full
 
-        elif self.freq == 'W':
+        elif self.freq == "W":
             if timestep[0] == timestep[1]:
                 first_full = pd.Timestamp(timestep.index.values[0], tz=self.tz)
             else:
@@ -333,7 +322,7 @@ class AnalyzePG:
             else:
                 self.to_index = last_full
 
-        self.timestep = timestep[self.from_index:self.to_index]
+        self.timestep = timestep[self.from_index : self.to_index]
 
     def _do_chart(self, start_date, end_date):
         """Performs chart analysis.
@@ -341,8 +330,8 @@ class AnalyzePG:
         :param str start_date: starting timestamp.
         :param str end_date: ending timestamp.
         """
-        print('Set UTC for all zones')
-        self.tz = 'utc'
+        print("Set UTC for all zones")
+        self.tz = "utc"
 
         self._set_date_range(start_date, end_date)
         self.data = []
@@ -360,50 +349,82 @@ class AnalyzePG:
         """
         pg, _ = self._get_pg(zone, self.resources)
         if pg is not None:
-            fig, ax = plt.subplots(1, 2, figsize=(20, 10), sharey='row')
+            fig, ax = plt.subplots(1, 2, figsize=(20, 10), sharey="row")
             plt.subplots_adjust(wspace=1)
             plt.suptitle("%s" % zone, fontsize=30)
-            ax[0].set_title('Generation (MWh)', fontsize=25)
-            ax[1].set_title('Resources (MW)', fontsize=25)
+            ax[0].set_title("Generation (MWh)", fontsize=25)
+            ax[1].set_title("Resources (MW)", fontsize=25)
 
-            pg_groups = pg.T.groupby(self.grid.plant['type']).agg(sum).T
+            pg_groups = pg.T.groupby(self.grid.plant["type"]).agg(sum).T
             pg_groups.name = "%s (Generation)" % zone
-            type2label = self.type2label.copy()
-            for t in self.grid.id2type.values():
-                if t not in pg_groups.columns:
-                    del type2label[t]
 
-            ax[0] = pg_groups[list(type2label.keys())].rename(
-                index=type2label).sum().plot(
-                ax=ax[0], kind='barh', alpha=0.7,
-                color=[self.grid.type2color[r] for r in type2label.keys()])
-
-            capacity = self.grid.plant.loc[pg.columns].groupby(
-                'type').agg(sum).GenMWMax
+            capacity = self.grid.plant.loc[pg.columns].groupby("type").agg(sum).Pmax
             capacity.name = "%s (Capacity)" % zone
 
-            ax[1] = capacity[list(type2label.keys())].rename(
-                index=type2label).plot(
-                ax=ax[1], kind='barh', alpha=0.7,
-                color=[self.grid.type2color[r] for r in type2label.keys()])
+            if self.storage_pg is not None:
+                pg_storage, capacity_storage = self._get_storage_pg(zone)
+                if capacity_storage is not None:
+                    capacity = capacity.append(
+                        pd.Series([capacity_storage], index=["storage"])
+                    )
+                    pg_groups = pd.merge(
+                        pg_groups,
+                        pg_storage.clip(lower=0).sum(axis=1).rename("storage"),
+                        left_index=True,
+                        right_index=True,
+                    )
+
+            t2l = type2label.copy()
+            for t in type2label.keys():
+                if t not in pg_groups.columns:
+                    del t2l[t]
+
+            ax[0] = (
+                pg_groups[list(t2l.keys())]
+                .rename(index=t2l)
+                .sum()
+                .plot(
+                    ax=ax[0],
+                    kind="barh",
+                    alpha=0.7,
+                    color=[type2color[r] for r in t2l.keys()],
+                )
+            )
+
+            ax[1] = (
+                capacity[list(t2l.keys())]
+                .rename(index=t2l)
+                .plot(
+                    ax=ax[1],
+                    kind="barh",
+                    alpha=0.7,
+                    color=[type2color[r] for r in t2l.keys()],
+                )
+            )
 
             y_offset = 0.3
             for i in [0, 1]:
-                ax[i].tick_params(axis='y', which='both', labelsize=20)
-                ax[i].set_xticklabels('')
-                ax[i].set_ylabel('')
-                ax[i].spines['right'].set_visible(False)
-                ax[i].spines['top'].set_visible(False)
-                ax[i].spines['bottom'].set_visible(False)
+                ax[i].tick_params(axis="y", which="both", labelsize=20)
+                ax[i].set_xticklabels("")
+                ax[i].set_ylabel("")
+                ax[i].spines["right"].set_visible(False)
+                ax[i].spines["top"].set_visible(False)
+                ax[i].spines["bottom"].set_visible(False)
                 ax[i].set_xticks([])
                 for p in ax[i].patches:
                     b = p.get_bbox()
-                    val = format(int(b.x1), ',')
-                    ax[i].annotate(val, (b.x1, b.y1-y_offset), fontsize=20)
+                    val = format(int(b.x1), ",")
+                    ax[i].annotate(val, (b.x1, b.y1 - y_offset), fontsize=20)
 
-            self.filename.append('%s_%s_%s-%s.png' % (
-                self.kind, zone, self.from_index.strftime('%Y%m%d%H'),
-                self.to_index.strftime('%Y%m%d%H')))
+            self.filename.append(
+                "%s_%s_%s-%s.png"
+                % (
+                    self.kind,
+                    zone,
+                    self.from_index.strftime("%Y%m%d%H"),
+                    self.to_index.strftime("%Y%m%d%H"),
+                )
+            )
 
             return pg_groups, capacity
         else:
@@ -419,12 +440,12 @@ class AnalyzePG:
         self.data = []
         self.filename = []
         for z in self.zones:
-            self.tz = self.zone2time[z] if tz == 'local' else tz
+            self.tz = self.zone2time[z] if tz == "local" else tz
             self._set_date_range(start_date, end_date)
             self.data.append(self._get_stacked(z))
 
     def _get_stacked(self, zone):
-        """Calculates time series of PG and demand in one zone. 
+        """Calculates time series of PG and demand in one zone.
 
         :param str zone: zone to consider.
         :return: (*pandas.DataFrame*) --  data frame of PG and load for selected
@@ -432,49 +453,140 @@ class AnalyzePG:
         """
         pg, capacity = self._get_pg(zone, self.resources)
         if pg is not None:
-            fig = plt.figure(figsize=(20, 10))
-            plt.title('%s' % zone, fontsize=25)
-            ax = fig.gca()
-            ax.grid(color='black', axis='y')
-            ax.tick_params(which='both', labelsize=20)
+
+            pg_groups = pg.T.groupby(self.grid.plant["type"])
+            pg_stack = pg_groups.agg(sum).T
+
+            if self.storage_pg is not None:
+                pg_storage, capacity_storage = self._get_storage_pg(zone)
+                if capacity_storage is not None:
+                    capacity += capacity_storage
+                    pg_stack = pd.merge(
+                        pg_stack,
+                        pg_storage.clip(lower=0).sum(axis=1).rename("storage"),
+                        left_index=True,
+                        right_index=True,
+                    )
+                    fig, (ax, ax_storage) = plt.subplots(
+                        2,
+                        1,
+                        figsize=(20, 15),
+                        sharex="row",
+                        gridspec_kw={"height_ratios": [3, 1], "hspace": 0},
+                    )
+                    plt.subplots_adjust(wspace=0)
+                    ax_storage = (
+                        pg_storage.tz_localize(None)
+                        .sum(axis=1)
+                        .rename("batteries")
+                        .plot(color=type2color["storage"], lw=4, ax=ax_storage)
+                    )
+                    ax_storage.fill_between(
+                        pg_storage.tz_localize(None).index.values,
+                        0,
+                        pg_storage.tz_localize(None).sum(axis=1).values,
+                        color=type2color["storage"],
+                        alpha=0.5,
+                    )
+
+                    ax_storage.tick_params(axis="both", which="both", labelsize=20)
+                    ax_storage.set_xlabel("")
+                    ax_storage.set_ylabel("Energy Storage (MW)", fontsize=22)
+                    for a in fig.get_axes():
+                        a.label_outer()
+                else:
+                    fig = plt.figure(figsize=(20, 10))
+                    ax = fig.gca()
+            else:
+                fig = plt.figure(figsize=(20, 10))
+                ax = fig.gca()
+
+            t2l = type2label.copy()
+            for t in type2label.keys():
+                if t not in pg_stack.columns:
+                    del t2l[t]
 
             demand = self._get_demand(zone)
+            net_demand = pd.DataFrame(
+                {"net_demand": demand["demand"]}, index=demand.index
+            )
 
-            pg_groups = pg.T.groupby(self.grid.plant['type'])
-            pg_stack = pg_groups.agg(sum).T
-            type2label = self.type2label.copy()
-            for t in self.grid.id2type.values():
-                if t not in pg_stack.columns:
-                    del type2label[t]
+            for (t, key) in [
+                ("solar", "sc"),
+                ("wind", "wonc"),
+                ("wind_offshore", "woffc"),
+            ]:
+                if t in t2l.keys():
+                    pg_t = self._get_pg(zone, [t])[0].sum(axis=1)
+                    net_demand["net_demand"] = net_demand["net_demand"] - pg_t
+                    curtailment_t = (
+                        self._get_profile(zone, t).sum(axis=1).tolist() - pg_t
+                    )
+                    pg_stack[key] = np.clip(curtailment_t, 0, None)
 
             if self.normalize:
-                pg_stack = pg_stack.divide(capacity * self.timestep,
-                                           axis='index')
-                demand = demand.divide(capacity * self.timestep, axis='index')
-
-            ax = pg_stack[list(type2label.keys())].tz_localize(None).rename(
-                columns=type2label).plot.area(
-                color=[self.grid.type2color[r] for r in type2label.keys()], 
-                alpha=0.7, ax=ax)
-
-            demand.tz_localize(None).plot(color='red', lw=4, ax=ax)
-            ax.set_ylim([0, max(ax.get_ylim()[1], 1.1*demand.max().values[0])])
-
-            ax.set_xlabel('')
-            handles, labels = ax.get_legend_handles_labels()
-            ax.legend(handles[::-1], labels[::-1], frameon=2,
-                      prop={'size': 18}, loc='lower right')
-            if self.normalize:
-                ax.set_ylabel('Normalized Generation', fontsize=22)
+                pg_stack = pg_stack.divide(capacity * self.timestep, axis="index")
+                demand = demand.divide(capacity * self.timestep, axis="index")
+                net_demand = net_demand.divide(capacity * self.timestep, axis="index")
+                ax.set_ylabel("Normalized Generation", fontsize=22)
             else:
-                ax.set_ylabel('Generation (MWh)', fontsize=22)
+                pg_stack = pg_stack.divide(1000, axis="index")
+                demand = demand.divide(1000, axis="index")
+                net_demand = net_demand.divide(1000, axis="index")
+                ax.set_ylabel("Generation (GW)", fontsize=22)
 
-            pg_stack['demand'] = demand
+            t2c = [type2color[r] for r in t2l.keys()]
+            if "solar" in t2l.keys():
+                t2l["sc"] = "Solar Curtailment"
+                t2c.append("#e8eb34")
+            if "wind" in t2l.keys():
+                t2l["wonc"] = "Wind Onshore Curtailment"
+                t2c.append("#b6fc03")
+            if "wind_offshore" in t2l.keys():
+                t2l["woffc"] = "Wind Offhore Curtailment"
+                t2c.append("turquoise")
+
+            ax = (
+                pg_stack[list(t2l.keys())]
+                .tz_localize(None)
+                .rename(columns=t2l)
+                .plot.area(color=t2c, linewidth=0, alpha=0.7, ax=ax)
+            )
+
+            demand.tz_localize(None).plot(color="red", lw=4, ax=ax)
+            net_demand.tz_localize(None).plot(color="red", ls="--", lw=2, ax=ax)
+            ax.set_ylim(
+                [
+                    min(0, 1.1 * net_demand.min().values[0]),
+                    max(ax.get_ylim()[1], 1.1 * demand.max().values[0]),
+                ]
+            )
+
+            ax.set_title("%s" % zone, fontsize=25)
+            ax.grid(color="black", axis="y")
+            ax.tick_params(which="both", labelsize=20)
+            ax.set_xlabel("")
+            handles, labels = ax.get_legend_handles_labels()
+            ax.legend(
+                handles[::-1],
+                labels[::-1],
+                frameon=2,
+                prop={"size": 18},
+                loc="lower right",
+            )
+
+            pg_stack["demand"] = demand
             pg_stack.name = zone
 
-            self.filename.append('%s_%s_%s-%s.png' % (
-                self.kind, zone, self.from_index.strftime('%Y%m%d%H'), 
-                self.to_index.strftime('%Y%m%d%H')))
+            self.filename.append(
+                "%s_%s_%s-%s.png"
+                % (
+                    self.kind,
+                    zone,
+                    self.from_index.strftime("%Y%m%d%H"),
+                    self.to_index.strftime("%Y%m%d%H"),
+                )
+            )
 
             return pg_stack
         else:
@@ -487,9 +599,9 @@ class AnalyzePG:
         :param str end_date: ending timestamp.
         :param str tz: timezone.
         """
-        if tz == 'local':
-            print('Set US/Pacific for all zones')
-            self.tz = 'US/Pacific'
+        if tz == "local":
+            print("Set US/Pacific for all zones")
+            self.tz = "US/Pacific"
         else:
             self.tz = tz
         self._set_date_range(start_date, end_date)
@@ -505,7 +617,7 @@ class AnalyzePG:
         :return: (*pandas.DataFrame*) -- data frame of PG for selected resource.
         """
         fig = plt.figure(figsize=(20, 10))
-        plt.title('%s' % resource.capitalize(), fontsize=25)
+        plt.title("%s" % resource.capitalize(), fontsize=25)
 
         first = True
         total = pd.DataFrame()
@@ -515,44 +627,44 @@ class AnalyzePG:
                 pass
             else:
                 ax = fig.gca()
-                col_name = '%s: %d plants (%d MW)' % (z, pg.shape[1], capacity)
+                col_name = "%s: %d plants (%d MW)" % (z, pg.shape[1], capacity)
                 total_tmp = pd.DataFrame(pg.T.sum().rename(col_name))
 
                 if self.normalize:
-                    total_tmp = total_tmp.divide(capacity * self.timestep,
-                                                 axis='index')
+                    total_tmp = total_tmp.divide(capacity * self.timestep, axis="index")
                 if first:
                     total = total_tmp
                     first = False
                 else:
-                    total = pd.merge(total, total_tmp, left_index=True,
-                                     right_index=True)
+                    total = pd.merge(
+                        total, total_tmp, left_index=True, right_index=True
+                    )
 
-                total[col_name].tz_localize(None).plot(
-                    color=self.zone2style[z]['color'],
-                    alpha=self.zone2style[z]['alpha'],
-                    lw=self.zone2style[z]['lw'],
-                    ls=self.zone2style[z]['ls'],
-                    ax=ax)
+                total[col_name].tz_localize(None).plot(lw=4, alpha=0.8, ax=ax)
 
-                ax.grid(color='black', axis='y')
-                ax.tick_params(which='both', labelsize=20)
-                ax.set_xlabel('')
+                ax.grid(color="black", axis="y")
+                ax.tick_params(which="both", labelsize=20)
+                ax.set_xlabel("")
                 handles, labels = ax.get_legend_handles_labels()
-                ax.legend(handles[::-1], labels[::-1], frameon=2,
-                          prop={'size': 18})
+                ax.legend(handles[::-1], labels[::-1], frameon=2, prop={"size": 18})
                 if self.normalize:
-                    ax.set_ylabel('Normalized Generation', fontsize=22)
+                    ax.set_ylabel("Normalized Generation", fontsize=22)
                 else:
-                    ax.set_ylabel('Generation (MWh)', fontsize=22)
+                    ax.set_ylabel("Generation (MWh)", fontsize=22)
         if total.empty:
             plt.close()
             return None
         else:
-            self.filename.append('%s_%s_%s_%s-%s.png' %
-                                 (self.kind, resource, "-".join(self.zones),
-                                  self.from_index.strftime('%Y%m%d%H'),
-                                  self.to_index.strftime('%Y%m%d%H')))
+            self.filename.append(
+                "%s_%s_%s_%s-%s.png"
+                % (
+                    self.kind,
+                    resource,
+                    "-".join(self.zones),
+                    self.from_index.strftime("%Y%m%d%H"),
+                    self.to_index.strftime("%Y%m%d%H"),
+                )
+            )
             total.name = resource
             return total
 
@@ -564,14 +676,14 @@ class AnalyzePG:
         :param str tz: timezone.
         """
         for r in self.resources:
-            if r not in ['solar', 'wind']:
+            if r not in ["solar", "wind"]:
                 print("Curtailment analysis is only for renewable energies")
-                raise Exception('Invalid resource')
+                raise Exception("Invalid resource")
 
         self.data = []
         self.filename = []
         for z in self.zones:
-            self.tz = self.zone2time[z] if tz == 'local' else tz
+            self.tz = self.zone2time[z] if tz == "local" else tz
             self._set_date_range(start_date, end_date)
             for r in self.resources:
                 self.data.append(self._get_curtailment(z, r))
@@ -592,46 +704,67 @@ class AnalyzePG:
             return None
         else:
             fig = plt.figure(figsize=(20, 10))
-            plt.title('%s (%s)' % (zone, resource.capitalize()), fontsize=25)
+            plt.title("%s (%s)" % (zone, resource.capitalize()), fontsize=25)
             ax = fig.gca()
             ax_twin = ax.twinx()
 
             demand = self._get_demand(zone)
             available = self._get_profile(zone, resource)
 
-            data = pd.DataFrame(available.T.sum().rename('available'))
-            data['generated'] = pg.T.sum().values
-            data['demand'] = demand.values
-            data['curtailment'] = (1 - data['generated'] / data['available'])
-            data['curtailment'] *= 100
+            data = pd.DataFrame(available.T.sum().rename("available"))
+            data["generated"] = pg.T.sum().values
+            data["demand"] = demand.values
+            data["curtailment"] = 1 - data["generated"] / data["available"]
+            data["curtailment"] *= 100
 
             # Numerical precision
-            data.loc[abs(data['curtailment']) < 1, 'curtailment'] = 0
+            data.loc[abs(data["curtailment"]) < 1, "curtailment"] = 0
 
-            data['curtailment'].tz_localize(None).plot(ax=ax, style='b', lw=4,
-                                                       alpha=0.7)
-            data['available'].tz_localize(
-                None).rename("%s energy available" % resource).plot(
-                ax=ax_twin, lw=4, alpha=0.7, style={
-                    "%s energy available" % resource: self.grid.type2color[
-                        resource]})
-            data['demand'].tz_localize(None).plot(ax=ax_twin, lw=4, alpha=0.7,
-                                                  style={'demand': 'r'})
-            ax.tick_params(which='both', labelsize=20)
-            ax.grid(color='black', axis='y')
-            ax.set_xlabel('')
-            ax.set_ylabel('Curtailment [%]', fontsize=22)
-            ax.legend(loc='upper left', prop={'size': 18})
-            ax_twin.tick_params(which='both', labelsize=20)
-            ax_twin.set_ylabel('MWh', fontsize=22)
-            ax_twin.legend(loc='upper right', prop={'size': 18})
+            data["curtailment"].tz_localize(None).plot(
+                ax=ax, style="b", lw=4, alpha=0.7
+            )
+
+            data["curtailment mean"] = data["curtailment"].mean()
+            data["curtailment mean"].tz_localize(None).plot(
+                ax=ax, style="b", ls="--", lw=4, alpha=0.7
+            )
+
+            data["available"].tz_localize(None).rename(
+                "%s energy available" % resource
+            ).plot(
+                ax=ax_twin,
+                lw=4,
+                alpha=0.7,
+                style={"%s energy available" % resource: type2color[resource]},
+            )
+
+            data["demand"].tz_localize(None).plot(
+                ax=ax_twin, lw=4, alpha=0.7, style={"demand": "r"}
+            )
+
+            ax.xaxis.set_major_locator(mdates.MonthLocator())
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
+            ax.tick_params(which="both", labelsize=20)
+            ax.grid(color="black", axis="y")
+            ax.set_xlabel("")
+            ax.set_ylabel("Curtailment [%]", fontsize=22)
+            ax.legend(loc="upper left", prop={"size": 18})
+            ax_twin.tick_params(which="both", labelsize=20)
+            ax_twin.set_ylabel("MWh", fontsize=22)
+            ax_twin.legend(loc="upper right", prop={"size": 18})
 
             data.name = "%s - %s" % (zone, resource)
 
-            self.filename.append('%s_%s_%s_%s-%s.png' %
-                                 (self.kind, resource,
-                                  zone, self.from_index.strftime('%Y%m%d%H'),
-                                  self.to_index.strftime('%Y%m%d%H')))
+            self.filename.append(
+                "%s_%s_%s_%s-%s.png"
+                % (
+                    self.kind,
+                    resource,
+                    zone,
+                    self.from_index.strftime("%Y%m%d%H"),
+                    self.to_index.strftime("%Y%m%d%H"),
+                )
+            )
 
             return data
 
@@ -643,14 +776,14 @@ class AnalyzePG:
         :param str tz: timezone.
         """
         for r in self.resources:
-            if r not in ['solar', 'wind']:
+            if r not in ["solar", "wind"]:
                 print("Curtailment analysis is only for renewable energies")
-                raise Exception('Invalid resource')
+                raise Exception("Invalid resource")
 
         self.data = []
         self.filename = []
         for z in self.zones:
-            self.tz = self.zone2time[z] if tz == 'local' else tz
+            self.tz = self.zone2time[z] if tz == "local" else tz
             self._set_date_range(start_date, end_date)
             for r in self.resources:
                 self.data.append(self._get_variability(z, r))
@@ -670,63 +803,76 @@ class AnalyzePG:
         else:
             n_plants = len(pg.columns)
             fig = plt.figure(figsize=(20, 10))
-            plt.title('%s (%s)' % (zone, resource.capitalize()), fontsize=25)
+            plt.title("%s (%s)" % (zone, resource.capitalize()), fontsize=25)
             ax = fig.gca()
 
-            total = pd.DataFrame(pg.T.sum().rename(
-                'Total: %d plants (%d MW)' % (n_plants, capacity)))
+            total = pd.DataFrame(
+                pg.T.sum().rename("Total: %d plants (%d MW)" % (n_plants, capacity))
+            )
             total.name = "%s - %s" % (zone, resource)
 
             np.random.seed(self.seed)
             if n_plants < 20:
-                print("Not enough %s plants in %s for variability analysis"
-                      % (resource, zone))
+                print(
+                    "Not enough %s plants in %s for variability analysis"
+                    % (resource, zone)
+                )
                 plt.close()
                 return None
             else:
-                selected = np.random.choice(pg.columns, 15,
-                                            replace=False).tolist()
+                selected = np.random.choice(pg.columns, 15, replace=False).tolist()
                 norm = [capacity]
                 for i in [15, 8, 2]:
-                    norm += [sum(self.grid.plant.loc[
-                        selected[:i]].GenMWMax.values)]
-                total['15 plants (%d MW)' % norm[1]] = pg[selected].T.sum()
-                total['8 plants (%d MW)' % norm[2]] = pg[selected[:8]].T.sum()
-                total['2 plants (%d MW)' % norm[3]] = pg[selected[:2]].T.sum()
+                    norm += [sum(self.grid.plant.loc[selected[:i]].Pmax.values)]
+                total["15 plants (%d MW)" % norm[1]] = pg[selected].T.sum()
+                total["8 plants (%d MW)" % norm[2]] = pg[selected[:8]].T.sum()
+                total["2 plants (%d MW)" % norm[3]] = pg[selected[:2]].T.sum()
 
                 if self.normalize:
                     for i, col in enumerate(total.columns):
                         total[col] = total[col].divide(
-                            norm[i] * self.timestep, axis='index')
+                            norm[i] * self.timestep, axis="index"
+                        )
 
                 lws = [5, 3, 3, 3]
-                lss = ['-', '--', '--', '--']
-                colors = [self.grid.type2color[resource]]
-                if resource == 'solar':
-                    colors += ['red', 'orangered', 'darkorange']
-                elif resource == 'wind':
-                    colors += ['dodgerblue', 'teal', 'turquoise']
+                lss = ["-", "--", "--", "--"]
+                colors = [type2color[resource]]
+                if resource == "solar":
+                    colors += ["red", "orangered", "darkorange"]
+                elif resource == "wind":
+                    colors += ["dodgerblue", "teal", "turquoise"]
 
                 for col, c, lw, ls in zip(total.columns, colors, lws, lss):
-                    total[col].tz_localize(None).plot(alpha=0.7, lw=lw, ls=ls,
-                                                      color=c, ax=ax)
+                    total[col].tz_localize(None).plot(
+                        alpha=0.7, lw=lw, ls=ls, color=c, ax=ax
+                    )
 
-                ax.grid(color='black', axis='y')
-                ax.tick_params(which='both', labelsize=20)
-                ax.set_xlabel('')
+                ax.grid(color="black", axis="y")
+                ax.tick_params(which="both", labelsize=20)
+                ax.set_xlabel("")
                 handles, labels = ax.get_legend_handles_labels()
-                ax.legend(handles[::-1], labels[::-1], frameon=2,
-                          prop={'size': 18}, loc='best')
+                ax.legend(
+                    handles[::-1],
+                    labels[::-1],
+                    frameon=2,
+                    prop={"size": 18},
+                    loc="best",
+                )
                 if self.normalize:
-                    ax.set_ylabel('Normalized Generation', fontsize=22)
+                    ax.set_ylabel("Normalized Generation", fontsize=22)
                 else:
-                    ax.set_ylabel('Generation (MWh)', fontsize=22)
+                    ax.set_ylabel("Generation (MWh)", fontsize=22)
 
-                self.filename.append('%s_%s_%s_%s-%s.png' %
-                                     (self.kind,
-                                      resource, zone,
-                                      self.from_index.strftime('%Y%m%d%H'),
-                                      self.to_index.strftime('%Y%m%d%H')))
+                self.filename.append(
+                    "%s_%s_%s_%s-%s.png"
+                    % (
+                        self.kind,
+                        resource,
+                        zone,
+                        self.from_index.strftime("%Y%m%d%H"),
+                        self.to_index.strftime("%Y%m%d%H"),
+                    )
+                )
 
                 return total
 
@@ -739,13 +885,13 @@ class AnalyzePG:
         """
 
         for r in self.resources:
-            if r not in ['solar', 'wind']:
+            if r not in ["solar", "wind"]:
                 print("Correlation analysis is only for renewable energies")
-                raise Exception('Invalid resource')
+                raise Exception("Invalid resource")
 
-        if tz == 'local':
-            print('Set US/Pacific for all zones')
-            self.tz = 'US/Pacific'
+        if tz == "local":
+            print("Set US/Pacific for all zones")
+            self.tz = "US/Pacific"
         else:
             self.tz = tz
         self._set_date_range(start_date, end_date)
@@ -764,7 +910,7 @@ class AnalyzePG:
         """
 
         fig = plt.figure(figsize=(12, 12))
-        plt.title('%s' % resource.capitalize(), fontsize=25)
+        plt.title("%s" % resource.capitalize(), fontsize=25)
 
         first = True
         pg = pd.DataFrame()
@@ -774,8 +920,9 @@ class AnalyzePG:
                 pass
             else:
                 if first:
-                    pg = pd.DataFrame({z: pg_tmp.sum(axis=1).values},
-                                      index=pg_tmp.index)
+                    pg = pd.DataFrame(
+                        {z: pg_tmp.sum(axis=1).values}, index=pg_tmp.index
+                    )
                     first = False
                 else:
                     pg[z] = pg_tmp.sum(axis=1).values
@@ -786,36 +933,53 @@ class AnalyzePG:
         else:
             pg.name = resource
             corr = pg.corr()
-            if resource == 'solar':
-                palette = 'OrRd'
-                color = 'red'
+            if resource == "solar":
+                palette = "OrRd"
+                color = "red"
             else:
-                palette = 'Greens'
-                color = 'green'
+                palette = "Greens"
+                color = "green"
 
             ax_matrix = fig.gca()
-            ax_matrix = sns.heatmap(corr, annot=True, fmt=".2f", cmap=palette,
-                                    ax=ax_matrix, square=True, cbar=False,
-                                    annot_kws={"size": 18}, lw=4)
-            ax_matrix.set_yticklabels(pg.columns, rotation=40, ha='right')
-            ax_matrix.tick_params(which='both', labelsize=20)
+            ax_matrix = sns.heatmap(
+                corr,
+                annot=True,
+                fmt=".2f",
+                cmap=palette,
+                ax=ax_matrix,
+                square=True,
+                cbar=False,
+                annot_kws={"size": 18},
+                lw=4,
+            )
+            ax_matrix.set_yticklabels(pg.columns, rotation=40, ha="right")
+            ax_matrix.tick_params(which="both", labelsize=20)
 
-            scatter = scatter_matrix(pg, alpha=0.2, diagonal='kde',
-                                     figsize=(12, 12), color=color,
-                                     density_kwds={'color': color, 'lw': 4})
+            scatter = scatter_matrix(
+                pg,
+                alpha=0.2,
+                diagonal="kde",
+                figsize=(12, 12),
+                color=color,
+                density_kwds={"color": color, "lw": 4},
+            )
             for ax_scatter in scatter.ravel():
                 ax_scatter.tick_params(labelsize=20)
-                ax_scatter.set_xlabel(ax_scatter.get_xlabel(), fontsize=22,
-                                      rotation=0)
-                ax_scatter.set_ylabel(ax_scatter.get_ylabel(), fontsize=22,
-                                      rotation=90)
+                ax_scatter.set_xlabel(ax_scatter.get_xlabel(), fontsize=22, rotation=0)
+                ax_scatter.set_ylabel(ax_scatter.get_ylabel(), fontsize=22, rotation=90)
 
-            for t in ['matrix', 'scatter']:
-                self.filename.append('%s-%s_%s_%s_%s-%s.png' %
-                                     (self.kind, t, resource,
-                                      "-".join(self.zones),
-                                      self.from_index.strftime('%Y%m%d%H'),
-                                      self.to_index.strftime('%Y%m%dH')))
+            for t in ["matrix", "scatter"]:
+                self.filename.append(
+                    "%s-%s_%s_%s_%s-%s.png"
+                    % (
+                        self.kind,
+                        t,
+                        resource,
+                        "-".join(self.zones),
+                        self.from_index.strftime("%Y%m%d%H"),
+                        self.to_index.strftime("%Y%m%dH"),
+                    )
+                )
 
             return pg
 
@@ -827,11 +991,11 @@ class AnalyzePG:
         """
 
         for r in self.resources:
-            if r not in ['solar', 'wind']:
+            if r not in ["solar", "wind"]:
                 print("Correlation analysis is only for renewable energies")
-                raise Exception('Invalid resource')
+                raise Exception("Invalid resource")
 
-        self.tz = 'utc'
+        self.tz = "utc"
         self.data = []
         self.filename = []
         for z in self.zones:
@@ -856,34 +1020,70 @@ class AnalyzePG:
         else:
             available = self._get_profile(zone, resource)
 
-            capacity = self.grid.plant.loc[pg.columns].GenMWMax.values
+            capacity = self.grid.plant.loc[pg.columns].Pmax.values
 
-            uncurtailed = available.sum().divide(len(pg) * capacity,
-                                                 axis='index')
+            uncurtailed = available.sum().divide(len(pg) * capacity, axis="index")
             mean_uncurtailed = np.mean(uncurtailed)
-            curtailed = pg.sum().divide(len(pg) * capacity, axis='index')
+            curtailed = pg.sum().divide(len(pg) * capacity, axis="index")
             mean_curtailed = np.mean(curtailed)
 
             if len(pg.columns) > 10:
                 fig = plt.figure(figsize=(12, 12))
-                plt.title('%s (%s)' % (zone, resource.capitalize()),
-                          fontsize=25)
+                plt.title("%s (%s)" % (zone, resource.capitalize()), fontsize=25)
                 ax = fig.gca()
-                cf = pd.DataFrame({'uncurtailed': 100 * uncurtailed,
-                                   'curtailed': 100 * curtailed},
-                                  index=pg.columns)
+                cf = pd.DataFrame(
+                    {"uncurtailed": 100 * uncurtailed, "curtailed": 100 * curtailed},
+                    index=pg.columns,
+                )
                 cf.boxplot(ax=ax)
-                plt.text(0.5, 0.9, '%d plants' % len(capacity), ha='center',
-                         va='center', transform=ax.transAxes, fontsize=22)
+                plt.text(
+                    0.5,
+                    0.9,
+                    "%d plants" % len(capacity),
+                    ha="center",
+                    va="center",
+                    transform=ax.transAxes,
+                    fontsize=22,
+                )
                 ax.tick_params(labelsize=20)
-                ax.set_ylabel('Capacity Factor [%]', fontsize=22)
+                ax.set_ylabel("Capacity Factor [%]", fontsize=22)
 
-                self.filename.append('%s_%s_%s_%s-%s.png' %
-                                     (self.kind, resource, zone,
-                                      self.from_index.strftime('%Y%m%d%H'),
-                                      self.to_index.strftime('%Y%m%d%H')))
+                self.filename.append(
+                    "%s_%s_%s_%s-%s.png"
+                    % (
+                        self.kind,
+                        resource,
+                        zone,
+                        self.from_index.strftime("%Y%m%d%H"),
+                        self.to_index.strftime("%Y%m%d%H"),
+                    )
+                )
 
             return mean_uncurtailed, mean_curtailed
+
+    def _get_zone_id(self, zone):
+        """Returns the load zone identification numbers for specified zone.
+
+        :param zone: zone to consider. A specific load zone, *Eastern*,
+            *Western*, *California* or *Texas*.
+        :return (*list*): Corresponding load zones identification number.
+        """
+        if zone == "Western":
+            load_zone_id = list(range(201, 217))
+        elif zone == "Texas":
+            load_zone_id = list(range(301, 309))
+        elif zone == "California":
+            load_zone_id = list(range(203, 208))
+        elif zone == "Eastern":
+            load_zone_id = list(range(1, 53))
+        elif zone == "USA":
+            load_zone_id = (
+                list(range(1, 53)) + list(range(201, 217)) + list(range(301, 309))
+            )
+        else:
+            load_zone_id = [self.grid.zone2id[zone]]
+
+        return load_zone_id
 
     def _get_plant_id(self, zone, resource):
         """Extracts the plant identification number of all the generators
@@ -895,27 +1095,13 @@ class AnalyzePG:
             using resource.
         """
         plant_id = []
-        if zone == 'Western':
+        for z in self._get_zone_id(zone):
             try:
-                plant_id = self.grid.plant.groupby('type').get_group(
-                    resource).index.values.tolist()
-            except KeyError:
-                pass
-        elif zone == 'California':
-            ca = ['Bay Area', 'Central California', 'Northern California',
-                  'Southeast California', 'Southwest California']
-            for load_zone in ca:
-                try:
-                    plant_id += self.grid.plant.groupby(
-                        ['zone_name', 'type']).get_group(
-                        (load_zone, resource)).index.values.tolist()
-                except KeyError:
-                    pass
-        else:
-            try:
-                plant_id = self.grid.plant.groupby(
-                    ['zone_name', 'type']).get_group(
-                    (zone, resource)).index.values.tolist()
+                plant_id += (
+                    self.grid.plant.groupby(["zone_id", "type"])
+                    .get_group((z, resource))
+                    .index.values.tolist()
+                )
             except KeyError:
                 pass
 
@@ -938,30 +1124,55 @@ class AnalyzePG:
             print("No %s plants in %s" % ("/".join(resources), zone))
             return [None] * 2
         else:
-            capacity = sum(self.grid.plant.loc[plant_id].GenMWMax.values)
-            pg = self._convert_tz(self.pg[plant_id]).resample(
-                self.freq, label='left').sum()[self.from_index:self.to_index]
+            capacity = sum(self.grid.plant.loc[plant_id].Pmax.values)
+            pg = (
+                self._convert_tz(self.pg[plant_id])
+                .resample(self.freq, label="left")
+                .sum()[self.from_index : self.to_index]
+            )
+
+            return pg, capacity
+
+    def _get_storage_pg(self, zone):
+        """Returns PG of all storage units located in zone
+
+        :param str zone: one of the zones
+        :return: (*tuple*) -- data frame of PG and associated capacity for all
+            storage units located in zone.
+        """
+        storage_id = []
+
+        for c, bus in enumerate(self.grid.storage["gen"].bus_id.values):
+            if self.grid.bus.loc[bus].zone_id in self._get_zone_id(zone):
+                storage_id.append(c)
+
+        if len(storage_id) == 0:
+            print("No storage units in %s" % zone)
+            return [None] * 2
+        else:
+            capacity = sum(self.grid.storage["gen"].loc[storage_id].Pmax.values)
+            pg = (
+                self._convert_tz(self.storage_pg[storage_id])
+                .resample(self.freq, label="left")
+                .sum()[self.from_index : self.to_index]
+            )
 
             return pg, capacity
 
     def _get_demand(self, zone):
-        """Returns demand profile for load zone, California or total.
+        """Returns demand profile for a specific load zone, *Eastern*,
+            *Western*, *California* or *Texas*.
 
         :param str zone: one of the zones.
         :return: (*pandas.DataFrame*) -- data frame of demand in zone (in MWh).
         """
-        demand = self.demand.tz_localize('utc')
-        if zone == 'Western':
-            demand = demand.sum(axis=1).rename('demand').to_frame()
-        elif zone == 'California':
-            ca = [204, 205, 203, 207, 206]
-            demand = demand.loc[:, ca].sum(axis=1).rename('demand').to_frame()
-        else:
-            demand = demand.loc[:, self.grid.zone2id[zone]].rename(
-                'demand').to_frame()
-
-        demand = self._convert_tz(demand).resample(
-            self.freq, label='left').sum()[self.from_index:self.to_index]
+        demand = self.demand.tz_localize("utc")
+        demand = demand[self._get_zone_id(zone)].sum(axis=1).rename("demand").to_frame()
+        demand = (
+            self._convert_tz(demand)
+            .resample(self.freq, label="left")
+            .sum()[self.from_index : self.to_index]
+        )
 
         return demand
 
@@ -979,10 +1190,16 @@ class AnalyzePG:
             print("No %s plants in %s" % (resource, zone))
             return None
 
-        profile = eval('self.'+resource).tz_localize('utc')
+        if resource == "wind_offshore":
+            profile = self.wind.tz_localize("utc")
+        else:
+            profile = eval("self." + resource).tz_localize("utc")
 
-        return self._convert_tz(profile[plant_id]).resample(
-            self.freq, label='left').sum()[self.from_index:self.to_index]
+        return (
+            self._convert_tz(profile[plant_id])
+            .resample(self.freq, label="left")
+            .sum()[self.from_index : self.to_index]
+        )
 
     def get_plot(self, save=False):
         """Plots analysis.
@@ -992,8 +1209,7 @@ class AnalyzePG:
         if save:
             for i in plt.get_fignums():
                 plt.figure(i)
-                plt.savefig(self.filename[i-1], bbox_inches='tight',
-                            pad_inches=0)
+                plt.savefig(self.filename[i - 1], bbox_inches="tight", pad_inches=0)
         plt.show()
 
     def get_data(self):
@@ -1001,7 +1217,7 @@ class AnalyzePG:
 
         :return: (*dict*) -- the formatting of the data depends on the selected
             analysis.
-            
+
         .. note::
             * *'stacked'*:
                 1D dictionary. Keys are zones and associated value is a data
@@ -1017,7 +1233,7 @@ class AnalyzePG:
                 2D dictionary. First key is zone and associated value is a
                 dictionary, which has resources as keys and a data frame for
                 value.
- 
+
         """
         data = None
         if self.kind == "stacked":
@@ -1028,14 +1244,17 @@ class AnalyzePG:
             data = {}
             for i, z in enumerate(self.zones):
                 data[z] = {}
-                data[z]['Generation'] = self.data[i][0]
-                data[z]['Capacity'] = self.data[i][1]
+                data[z]["Generation"] = self.data[i][0]
+                data[z]["Capacity"] = self.data[i][1]
         elif self.kind == "comp" or self.kind == "correlation":
             data = {}
             for i, r in enumerate(self.resources):
                 data[r] = self.data[i]
-        elif self.kind == 'variability' or self.kind == "curtailment" or \
-                self.kind == 'yield':
+        elif (
+            self.kind == "variability"
+            or self.kind == "curtailment"
+            or self.kind == "yield"
+        ):
             data = {}
             index = 0
             for z in self.zones:
