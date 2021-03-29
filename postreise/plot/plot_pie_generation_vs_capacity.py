@@ -4,7 +4,7 @@ import pandas as pd
 from powersimdata.network.model import ModelImmutables, area_to_loadzone
 from powersimdata.scenario.scenario import Scenario
 
-from postreise.analyze.generation.capacity_value import sum_capacity_by_type_zone
+from postreise.analyze.generation.capacity import sum_capacity_by_type_zone
 from postreise.analyze.generation.summarize import sum_generation_by_type_zone
 
 

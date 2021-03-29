@@ -7,7 +7,7 @@ from powersimdata.network.model import ModelImmutables
 
 from postreise.analyze.check import _check_scenario_is_in_analyze_state
 from postreise.analyze.demand import get_demand_time_series, get_net_demand_time_series
-from postreise.analyze.generation.capacity_value import (
+from postreise.analyze.generation.capacity import (
     get_capacity_by_resources,
     get_storage_capacity,
 )

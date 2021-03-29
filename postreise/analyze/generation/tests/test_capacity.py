@@ -3,7 +3,7 @@ import pytest
 from powersimdata.tests.mock_scenario import MockScenario
 from pytest import approx
 
-from postreise.analyze.generation.capacity_value import (
+from postreise.analyze.generation.capacity import (
     calculate_net_load_peak,
     calculate_NLDC,
     get_capacity_by_resources,
