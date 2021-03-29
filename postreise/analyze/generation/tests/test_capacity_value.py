@@ -129,35 +129,35 @@ scenario.state.grid.zone2id = {
 }
 
 
-def test_NLDC_calculation_wind_str():
+def test_NLDC_calculation_wind_str():  # noqa: N802
     assert calculate_NLDC(scenario, "wind", 10) == approx(3496.1)
 
 
-def test_NLDC_calculation_wind_set():
+def test_NLDC_calculation_wind_set():  # noqa: N802
     assert calculate_NLDC(scenario, {"wind"}, 10) == approx(3496.1)
 
 
-def test_NLDC_calculation_wind_tuple():
+def test_NLDC_calculation_wind_tuple():  # noqa: N802
     assert calculate_NLDC(scenario, ("wind",), 10) == approx(3496.1)
 
 
-def test_NLDC_calculation_wind_list():
+def test_NLDC_calculation_wind_list():  # noqa: N802
     assert calculate_NLDC(scenario, ["wind"], 10) == approx(3496.1)
 
 
-def test_NLDC_calculation_wind_5_hour():
+def test_NLDC_calculation_wind_5_hour():  # noqa: N802
     assert calculate_NLDC(scenario, {"wind"}, hours=5) == approx(3343)
 
 
-def test_NLDC_calculation_solar():
+def test_NLDC_calculation_solar():  # noqa: N802
     assert calculate_NLDC(scenario, {"solar"}, 10) == approx(3720)
 
 
-def test_NLDC_calculation_wind_solar():
+def test_NLDC_calculation_wind_solar():  # noqa: N802
     assert calculate_NLDC(scenario, ["wind", "solar"], 10) == approx(8478.9)
 
 
-def test_NLDC_calculation_solar_wind():
+def test_NLDC_calculation_solar_wind():  # noqa: N802
     assert calculate_NLDC(scenario, ["solar", "wind"], 10) == approx(8478.9)
 
 
