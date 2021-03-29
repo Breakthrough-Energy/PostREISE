@@ -9,7 +9,7 @@ from postreise.analyze.helpers import (
 )
 
 
-def calculate_NLDC(scenario, resources, hours=100):
+def calculate_NLDC(scenario, resources, hours=100):  # noqa: N802
     """Calculate the capacity value of a class of resources by comparing the
     mean of the top N hour of absolute demand to the mean of the top N hours of
     net demand. NLDC = 'Net Load Duration Curve'.
