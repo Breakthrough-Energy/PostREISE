@@ -91,14 +91,13 @@ def plot_curtailment_time_series(
     demand = get_demand_time_series(scenario, area, area_type=area_type)
     curtailment = get_curtailment_time_series(scenario, area, area_type=area_type)
 
-    if time_zone != "utc":
-        resource_pg = change_time_zone(resource_pg, time_zone)
-        demand = change_time_zone(demand, time_zone)
-        curtailment = change_time_zone(curtailment, time_zone)
+    resource_pg = change_time_zone(resource_pg, time_zone)
+    demand = change_time_zone(demand, time_zone)
+    curtailment = change_time_zone(curtailment, time_zone)
     if not time_range:
         time_range = (
-            pd.Timestamp(scenario.info["start_date"]),
-            pd.Timestamp(scenario.info["end_date"]),
+            pd.Timestamp(scenario.info["start_date"], tz="utc"),
+            pd.Timestamp(scenario.info["end_date"], tz="utc"),
         )
     resource_pg = slice_time_series(resource_pg, time_range[0], time_range[1])
     demand = slice_time_series(demand, time_range[0], time_range[1])
