@@ -7,7 +7,7 @@ from powersimdata.network.model import ModelImmutables
 
 from postreise.analyze.check import _check_scenario_is_in_analyze_state
 from postreise.analyze.demand import get_demand_time_series, get_net_demand_time_series
-from postreise.analyze.generation.capacity_value import (
+from postreise.analyze.generation.capacity import (
     get_capacity_by_resources,
     get_storage_capacity,
 )
@@ -117,15 +117,14 @@ def plot_generation_time_series_stack(
             if r in resources and r in curtailment.columns:
                 pg_stack[r] = curtailment[r]
 
-    if time_zone != "utc":
-        pg_stack = change_time_zone(pg_stack, time_zone)
-        demand = change_time_zone(demand, time_zone)
-        net_demand = change_time_zone(net_demand, time_zone)
-        capacity_ts = change_time_zone(capacity_ts, time_zone)
+    pg_stack = change_time_zone(pg_stack, time_zone)
+    demand = change_time_zone(demand, time_zone)
+    net_demand = change_time_zone(net_demand, time_zone)
+    capacity_ts = change_time_zone(capacity_ts, time_zone)
     if not time_range:
         time_range = (
-            pd.Timestamp(scenario.info["start_date"]),
-            pd.Timestamp(scenario.info["end_date"]),
+            pd.Timestamp(scenario.info["start_date"], tz="utc"),
+            pd.Timestamp(scenario.info["end_date"], tz="utc"),
         )
     pg_stack = slice_time_series(pg_stack, time_range[0], time_range[1])
     demand = slice_time_series(demand, time_range[0], time_range[1])
@@ -142,14 +141,12 @@ def plot_generation_time_series_stack(
         capacity_storage = get_storage_capacity(scenario, area, area_type=area_type)
         capacity_storage_ts = pd.Series(capacity_storage, index=pg_storage.index)
 
-        if time_zone != "utc":
-            pg_storage = change_time_zone(pg_storage, time_zone)
-            capacity_storage_ts = change_time_zone(capacity_storage_ts, time_zone)
-        if time_range != ("2016-01-01 00:00:00", "2016-12-31 23:00:00"):
-            pg_storage = slice_time_series(pg_storage, time_range[0], time_range[1])
-            capacity_storage_ts = slice_time_series(
-                capacity_storage_ts, time_range[0], time_range[1]
-            )
+        pg_storage = change_time_zone(pg_storage, time_zone)
+        capacity_storage_ts = change_time_zone(capacity_storage_ts, time_zone)
+        pg_storage = slice_time_series(pg_storage, time_range[0], time_range[1])
+        capacity_storage_ts = slice_time_series(
+            capacity_storage_ts, time_range[0], time_range[1]
+        )
         if time_freq != "H":
             pg_storage = resample_time_series(pg_storage, time_freq)
             capacity_storage_ts = resample_time_series(capacity_storage_ts, time_freq)

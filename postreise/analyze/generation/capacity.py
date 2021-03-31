@@ -1,3 +1,5 @@
+import numpy as np
+
 from postreise.analyze.check import (
     _check_number_hours_to_analyze,
     _check_resources_are_in_grid_and_format,
@@ -73,7 +75,8 @@ def get_capacity_by_resources(scenario, area, resources, area_type=None):
     :param str/list resources: one or a list of resources
     :param str area_type: one of *'loadzone'*, *'state'*, *'state_abbr'*,
         *'interconnect'*
-    :return: (*pandas.Series*) -- index: resources, column: total capacity values
+    :return: (*pandas.Series*) -- index: resources, column: total nameplate Pmax
+        capacity
     """
     plant_id = get_plant_id_for_resources_in_area(
         scenario, area, resources, area_type=area_type
@@ -109,3 +112,26 @@ def sum_capacity_by_type_zone(scenario):
     plant = grid.plant
 
     return plant.groupby(["type", "zone_id"])["Pmax"].sum().unstack().fillna(0)
+
+
+def get_capacity_factor_time_series(scenario, area, resources, area_type=None):
+    """Get time series capacity factor for every plant located in area and fueled by
+    resources
+
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
+    :param str area: one of *loadzone*, *state*, *state abbreviation*,
+        *interconnect*, *'all'*
+    :param str/list resources: one or a list of resources
+    :param str area_type: one of *'loadzone'*, *'state'*, *'state_abbr'*,
+        *'interconnect'*
+    :return: (*pandas.DataFrame*) -- index: timestamps, column: plant ids,
+        value: capacity factors
+    """
+    _check_scenario_is_in_analyze_state(scenario)
+    plant_id = get_plant_id_for_resources_in_area(
+        scenario, area, resources, area_type=area_type
+    )
+    pg = scenario.state.get_pg()[plant_id]
+    capacity = scenario.state.get_grid().plant.loc[plant_id, "Pmax"]
+    cf = (pg / capacity).replace(np.inf, 0).clip(0, 1)
+    return cf

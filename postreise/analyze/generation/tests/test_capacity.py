@@ -3,10 +3,11 @@ import pytest
 from powersimdata.tests.mock_scenario import MockScenario
 from pytest import approx
 
-from postreise.analyze.generation.capacity_value import (
+from postreise.analyze.generation.capacity import (
     calculate_net_load_peak,
     calculate_NLDC,
     get_capacity_by_resources,
+    get_capacity_factor_time_series,
     get_storage_capacity,
     sum_capacity_by_type_zone,
 )
@@ -247,3 +248,10 @@ def test_sum_capacity_by_type_zone():
         index=["solar", "wind"],
     )
     check_dataframe_matches(expected_df, sum_capacity_by_type_zone(scenario))
+
+
+def test_get_capacity_factor_time_series():
+    expected_df = pd.DataFrame({101: mock_pg[101] / 9000})
+    check_dataframe_matches(
+        expected_df, get_capacity_factor_time_series(scenario, "Washington", "solar")
+    )
