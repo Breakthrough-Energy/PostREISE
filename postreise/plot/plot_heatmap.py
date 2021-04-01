@@ -30,7 +30,7 @@ def plot_heatmap(
 
     :param pandas.Series series: a time-series of values to be color-coded.
     :param str time_zone: a time zone to be passed as `tz` kwarg to
-        :func:`postreise.analyze.time.change_time_zone.
+        :func:`postreise.analyze.time.change_time_zone`.
     :param str time_zone_label: a time zone label to be added to the y axis label.
     :param str title: a title to be added to the figure.
     :param str/matplotlib.colors.Colormap cmap: colormap specification to be passed

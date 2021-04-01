@@ -266,8 +266,7 @@ def _get_bar_display_val(val):
 
 
 def make_gen_cap_custom_data(areas, label, gen_data=None, cap_data=None):
-    """Format custom data for :func:`postreise.plot_bar_generation_vs_capacity
-    .plot_bar_generation_vs_capacity.
+    """Format custom data for :func:`plot_bar_generation_vs_capacity`.
 
     :param list/str areas: list of interest area(s).
     :param str label: the name of the custom scenario to be shown in the plot.
