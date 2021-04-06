@@ -11,14 +11,13 @@ from postreise.plot.projection_helpers import project_borders, project_bus
 
 
 def group_lat_lon(bus_map, agg=True):
-    """Groups data and sums values, based on coordinates.
-        Rounds to the nearest lat lon degrees
+    """Group data and sums values, based on coordinates. Round to the nearest lat/lon
+    degrees.
 
-    :param pandas.DataFrame bus_map: data frame with coal, ng, and lat lon
-        coordinates per bus
-    :param boolean agg: aggregate by rounded lat/lon if true
-    :return: (pandas.DataFrame) -- data frame, aggregated by rounded lat lon
-        coordinates
+    :param pandas.DataFrame bus_map: data frame with coal, ng, and lat/lon coordinates
+        per bus.
+    :param boolean agg: aggregate by rounded lat/lon if true.
+    :return: (pandas.DataFrame) -- data frame aggregated by rounded lat/lon coordinates.
     """
     bus_map1 = bus_map
     if agg:
@@ -33,14 +32,12 @@ def group_lat_lon(bus_map, agg=True):
 
 
 def group_zone(bus_map):
-    """Groups data and sums values, based on zone,
-    with zones in the same state aggregated. To get the 'center'
-    of each state, the midway point between the max and min
-    for lat and lon are calculated.
+    """Group data and sums values, based on zone, with zones in the same state
+    aggregated. To get the 'center' of each state, the midway point between the max and
+    min for lat and lon are calculated.
 
     :param pandas.DataFrame bus_map: data frame with coal, ng, and zone id per bus.
-    :return: (pandas.DataFrame) -- data frame, aggregated by us state
-        coordinates
+    :return: (pandas.DataFrame) -- data frame aggregated by US state coordinates
     """
     bus_map1 = bus_map
     # for states with multiple zones, consolidate
@@ -73,17 +70,17 @@ def map_carbon_emission_bar(
     us_states_dat=None,
     size_factor=1.0,
 ):
-    """Makes map of carbon emissions, color code by fuel type. Size/area
-    indicates emissions.
+    """Make map of carbon emissions, color code by fuel type. Size/area indicates
+    emissions.
 
     :param dict us_states_dat: dictionary of state border lats/lons. If None, get
         from :func:`postreise.plot.plot_states.get_state_borders`.
-    :param pandas.DataFrame bus_info_and_emission: info and
-        emission of buses by :func:`combine_bus_info_and_emission`.
+    :param pandas.DataFrame bus_info_and_emission: info and emission of buses as
+        returned by :func:`combine_bus_info_and_emission`.
     :param str scenario_name: name of scenario for labeling.
-    :param str color_coal: color assigned for coal
-    :param str color_ng: color assigned for natural gas
-    :param float size_factor: height scale for bars
+    :param str color_coal: color assigned for coal.
+    :param str color_ng: color assigned for natural gas.
+    :param float size_factor: height scale for bars.
     """
 
     if us_states_dat is None:
@@ -237,14 +234,14 @@ def _prepare_busmap(
 
     :param pandas.DataFrame bus_info_and_emission: info and emission of buses
         as returned by :func:`combine_bus_info_and_emission`.
-    :param str color_ng: color assigned for ng, default to BE purple
-    :param str color_coal: color associated with coal, default to black/gray
-        :param boolean agg: if true, aggregates points by lat lon within a given radius
-    :param str type1: label for hover over tool tips, first color/type
-        (usual choices: natural gas or increase if making a diff map)
-    :param str type2: label for hover over tool tips, second color/type
-        (usual choices: coal or decrease if making diff map)
-    :return: (pandas.DataFrame) -- data frame with amount and tye fields
+    :param str color_ng: color assigned for ng, default to BE purple.
+    :param str color_coal: color associated with coal, default to black/gray.
+    :param boolean agg: if true, aggregates points by lat lon within a given radius.
+    :param str type1: label for hover over tool tips, first color/type. Usual choices:
+        natural gas or increase if making a diff map.
+    :param str type2: label for hover over tool tips, second color/type. Usual choices:
+        coal or decrease if making diff map.
+    :return: (pandas.DataFrame) -- data frame with amount and tye fields.
     """
     bus_map = bus_info_and_emission
     bus_map["color"] = ""
@@ -274,23 +271,23 @@ def map_carbon_emission(
     type2="coal",
 ):
     """Makes map of carbon emissions, color code by fuel type. Size/area
-        indicates emissions.
+    indicates emissions.
 
     :param pandas.DataFrame bus_info_and_emission: info and emission of buses
         as returned by :func:`combine_bus_info_and_emission`.
-    :param str color_ng: color assigned for ng, default to BE purple
-    :param str color_coal: color associated with coal, default to black/gray
+    :param str color_ng: color assigned for ng, default to BE purple.
+    :param str color_coal: color associated with coal, default to black/gray.
     :param str label_coal: label for legend associated with coal.
     :param str label_ng: label for legend associated with ng.
     :param dict us_states_dat: dictionary of state border lats/lons. If None, get
         from :func:`postreise.plot.plot_states.get_state_borders`.
-    :param float size_factor: scaling factor for size of emissions circles glyphs
-    :param boolean web: if true, optimizes figure for web-based presentation
-    :param boolean agg: if true, aggregates points by lat lon within a given radius
-    :param str type1: label for hover over tool tips, first color/type
-        (usual choices: natural gas or increase if making a diff map)
-    :param str type2: label for hover over tool tips, second color/type
-        (usual choices: coal or decrease if making diff map)
+    :param float size_factor: scaling factor for size of emissions circles glyphs.
+    :param boolean web: if true, optimizes figure for web-based presentation.
+    :param boolean agg: if true, aggregates points by lat lon within a given radius.
+    :param str type1: label for hover over tool tips, first color/type. Usual choices:
+        natural gas or increase if making a diff map.
+    :param str type2: label for hover over tool tips, second color/type. Usual choices:
+        coal or decrease if making diff map.
     """
 
     # us states borders, prepare data
@@ -449,19 +446,17 @@ def map_carbon_emission(
 def map_carbon_emission_comparison(
     bus_info_and_emission_1, bus_info_and_emission_2, web=True
 ):
-    """Makes map of carbon emissions, color code by fuel type, size/area
-        indicates emissions Also, returns data frame enclosing emission
-        released by thermal generators.
+    """Make map of carbon emissions, color code by fuel type, size/area indicates
+    emissions Also, returns data frame enclosing emission released by thermal
+    generators.
 
-    :param pandas.DataFrame bus_info_and_emission_1: info and emission
-        of buses for 1st scenario
-        returned by :func:`combine_bus_info_and_emission`.
-    :param pandas.DataFrame bus_info_and_emission_2: info and emission
-        of buses for 2nd scenario
-        as returned by :func:`combine_bus_info_and_emission`.
-    :param boolean web: if true, optimizes figure for web-based presentation
-    :return: (pandas.DataFrame) -- comparison map indicating increase or
-        decrease in emission
+    :param pandas.DataFrame bus_info_and_emission_1: info and emission of buses for 1st
+        scenario as by returned by :func:`combine_bus_info_and_emission`.
+    :param pandas.DataFrame bus_info_and_emission_2: info and emission of buses for 2nd
+        scenario as returned by :func:`combine_bus_info_and_emission`.
+    :param boolean web: if true, optimizes figure for web-based presentation.
+    :return: (pandas.DataFrame) -- comparison map indicating increase or decrease in
+        emission.
     """
     # merge
     bus_info_and_emission_1 = bus_info_and_emission_1.fillna(0)
@@ -514,13 +509,12 @@ def map_carbon_emission_comparison(
 
 
 def combine_bus_info_and_emission(bus_info, carbon_by_bus):
-    """Builds data frame needed for plotting carbon emitted by thermal
-        generators.
+    """Build data frame needed for plotting carbon emitted by thermal
+    generators.
 
     :param pandas.DataFrame bus_info: bus data frame.
-    :param dict carbon_by_bus: keys are fuel type and values is a dictionary
-        where keys and values are the bus id and emission, respectively.
-        This is returned by
+    :param dict carbon_by_bus: keys are fuel type and values is a dictionary where keys
+        and values are the bus id and emission, respectively. This is returned by
         :func:`postreise.analyze.generation.carbon.summarize_carbon_by_bus`.
     :return: (*pandas.DataFrame*) -- combined data frame.
     """

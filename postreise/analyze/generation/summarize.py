@@ -18,7 +18,7 @@ from postreise.analyze.time import change_time_zone, slice_time_series
 def sum_generation_by_type_zone(
     scenario: Scenario, time_range=None, time_zone=None
 ) -> pd.DataFrame:
-    """Sum generation for a Scenario in Analyze state by {type, zone}.
+    """Get total generation for each generator type and load zone combination.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param tuple time_range: [start_timestamp, end_timestamp] where each time stamp
@@ -44,8 +44,8 @@ def sum_generation_by_type_zone(
 
 
 def sum_generation_by_state(scenario: Scenario) -> pd.DataFrame:
-    """Get the generation of each resource from the scenario by state, including
-    totals for the given interconnects and for all states.
+    """Get the total generation for each generator type and state combination, adding
+    totals for the interconnects and for all states.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :return: (*pandas.DataFrame*) -- total generation per resource, by area.
@@ -85,8 +85,8 @@ def sum_generation_by_state(scenario: Scenario) -> pd.DataFrame:
 def summarize_hist_gen(
     hist_gen_raw: pd.DataFrame, all_resources: list, grid_model="usa_tamu"
 ) -> pd.DataFrame:
-    """Sum generation by state for the given resources from a scenario, adding
-    totals for interconnects and for all states.
+    """Get the total historical generation for each generator type and state
+    combination, adding totals for interconnects and for all states.
 
     :param pandas.DataFrame hist_gen_raw: historical generation data frame. Columns
         are resources and indices are either state or load zone.
@@ -149,7 +149,7 @@ def summarize_hist_gen(
 
 
 def get_generation_time_series_by_resources(scenario, area, resources, area_type=None):
-    """Get time series generation for each resource in certain area of a scenario
+    """Get hourly total generation for generator type(s) in an area.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
     :param str area: one of *loadzone*, *state*, *state abbreviation*,
@@ -158,7 +158,7 @@ def get_generation_time_series_by_resources(scenario, area, resources, area_type
     :param str area_type: one of *'loadzone'*, *'state'*, *'state_abbr'*,
         *'interconnect'*
     :return: (*pandas.DataFrame*) -- times series of generation for each resource,
-        index: time stamps, columns: resources
+        index: timestamps, columns: resources
     """
     _check_scenario_is_in_analyze_state(scenario)
     plant_id = get_plant_id_for_resources_in_area(
@@ -171,7 +171,7 @@ def get_generation_time_series_by_resources(scenario, area, resources, area_type
 
 
 def get_storage_time_series(scenario, area, area_type=None, storage_e=False):
-    """Get time series total storage energy in certain area of a scenario.
+    """Get hourly total storage power generation in an area
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
     :param str area: one of *loadzone*, *state*, *state abbreviation*,
@@ -181,8 +181,8 @@ def get_storage_time_series(scenario, area, area_type=None, storage_e=False):
     :param bool storage_e: if set, return time series energy of storage devices
         instead of power generation. Default to False.
     :return: (*pandas.Series*) -- time series of total storage power generation,
-        if storage_e is not set, otherwise, time series of total storage energy,
-        index: time stamps, column: storage power/storage energy
+        if ``storage_e`` is not set, otherwise, time series of total storage energy,
+        index: timestamps, values: storage power/storage energy
     """
     _check_scenario_is_in_analyze_state(scenario)
     storage_id = get_storage_id_in_area(scenario, area, area_type)

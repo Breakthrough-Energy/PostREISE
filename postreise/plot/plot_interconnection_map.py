@@ -14,7 +14,8 @@ def count_nodes_per_state(grid):
     """Count nodes per state to add as hover-over info in :func`map_interconnections`
 
     :param powersimdata.input.grid.Grid grid: grid object.
-    :return: (*pandas.DataFrame*) -- dataframe containing state names and count of nodes per state.
+    :return: (*pandas.DataFrame*) -- data frame containing state names and count of
+        nodes per state.
     """
     id2state = ModelImmutables(grid.get_grid_model()).zones["id2abv"]
     grid.bus["state"] = grid.bus["zone_id"].map(id2state)
@@ -29,7 +30,7 @@ def count_nodes_per_state(grid):
 def map_interconnections(
     grid, state_counts, hover_choice, hvdc_width=1, us_states_dat=None
 ):
-    """Maps transmission lines color coded by interconnection.
+    """Map transmission lines color coded by interconnection.
 
     :param powersimdata.input.grid.Grid grid: grid object.
     :param pandas.DataFrame state_counts: state names and node counts, created by
@@ -37,7 +38,7 @@ def map_interconnections(
     :param str hover_choice: "nodes" for state_counts nodes per state, otherwise HVDC
         capacity in hover over tool tips for hvdc lines only.
     :param float hvdc_width: adjust width of HVDC lines on map.
-    :param dict us_states_dat: dictionary of state border lats/lons. If None, get
+    :param dict us_states_dat: dictionary of state border lat/lon. If None, get
         from :func:`postreise.plot.plot_states.get_state_borders`.
     :return: (*bokeh.plotting.figure*) -- map of transmission lines.
     """
@@ -186,7 +187,7 @@ def map_interconnections(
     leg_ys = [4.639031e06] * 4
 
     for (colr, leg, x, y) in zip(leg_clr, leg_lab, leg_xs, leg_ys):
-        p.line(x, y, color=colr, width=5, legend=leg)
+        p.line(x, y, color=colr, width=5, legend_label=leg)
 
     # pseudo lines for hover tips
     lines = p.multi_line(
@@ -220,7 +221,7 @@ def map_interconnections(
         color="#FF2370",
         marker="triangle",
         size=b2b.Pmax / 50 + 5,
-        legend="Back-to-Back",
+        legend_label="Back-to-Back",
     )
 
     # legend formatting

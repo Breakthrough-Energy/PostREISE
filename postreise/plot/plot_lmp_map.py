@@ -12,10 +12,10 @@ from postreise.plot.plot_states import get_state_borders
 from postreise.plot.projection_helpers import project_borders, project_bus
 
 
-def map_lmp(s_grid, lmp, us_states_dat=None, lmp_min=20, lmp_max=45, is_website=False):
-    """Plots average LMP by color coding buses
+def map_lmp(grid, lmp, us_states_dat=None, lmp_min=20, lmp_max=45, is_website=False):
+    """Plot average LMP by color coding buses.
 
-    :param powersimdata.input.grid.Grid s_grid: scenario grid
+    :param powersimdata.input.grid.Grid grid: grid object
     :param pandas.DataFrame lmp: locational marginal prices calculated for the scenario
     :param dict us_states_dat: dictionary of state border lats/lons. If None, get
         from :func:`postreise.plot.plot_states.get_state_borders`.
@@ -27,7 +27,7 @@ def map_lmp(s_grid, lmp, us_states_dat=None, lmp_min=20, lmp_max=45, is_website=
     if us_states_dat is None:
         us_states_dat = get_state_borders()
 
-    bus = project_bus(s_grid.bus)
+    bus = project_bus(grid.bus)
     bus_segments = _construct_bus_data(bus, lmp, lmp_min, lmp_max)
     return _construct_shadowprice_visuals(
         bus_segments, us_states_dat, lmp_min, lmp_max, is_website
@@ -35,7 +35,7 @@ def map_lmp(s_grid, lmp, us_states_dat=None, lmp_min=20, lmp_max=45, is_website=
 
 
 def _construct_bus_data(bus_map, lmp, lmp_min, lmp_max):
-    """Adds lmp data to each bus, splits buses into lmp segments for coloring
+    """Add lmp data to each bus, splits buses into lmp segments for coloring
 
     :param pandas.DataFrame bus_map: bus dataframe with location data
     :param pandas.DataFrame lmp: lmp dataframe
@@ -59,13 +59,13 @@ def _construct_bus_data(bus_map, lmp, lmp_min, lmp_max):
 
 
 def group_lat_lon(bus_map):
-    """Groups data and sums values, based on coordinates.
-        Takes mean of means of buses at same coordinates
-        Rounds locations for grouping to nearest latlon decimal (1/10) degrees
+    """Group data and sums values, based on coordinates. Takes mean of means of buses
+    at same coordinates. Round locations for grouping to nearest latlon decimal (1/10)
+    degrees.
 
-    :param pandas.DataFrame bus_map: data frame bus location and lmp means
-    :return: (pandas.DataFrame) -- data frame, aggregated by rounded lat lon
-        coordinates
+    :param pandas.DataFrame bus_map: data frame bus location and lmp means.
+    :return: (*pandas.DataFrame*) -- data frame aggregated by rounded lat/lon
+        coordinates.
     """
     bus_map1 = bus_map.copy()
 
@@ -82,15 +82,15 @@ def group_lat_lon(bus_map):
 def _construct_shadowprice_visuals(
     bus_segments, us_states_dat, lmp_min, lmp_max, is_website=False
 ):
-    """Uses bokeh to plot formatted data. Make map showing lmp using color.
+    """Use bokeh to plot formatted data. Make map showing lmp using color.
 
-    :param list(pandas.DataFrame) bus_segments: bus data split by lmp
-    :param dict us_states_dat: dictionary of state border lats/lons
-    :param str file_name: name for output png file
+    :param list bus_segments: bus data split by lmp as data frame.
+    :param dict us_states_dat: dictionary of state border lats/lons.
+    :param str file_name: name for output png file.
     :param inf/float lmp_min: minimum LMP to clamp plot range to.
     :param inf/float lmp_max: maximum LMP to clamp plot range to.
-    :param bool is_website: changes text/legend formatting to look better on the website
-    :return: (*bokeh.models.layout.Row*) bokeh map visual in row layout
+    :param bool is_website: changes text/legend formatting to look better on website.
+    :return: (*bokeh.models.layout.Row*) -- bokeh map visual in row layout.
     """
 
     tools = "pan,wheel_zoom,reset,save"
@@ -138,12 +138,12 @@ def _construct_shadowprice_visuals(
 
 
 def _construct_bus_legend(lmp_min, lmp_max, is_website=False):
-    """Constructs the legend for lmp at each bus
+    """Constructs the legend for lmp at each bus.
 
-    :param inf/float lmp_min: minimum LMP to clamp plot range to.
-    :param inf/float lmp_max: maximum LMP to clamp plot range to.
-    :param bool is_website: changes text/legend formatting to look better on the website
-    :return: (bokeh.plotting.figure) the legend showing lmp for each bus
+    :param int/float lmp_min: minimum LMP to clamp plot range to.
+    :param int/float lmp_max: maximum LMP to clamp plot range to.
+    :param bool is_website: changes text/legend formatting to look better on website.
+    :return: (*bokeh.plotting.figure*) -- legend showing lmp for each bus
     """
     x_range = [""]
     bars, bar_len_sum, labels = _get_bus_legend_bars_and_labels(
@@ -200,12 +200,12 @@ def _construct_bus_legend(lmp_min, lmp_max, is_website=False):
 
 
 def _get_bus_legend_bars_and_labels(x_range, lmp_min, lmp_max):
-    """Gets the bar lengths and labels for the bus legend
+    """Get the bar lengths and labels for the bus legend.
 
-    :param list(string) x_range: the x-range for the vbar_stack
-    :param inf/float lmp_min: minimum LMP to clamp plot range to.
-    :param inf/float lmp_max: maximum LMP to clamp plot range to.
-    :return: (dict, float, dict) bar lengths and labels for the bus legend
+    :param list x_range: the x-range for the vbar_stack.
+    :param int/float lmp_min: minimum LMP to clamp plot range to.
+    :param int/float lmp_max: maximum LMP to clamp plot range to.
+    :return: (*tuple*) -- bar lengths and labels for the bus legend.
     """
     bars = {"x_range": x_range}
     lmp_split_points = list(range(0, 256, 1))

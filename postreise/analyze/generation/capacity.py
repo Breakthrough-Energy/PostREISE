@@ -16,7 +16,7 @@ def calculate_NLDC(scenario, resources, hours=100):  # noqa: N802
     mean of the top N hour of absolute demand to the mean of the top N hours of
     net demand. NLDC = 'Net Load Duration Curve'.
 
-    :param powersimdata.scenario.scenario.Scenario scenario: analyzed scenario.
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param str/list/tuple/set resources: one or more resources to analyze.
     :param int hours: number of hours to analyze.
     :return: (*float*) -- difference between peak demand and peak net demand.
@@ -43,7 +43,7 @@ def calculate_net_load_peak(scenario, resources, hours=100):
     """Calculate the capacity value of a class of resources by averaging the
     power generated in the top N hours of net load peak.
 
-    :param powersimdata.scenario.scenario.Scenario scenario: analyzed scenario.
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param str/list/tuple/set resources: one or more resources to analyze.
     :param int hours: number of hours to analyze.
     :return: (*float*) -- resource capacity during hours of peak net demand.
@@ -66,8 +66,7 @@ def calculate_net_load_peak(scenario, resources, hours=100):
 
 
 def get_capacity_by_resources(scenario, area, resources, area_type=None):
-    """Get total nameplate Pmax capacity of certain resources in the specific area of a
-    scenario.
+    """Get the total nameplate capacity for generator type(s) in an area
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
     :param str area: one of *loadzone*, *state*, *state abbreviation*,
@@ -87,7 +86,7 @@ def get_capacity_by_resources(scenario, area, resources, area_type=None):
 
 
 def get_storage_capacity(scenario, area, area_type=None):
-    """Get total storage nameplate Pmax capacity in the specific area of a scenario.
+    """Get total storage nameplate capacity in an area.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
     :param str area: one of *loadzone*, *state*, *state abbreviation*,
@@ -103,10 +102,11 @@ def get_storage_capacity(scenario, area, area_type=None):
 
 
 def sum_capacity_by_type_zone(scenario):
-    """Sum generator capacity for a Scenario by {type, zone}.
+    """Get total capacity for each generator type and load zone combination.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
-    :return: (*pandas.DataFrame*) -- total capacity, indexed by {type, zone}.
+    :return: (*pandas.DataFrame*) -- index: generator type, column: load zone, value:
+        total capacity.
     """
     grid = scenario.state.get_grid()
     plant = grid.plant
@@ -115,8 +115,8 @@ def sum_capacity_by_type_zone(scenario):
 
 
 def get_capacity_factor_time_series(scenario, area, resources, area_type=None):
-    """Get time series capacity factor for every plant located in area and fueled by
-    resources
+    """Get the hourly capacity factor of each generator fueled by resource(s) in an
+    area.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
     :param str area: one of *loadzone*, *state*, *state abbreviation*,
