@@ -3,7 +3,7 @@ FROM ghcr.io/breakthrough-energy/powersimdata:latest
 WORKDIR /PostRIESE
 COPY Pipfile .
 COPY Pipfile.lock .
-RUN pip install -U pip pipenv jupyterlab; \
+RUN pip install -U pip pipenv jupyterlab ipywidgets; \
     pipenv sync --dev --system;
 
 COPY . .
