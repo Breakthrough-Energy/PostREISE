@@ -1,250 +1,178 @@
-import numpy as np
 import pandas as pd
-from bokeh.models import ColumnDataSource, HoverTool
 from bokeh.plotting import figure
-from bokeh.tile_providers import Vendors, get_provider
 from powersimdata.network.model import ModelImmutables
 from powersimdata.utility import distance
 
-from postreise.plot.plot_states import get_state_borders
-from postreise.plot.projection_helpers import project_borders, project_branch
+from postreise.analyze.check import _check_grid
+from postreise.plot.plot_states import plot_states
+from postreise.plot.projection_helpers import project_branch
 
 
 def count_nodes_per_state(grid):
     """Count nodes per state to add as hover-over info in :func`map_interconnections`
 
     :param powersimdata.input.grid.Grid grid: grid object.
-    :return: (*pandas.DataFrame*) -- data frame containing state names and count of
-        nodes per state.
+    :return: (*pandas.Series*) -- index: state names, values: number of nodes.
     """
     id2state = ModelImmutables(grid.get_grid_model()).zones["id2abv"]
     grid.bus["state"] = grid.bus["zone_id"].map(id2state)
-    liststates = grid.bus["state"].value_counts()
-    state_counts = pd.DataFrame(liststates)
-    state_counts.reset_index(inplace=True)
-    state_counts.rename(columns={"index": "state", "state": "count"}, inplace=True)
+    counts = pd.Series(grid.bus["state"].value_counts())
 
-    return state_counts
+    return counts
 
 
 def map_interconnections(
-    grid, state_counts, hover_choice, hvdc_width=1, us_states_dat=None
+    grid,
+    branch_distance_cutoff=5,
+    figsize=(1400, 800),
+    branch_width_scale_factor=0.5,
+    hvdc_width_scale_factor=1,
+    b2b_size_scale_factor=50,
+    background_map=False,
 ):
     """Map transmission lines color coded by interconnection.
 
     :param powersimdata.input.grid.Grid grid: grid object.
-    :param pandas.DataFrame state_counts: state names and node counts, created by
-        :func:`count_nodes_per_state`.
-    :param str hover_choice: "nodes" for state_counts nodes per state, otherwise HVDC
-        capacity in hover over tool tips for hvdc lines only.
-    :param float hvdc_width: adjust width of HVDC lines on map.
-    :param dict us_states_dat: dictionary of state border lat/lon. If None, get
-        from :func:`postreise.plot.plot_states.get_state_borders`.
+    :param int/float branch_distance_cutoff: distance cutoff for branch display.
+    :param tuple figsize: size of the bokeh figure (in pixels).
+    :param int/float branch_width_scale_factor: scale factor for branch capacities.
+    :param int/float hvdc_width_scale_factor: scale factor for hvdc capacities.
+    :param int/float b2b_size_scale_factor: scale factor for back-to_back capacities.
+    :param bool background_map: whether to plot map tiles behind figure.
     :return: (*bokeh.plotting.figure*) -- map of transmission lines.
+    :raises TypeError:
+        if ``branch_device_cutoff`` is not ``float``.
+        if ``figsize`` is not a tuple.
+        if ``branch_width_scale_factor`` is not ``int`` or ``float``.
+        if ``hvdc_width_scale_factor`` is not ``int`` or ``float``.
+        if ``b2b_size_scale_factor`` is not ``int`` or ``float``.
+        if ``background_map`` is not a ``bool``.
+    :raises ValueError:
+        if ``branch_device_cutoff`` is negative.
+        if both elements of ``figsize`` are not positive.
+        if ``branch_width_scale_factor`` is negative.
+        if ``hvdc_width_scale_factor`` is negative.
+        if ``b2b_size_scale_factor`` is negative.
+        if grid model is not supported.
     """
-    if us_states_dat is None:
-        us_states_dat = get_state_borders()
+    _check_grid(grid)
+    if not isinstance(branch_distance_cutoff, (int, float)):
+        raise TypeError("branch_distance_cutoff must be an int")
+    if branch_distance_cutoff <= 0:
+        raise ValueError("branch_distance_cutoff must be strictly positive")
+    if not isinstance(figsize, tuple):
+        raise TypeError("figsize must be a tuple")
+    if not (len(figsize) == 2 and all(e > 0 for e in figsize)):
+        raise ValueError("both elemets of figsize must be positive")
+    if not isinstance(branch_width_scale_factor, (int, float)):
+        raise TypeError("branch_width_scale_factor must be a int/float")
+    if branch_width_scale_factor < 0:
+        raise ValueError("branch_width_scale_factor must be positive")
+    if not isinstance(hvdc_width_scale_factor, (int, float)):
+        raise TypeError("hvdc_width_scale_factor must be a int/float")
+    if hvdc_width_scale_factor < 0:
+        raise ValueError("hvdc_width_scale_factor must be positive")
+    if not isinstance(b2b_size_scale_factor, (int, float)):
+        raise TypeError("b2b_size_scale_factor must be a int/float")
+    if b2b_size_scale_factor < 0:
+        raise ValueError("b2b_size_scale_factor must be positive")
+    if not isinstance(background_map, bool):
+        raise TypeError("background_map must be a bool")
 
-    # projection steps for mapping
-    branch = grid.branch
-    branch_bus = grid.bus
-    branch_map = project_branch(branch)
-    branch_map["point1"] = list(zip(branch_map.to_lat, branch_map.to_lon))
-    branch_map["point2"] = list(zip(branch_map.from_lat, branch_map.from_lon))
-    branch_map["dist"] = branch_map.apply(
-        lambda row: distance.haversine(row["point1"], row["point2"]), axis=1
+    # branches
+    branch = grid.branch.copy()
+    branch["to_coord"] = list(zip(branch["to_lat"], branch["to_lon"]))
+    branch["from_coord"] = list(zip(branch["from_lat"], branch["from_lon"]))
+    branch["dist"] = branch.apply(
+        lambda row: distance.haversine(row["to_coord"], row["from_coord"]), axis=1
     )
+    branch = branch.loc[branch["dist"] > branch_distance_cutoff]
+    branch = project_branch(branch)
 
-    # speed rendering on website by removing very short branches
-    branch_map = branch_map.loc[branch_map.dist > 5]
+    branch_west = branch.loc[branch["interconnect"] == "Western"]
+    branch_east = branch.loc[branch["interconnect"] == "Eastern"]
+    branch_tx = branch.loc[branch["interconnect"] == "Texas"]
 
-    branch_west = branch_map.loc[branch_map.interconnect == "Western"]
-    branch_east = branch_map.loc[branch_map.interconnect == "Eastern"]
-    branch_tx = branch_map.loc[branch_map.interconnect == "Texas"]
-    branch_mdc = grid.dcline
+    # HVDC lines
+    all_dcline = grid.dcline.copy()
+    all_dcline["from_lon"] = grid.bus.loc[all_dcline["from_bus_id"], "lon"].values
+    all_dcline["from_lat"] = grid.bus.loc[all_dcline["from_bus_id"], "lat"].values
+    all_dcline["to_lon"] = grid.bus.loc[all_dcline["to_bus_id"], "lon"].values
+    all_dcline["to_lat"] = grid.bus.loc[all_dcline["to_bus_id"], "lat"].values
+    all_dcline = project_branch(all_dcline)
 
-    branch_mdc["from_lon"] = branch_bus.loc[branch_mdc.from_bus_id, "lon"].values
-    branch_mdc["from_lat"] = branch_bus.loc[branch_mdc.from_bus_id, "lat"].values
-    branch_mdc["to_lon"] = branch_bus.loc[branch_mdc.to_bus_id, "lon"].values
-    branch_mdc["to_lat"] = branch_bus.loc[branch_mdc.to_bus_id, "lat"].values
-    branch_mdc = project_branch(branch_mdc)
-
-    # back to backs are index 0-8, treat separately
-    branch_mdc1 = branch_mdc.iloc[
-        9:,
-    ]
-    b2b = branch_mdc.iloc[
-        0:9,
-    ]
-
-    branch_mdc_leg = branch_mdc
-    branch_mdc_leg.loc[0:8, ["to_x"]] = np.nan
-    branch_mdc_leg["to_x"] = branch_mdc_leg["to_x"].fillna(branch_mdc_leg["from_x"])
-    branch_mdc_leg.loc[0:8, ["to_y"]] = np.nan
-    branch_mdc_leg["to_y"] = branch_mdc_leg["to_y"].fillna(branch_mdc_leg["from_y"])
-
-    # pseudolines for legend to show hvdc and back to back, plot UNDER map
-    multi_line_source6 = ColumnDataSource(
-        {
-            "xs": branch_mdc_leg[["from_x", "to_x"]].values.tolist(),
-            "ys": branch_mdc_leg[["from_y", "to_y"]].values.tolist(),
-            "capacity": branch_mdc_leg.Pmax.astype(float) * 0.00023 + 0.2,
-            "cap": branch_mdc_leg.Pmax.astype(float),
-        }
-    )
-
-    # state borders
-    a, b = project_borders(us_states_dat, state_list=list(state_counts["state"]))
-
-    # transmission data sources
-    line_width_const = 0.000225
-
-    multi_line_source = ColumnDataSource(
-        {
-            "xs": branch_west[["from_x", "to_x"]].values.tolist(),
-            "ys": branch_west[["from_y", "to_y"]].values.tolist(),
-            "capacity": branch_west.rateA * line_width_const + 0.1,
-        }
-    )
-
-    multi_line_source2 = ColumnDataSource(
-        {
-            "xs": branch_east[["from_x", "to_x"]].values.tolist(),
-            "ys": branch_east[["from_y", "to_y"]].values.tolist(),
-            "capacity": branch_east.rateA * line_width_const + 0.1,
-        }
-    )
-
-    multi_line_source3 = ColumnDataSource(
-        {
-            "xs": branch_tx[["from_x", "to_x"]].values.tolist(),
-            "ys": branch_tx[["from_y", "to_y"]].values.tolist(),
-            "capacity": branch_tx.rateA * line_width_const + 0.1,
-        }
-    )
-    # hvdc
-    multi_line_source4 = ColumnDataSource(
-        {
-            "xs": branch_mdc1[["from_x", "to_x"]].values.tolist(),
-            "ys": branch_mdc1[["from_y", "to_y"]].values.tolist(),
-            "capacity": branch_mdc1.Pmax.astype(float) * line_width_const * hvdc_width
-            + 0.1,
-            "cap": branch_mdc1.Pmax.astype(float),
-        }
-    )
-
-    # pseudolines for ac
-    multi_line_source5 = ColumnDataSource(
-        {
-            "xs": b2b[["from_x", "to_x"]].values.tolist(),
-            "ys": b2b[["from_y", "to_y"]].values.tolist(),
-            "capacity": b2b.Pmax.astype(float) * 0.00023 + 0.2,
-            "cap": b2b.Pmax.astype(float),
-            "col": (
-                "#006ff9",
-                "#006ff9",
-                "#006ff9",
-                "#006ff9",
-                "#006ff9",
-                "#006ff9",
-                "#006ff9",
-                "#8B36FF",
-                "#8B36FF",
-            ),
-        }
-    )
-
-    # lower 48 states, patches
-    source = ColumnDataSource(
-        dict(
-            xs=a,
-            ys=b,
-            col=["gray" for i in range(48)],
-            col2=["gray" for i in range(48)],
-            label=list(state_counts["count"]),
-            state_name=list(state_counts["state"]),
-        )
-    )
-
-    # Set up figure
-    tools: str = "pan, wheel_zoom, reset, save"
+    if grid.get_grid_model() == "usa_tamu":
+        b2b_id = range(9)
+    else:
+        raise ValueError("grid model is not supported")
+    dcline = all_dcline.iloc[~all_dcline.index.isin(b2b_id)]
+    b2b = all_dcline.iloc[b2b_id]
 
     p = figure(
-        tools=tools,
+        tools="pan,wheel_zoom,reset,save",
         x_axis_location=None,
         y_axis_location=None,
-        plot_width=800,
-        plot_height=800,
+        plot_width=figsize[0],
+        plot_height=figsize[1],
         output_backend="webgl",
-        sizing_mode="stretch_both",
+        sizing_mode="scale_both",
         match_aspect=True,
     )
 
-    # for legend, hidden lines
-    leg_clr = ["#006ff9", "#8B36FF", "#01D4ED", "#FF2370"]
-    leg_lab = ["Western", "Eastern", "Texas", "HVDC"]
-    leg_xs = [-1.084288e07] * 4
-    leg_ys = [4.639031e06] * 4
+    p.xgrid.visible = False
+    p.ygrid.visible = False
 
-    for (colr, leg, x, y) in zip(leg_clr, leg_lab, leg_xs, leg_ys):
-        p.line(x, y, color=colr, width=5, legend_label=leg)
-
-    # pseudo lines for hover tips
-    lines = p.multi_line(
-        "xs", "ys", color="black", line_width="capacity", source=multi_line_source6
+    state_counts = count_nodes_per_state(grid)
+    plot_states(
+        bokeh_figure=p,
+        background_map=background_map,
+        state_list=state_counts.index,
+        labels_list=state_counts.to_numpy(),
+        tooltip_name="nodes",
     )
-
-    # background tiles
-    p.add_tile(get_provider(Vendors.CARTODBPOSITRON))
-
-    # state borders
-    patch = p.patches("xs", "ys", fill_alpha=0.0, line_color="col", source=source)
-
-    # branches
-    source_list = [multi_line_source, multi_line_source2, multi_line_source3]
-
-    for (colr, source) in zip(leg_clr[0:3], source_list):
-        p.multi_line("xs", "ys", color=colr, line_width="capacity", source=source)
 
     p.multi_line(
-        "xs", "ys", color="#FF2370", line_width="capacity", source=multi_line_source4
-    )
-    # pseudo ac
-    p.multi_line(
-        "xs", "ys", color="col", line_width="capacity", source=multi_line_source5
+        branch_west[["from_x", "to_x"]].to_numpy().tolist(),
+        branch_west[["from_y", "to_y"]].to_numpy().tolist(),
+        color="#006ff9",
+        line_width=branch_west["rateA"].abs() * 1e-3 * branch_width_scale_factor,
+        legend_label="Western",
     )
 
-    # triangles for b2b
+    p.multi_line(
+        branch_east[["from_x", "to_x"]].to_numpy().tolist(),
+        branch_east[["from_y", "to_y"]].to_numpy().tolist(),
+        color="#8B36FF",
+        line_width=branch_east["rateA"].abs() * 1e-3 * branch_width_scale_factor,
+        legend_label="Eastern",
+    )
+
+    p.multi_line(
+        branch_tx[["from_x", "to_x"]].to_numpy().tolist(),
+        branch_tx[["from_y", "to_y"]].to_numpy().tolist(),
+        color="#01D4ED",
+        line_width=branch_tx["rateA"].abs() * 1e-3 * branch_width_scale_factor,
+        legend_label="Texas",
+    )
+
+    p.multi_line(
+        dcline[["from_x", "to_x"]].to_numpy().tolist(),
+        dcline[["from_y", "to_y"]].to_numpy().tolist(),
+        color="#FF2370",
+        line_width=dcline["Pmax"] * 1e-3 * hvdc_width_scale_factor,
+        legend_label="HVDC",
+    )
+
     p.scatter(
-        x=b2b.from_x,
-        y=b2b.from_y,
+        x=b2b["from_x"],
+        y=b2b["from_y"],
         color="#FF2370",
         marker="triangle",
-        size=b2b.Pmax / 50 + 5,
+        size=b2b["Pmax"] * 1e-3 * b2b_size_scale_factor,
         legend_label="Back-to-Back",
     )
 
-    # legend formatting
-    p.legend.location = "bottom_right"
+    p.legend.location = "bottom_left"
     p.legend.label_text_font_size = "12pt"
-
-    if hover_choice == "nodes":
-        hover = HoverTool(
-            tooltips=[
-                ("State", "@state_name"),
-                ("Nodes", "@label"),
-            ],
-            renderers=[patch],
-        )
-
-    else:
-        hover = HoverTool(
-            tooltips=[
-                ("HVDC capacity MW", "@cap"),
-            ],
-            renderers=[lines],
-        )
-
-    p.add_tools(hover)
 
     return p
