@@ -76,12 +76,12 @@ def plot_states(
     legend_title=None,
     font_size="10pt",
     bokeh_figure=None,
-    web=True,
+    tooltip_name=None,
     us_states_dat=None,
     background_map=True,
 ):
     """Plots US state borders and allows color coding by state,
-        for example to represent different emissions goals.
+    for example to represent different emissions goals.
 
     :param list state_list: list of us states to color code.
     :param str/iterable colors: color or colors associated with states in state_list.
@@ -95,7 +95,7 @@ def plot_states(
     :param float font_size: citation font size, for non web version only
     :param bokeh.plotting.figure.Figure bokeh_figure: figure to plot onto, if provided.
         If not, a new figure will be created.
-    :param bool web: if true, formats for website with hover tips
+    :param str tooltip_name: name for the web tooltip. Trigger web version.
     :param dict us_states_dat: dictionary of state border lats/lons. If None, get
         from :func:`postreise.plot.plot_states.get_state_borders`.
     :param bool background_map: if True, plot a map background behind state borders.
@@ -125,7 +125,7 @@ def plot_states(
         if labels_list is not None:
             try:
                 if len(state_list) != len(labels_list):
-                    raise ValueError("State_list and labels_list must be same length")
+                    raise ValueError("state_list and labels_list must be same length")
             except TypeError:
                 raise TypeError("labels_list must be an iterable")
     if legend_colors is not None or legend_labels is not None:
@@ -185,10 +185,10 @@ def plot_states(
         line_width=line_width,
     )
     if labels_list is not None:
-        if web:
+        if tooltip_name is not None:
             # For the web, add hover-over functionality
             hover = HoverTool(
-                tooltips=[("State", "@state_name"), ("Goal", "@label")],
+                tooltips=[("State", "@state_name"), (f"{tooltip_name}", "@label")],
                 renderers=[patch],
             )
             p.add_tools(hover)
