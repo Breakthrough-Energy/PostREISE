@@ -8,23 +8,9 @@ from bokeh.plotting import figure
 from bokeh.tile_providers import Vendors, get_provider
 from bokeh.transform import linear_cmap
 
+from postreise.plot.colors import traffic_palette
 from postreise.plot.plot_states import get_state_borders
 from postreise.plot.projection_helpers import project_borders, project_branch
-
-traffic_palette = [
-    "darkgreen",
-    "green",
-    "limegreen",
-    "lawngreen",
-    "yellowgreen",
-    "yellow",
-    "gold",
-    "goldenrod",
-    "orange",
-    "orangered",
-    "red",
-    "darkred",
-]
 
 
 def map_risk_bind(
