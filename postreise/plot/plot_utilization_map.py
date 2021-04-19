@@ -21,6 +21,7 @@ def map_risk_bind(
     vmin=None,
     vmax=None,
     is_website=False,
+    palette=None,
 ):
     """Makes map showing risk or binding incidents on US states map.
 
@@ -33,6 +34,9 @@ def map_risk_bind(
     :param int/float vmin: minimum value for color range. If None, use data minimum.
     :param int/float vmax: maximum value for color range. If None, use data maximum.
     :param bool is_website: changes text/legend formatting to look better on the website
+    :param iterable palette: sequence of colors used for color range, passed as
+        `palette` kwarg to :func:`bokeh.transform.linear_cmap`.
+        If None, default to `postreise.plot.colors.traffic_palette`.
     :return:  -- map of lines with risk and bind incidents color coded
     """
     if us_states_dat is None:
@@ -43,6 +47,9 @@ def map_risk_bind(
 
     if risk_or_bind == "bind":
         risk_or_bind_units = "Binding incidents"
+
+    if palette is None:
+        palette = list(traffic_palette)
 
     # projection steps for mapping
     branch_congestion = pd.concat(
@@ -65,7 +72,7 @@ def map_risk_bind(
     min_val = branch_congestion[risk_or_bind].min() if vmin is None else vmin
     max_val = branch_congestion[risk_or_bind].max() if vmax is None else vmax
     mapper = linear_cmap(
-        field_name=risk_or_bind, palette=traffic_palette, low=min_val, high=max_val
+        field_name=risk_or_bind, palette=palette, low=min_val, high=max_val
     )
     color_bar = ColorBar(
         color_mapper=mapper["transform"],
