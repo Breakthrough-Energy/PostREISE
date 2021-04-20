@@ -207,11 +207,8 @@ def map_utilization(
         }
     )
 
-    # Set up figure
-    tools: str = "pan,wheel_zoom,reset,save"
-
     p = figure(
-        tools=tools,
+        tools="pan,wheel_zoom,reset,save",
         x_axis_location=None,
         y_axis_location=None,
         plot_width=800,
