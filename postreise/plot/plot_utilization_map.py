@@ -184,7 +184,7 @@ def map_utilization(
     min_val = lines["median_utilization"].min() if vmin is None else vmin
     max_val = lines["median_utilization"].max() if vmax is None else vmax
 
-    mapper1 = linear_cmap(
+    mapper = linear_cmap(
         field_name="median_utilization",
         palette=palette,
         low=min_val,
@@ -192,7 +192,7 @@ def map_utilization(
     )
 
     color_bar = ColorBar(
-        color_mapper=mapper1["transform"],
+        color_mapper=mapper["transform"],
         width=385 if is_website else 500,
         height=5,
         location=(0, 0),
@@ -233,7 +233,7 @@ def map_utilization(
         all_plot_states_kwargs = default_plot_states_kwargs
     plot_states(bokeh_figure=p, **all_plot_states_kwargs)
     lines = p.multi_line(
-        "xs", "ys", color=mapper1, line_width="width", source=multi_line_source
+        "xs", "ys", color=mapper, line_width="width", source=multi_line_source
     )
     hover = HoverTool(
         tooltips=[
