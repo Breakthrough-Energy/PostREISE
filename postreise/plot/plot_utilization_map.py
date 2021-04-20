@@ -159,7 +159,8 @@ def map_utilization(
     :param bool is_website: changes text/legend formatting to look better on the website
     :param dict plot_states_kwargs: keyword arguments to be passed to
         :func:`postreise.plot.plot_states.plot_states`.
-    :return:  -- map of lines with median utilization color coded
+    :return: (*bokeh.plotting.figure*) -- map of lines with median utilization color
+        coded.
     """
     branch_mask = branch.rateA != 0
     median_util = utilization_df[branch.loc[branch_mask].index].median()
