@@ -66,7 +66,6 @@ def map_risk_bind(
         [branch.loc[congestion_stats.index], congestion_stats], axis=1
     )
     branch_map_all = project_branch(branch)
-    tools: str = "pan,wheel_zoom,reset,save"
 
     branch_congestion = branch_congestion[branch_congestion[risk_or_bind] > 0]
     branch_congestion.sort_values(by=[risk_or_bind])
@@ -92,7 +91,7 @@ def map_risk_bind(
 
     # Set up figure
     p = figure(
-        tools=tools,
+        tools="pan,wheel_zoom,reset,save",
         x_axis_location=None,
         y_axis_location=None,
         plot_width=figsize[0],
