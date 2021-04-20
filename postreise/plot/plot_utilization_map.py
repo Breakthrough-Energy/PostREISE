@@ -5,11 +5,10 @@ import numpy as np
 import pandas as pd
 from bokeh.models import ColorBar, ColumnDataSource, HoverTool
 from bokeh.plotting import figure
-from bokeh.tile_providers import Vendors, get_provider
 from bokeh.transform import linear_cmap
 
 from postreise.plot.colors import traffic_palette
-from postreise.plot.plot_states import get_state_borders
+from postreise.plot.plot_states import plot_states
 from postreise.plot.projection_helpers import project_borders, project_branch
 
 
@@ -28,6 +27,7 @@ def map_risk_bind(
     select_branch_min_width=2,
     figsize=(1400, 800),
     show_color_bar=True,
+    plot_states_kwargs=None,
 ):
     """Makes map showing risk or binding incidents on US states map.
 
@@ -35,8 +35,6 @@ def map_risk_bind(
     :param pandas.DataFrame congestion_stats: data frame as returned by
         :func:`postreise.analyze.transmission.utilization.generate_cong_stats`.
     :param pandas.DataFrame branch: branch data frame.
-    :param dict us_states_dat: dictionary of state border lats/lons. If None, get
-        from :func:`postreise.plot.plot_states.get_state_borders`.
     :param int/float vmin: minimum value for color range. If None, use data minimum.
     :param int/float vmax: maximum value for color range. If None, use data maximum.
     :param bool is_website: changes text/legend formatting to look better on the website
@@ -49,12 +47,11 @@ def map_risk_bind(
     :param int/float select_branch_min_width: minimum width for highlighted branches.
     :param tuple(int, int) figsize: size of the bokeh figure (in pixels).
     :param bool show_color_bar: whether to render the color bar on the figure.
+    :param dict plot_states_kwargs: keyword arguments to be passed to
+        :func:`postreise.plot.plot_states.plot_states`.
     :return: (*bokeh.plotting.figure*) -- map of lines with risk and bind incidents
         color coded.
     """
-    if us_states_dat is None:
-        us_states_dat = get_state_borders()
-
     if risk_or_bind == "risk":
         risk_or_bind_units = "Risk (MWH)"
 
@@ -79,7 +76,6 @@ def map_risk_bind(
             ),
         }
     )
-    a, b = project_borders(us_states_dat)
     tools: str = "pan,wheel_zoom,reset,save"
 
     branch_congestion = branch_congestion[branch_congestion[risk_or_bind] > 0]
@@ -125,8 +121,12 @@ def map_risk_bind(
             padding=5,
         )
         p.add_layout(color_bar, "center")
-    p.add_tile(get_provider(Vendors.CARTODBPOSITRON))
-    p.patches(a, b, fill_alpha=0.0, line_color="gray", line_width=1)
+    default_plot_states_kwargs = {"fill_alpha": 0.0, "background_map": True}
+    if plot_states_kwargs is not None:
+        all_plot_states_kwargs = default_plot_states_kwargs.update(**plot_states_kwargs)
+    else:
+        all_plot_states_kwargs = default_plot_states_kwargs
+    plot_states(bokeh_figure=p, **all_plot_states_kwargs)
     p.multi_line(
         "xs",
         "ys",
