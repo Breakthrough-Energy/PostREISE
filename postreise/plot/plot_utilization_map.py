@@ -27,6 +27,7 @@ def map_risk_bind(
     select_branch_scale_factor=1e-3,
     select_branch_min_width=2,
     figsize=(1400, 800),
+    show_color_bar=True,
 ):
     """Makes map showing risk or binding incidents on US states map.
 
@@ -47,6 +48,7 @@ def map_risk_bind(
     :param int/float select_branch_scale_factor: scale factor for highlighted branches.
     :param int/float select_branch_min_width: minimum width for highlighted branches.
     :param tuple(int, int) figsize: size of the bokeh figure (in pixels).
+    :param bool show_color_bar: whether to render the color bar on the figure.
     :return: (*bokeh.plotting.figure*) -- map of lines with risk and bind incidents
         color coded.
     """
@@ -88,15 +90,6 @@ def map_risk_bind(
     mapper = linear_cmap(
         field_name=risk_or_bind, palette=palette, low=min_val, high=max_val
     )
-    color_bar = ColorBar(
-        color_mapper=mapper["transform"],
-        width=385 if is_website else 500,
-        height=5,
-        location=(0, 0),
-        title=risk_or_bind_units,
-        orientation="horizontal",
-        padding=5,
-    )
     multi_line_source = ColumnDataSource(
         {
             "xs": branch_map[["from_x", "to_x"]].values.tolist(),
@@ -121,7 +114,17 @@ def map_risk_bind(
         output_backend="webgl",
         match_aspect=True,
     )
-    p.add_layout(color_bar, "center")
+    if show_color_bar:
+        color_bar = ColorBar(
+            color_mapper=mapper["transform"],
+            width=385 if is_website else 500,
+            height=5,
+            location=(0, 0),
+            title=risk_or_bind_units,
+            orientation="horizontal",
+            padding=5,
+        )
+        p.add_layout(color_bar, "center")
     p.add_tile(get_provider(Vendors.CARTODBPOSITRON))
     p.patches(a, b, fill_alpha=0.0, line_color="gray", line_width=1)
     p.multi_line(
