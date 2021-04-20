@@ -9,7 +9,7 @@ from bokeh.transform import linear_cmap
 
 from postreise.plot.colors import traffic_palette
 from postreise.plot.plot_states import plot_states
-from postreise.plot.projection_helpers import project_borders, project_branch
+from postreise.plot.projection_helpers import project_branch
 
 
 def map_risk_bind(
@@ -141,7 +141,12 @@ def map_risk_bind(
 
 
 def map_utilization(
-    utilization_df, branch, us_states_dat=None, vmin=None, vmax=None, is_website=False
+    utilization_df,
+    branch,
+    vmin=None,
+    vmax=None,
+    is_website=False,
+    plot_states_kwargs=None,
 ):
     """Makes map showing utilization. Utilization input can either be medians
     only, or can be normalized utilization dataframe
@@ -149,16 +154,13 @@ def map_utilization(
     :param pandas.DataFrame utilization_df: utilization returned by
         :func:`postreise.analyze.transmission.utilization.get_utilization`
     :param pandas.DataFrame branch: branch data frame.
-    :param dict us_states_dat: dictionary of state border lats/lons. If None, get
-        from :func:`postreise.plot.plot_states.get_state_borders`.
     :param int/float vmin: minimum value for color range. If None, use data minimum.
     :param int/float vmax: maximum value for color range. If None, use data maximum.
     :param bool is_website: changes text/legend formatting to look better on the website
+    :param dict plot_states_kwargs: keyword arguments to be passed to
+        :func:`postreise.plot.plot_states.plot_states`.
     :return:  -- map of lines with median utilization color coded
     """
-    if us_states_dat is None:
-        us_states_dat = get_state_borders()
-
     branch_mask = branch.rateA != 0
     median_util = utilization_df[branch.loc[branch_mask].index].median()
     branch_utilization = pd.concat(
@@ -190,9 +192,6 @@ def map_utilization(
     branch_map = branch_map.sort_values(by=["median_utilization"])
     branch_map = branch_map[~branch_map.isin([np.nan, np.inf, -np.inf]).any(1)]
 
-    # state borders
-    a, b = project_borders(us_states_dat)
-
     multi_line_source = ColumnDataSource(
         {
             "xs": branch_map[["from_x", "to_x"]].values.tolist(),
@@ -218,8 +217,12 @@ def map_utilization(
         match_aspect=True,
     )
     p.add_layout(color_bar, "center")
-    p.add_tile(get_provider(Vendors.CARTODBPOSITRON))
-    p.patches(a, b, fill_alpha=0.0, line_color="gray", line_width=2)
+    default_plot_states_kwargs = {"fill_alpha": 0.0, "line_width": 2}
+    if plot_states_kwargs is not None:
+        all_plot_states_kwargs = default_plot_states_kwargs.update(**plot_states_kwargs)
+    else:
+        all_plot_states_kwargs = default_plot_states_kwargs
+    plot_states(bokeh_figure=p, **all_plot_states_kwargs)
     lines = p.multi_line(
         "xs", "ys", color=mapper1, line_width="cap", source=multi_line_source
     )
