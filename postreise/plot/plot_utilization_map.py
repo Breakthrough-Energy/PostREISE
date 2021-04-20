@@ -22,6 +22,10 @@ def map_risk_bind(
     vmax=None,
     is_website=False,
     palette=None,
+    all_branch_scale_factor=5e-4,
+    all_branch_min_width=0.2,
+    select_branch_scale_factor=1e-3,
+    select_branch_min_width=2,
 ):
     """Makes map showing risk or binding incidents on US states map.
 
@@ -37,6 +41,10 @@ def map_risk_bind(
     :param iterable palette: sequence of colors used for color range, passed as
         `palette` kwarg to :func:`bokeh.transform.linear_cmap`.
         If None, default to `postreise.plot.colors.traffic_palette`.
+    :param int/float all_branch_scale_factor: scale factor for unhighlighted branches.
+    :param int/float all_branch_min_width: minimum width for unhighlighted branches.
+    :param int/float select_branch_scale_factor: scale factor for highlighted branches.
+    :param int/float select_branch_min_width: minimum width for highlighted branches.
     :return:  -- map of lines with risk and bind incidents color coded
     """
     if us_states_dat is None:
@@ -60,7 +68,10 @@ def map_risk_bind(
         {
             "xs": branch_map_all[["from_x", "to_x"]].values.tolist(),
             "ys": branch_map_all[["from_y", "to_y"]].values.tolist(),
-            "cap": branch_map_all["rateA"] / 2000 + 0.2,
+            "cap": (
+                branch_map_all["rateA"] * all_branch_scale_factor
+                + all_branch_min_width
+            ),
         }
     )
     a, b = project_borders(us_states_dat)
@@ -89,7 +100,10 @@ def map_risk_bind(
             "ys": branch_map[["from_y", "to_y"]].values.tolist(),
             risk_or_bind: branch_map[risk_or_bind],
             "value": branch_map[risk_or_bind].round(),
-            "cap": branch_map["capacity"] / 1000 + 2,
+            "cap": (
+                branch_map["capacity"] * select_branch_scale_factor
+                + select_branch_min_width
+            ),
             "capacity": branch_map.rateA.round(),
         }
     )
