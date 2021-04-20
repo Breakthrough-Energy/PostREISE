@@ -66,16 +66,6 @@ def map_risk_bind(
         [branch.loc[congestion_stats.index], congestion_stats], axis=1
     )
     branch_map_all = project_branch(branch)
-    multi_line_source_all = ColumnDataSource(
-        {
-            "xs": branch_map_all[["from_x", "to_x"]].values.tolist(),
-            "ys": branch_map_all[["from_y", "to_y"]].values.tolist(),
-            "cap": (
-                branch_map_all["rateA"] * all_branch_scale_factor
-                + all_branch_min_width
-            ),
-        }
-    )
     tools: str = "pan,wheel_zoom,reset,save"
 
     branch_congestion = branch_congestion[branch_congestion[risk_or_bind] > 0]
@@ -128,11 +118,12 @@ def map_risk_bind(
         all_plot_states_kwargs = default_plot_states_kwargs
     plot_states(bokeh_figure=p, **all_plot_states_kwargs)
     p.multi_line(
-        "xs",
-        "ys",
+        branch_map_all[["from_x", "to_x"]].to_numpy().tolist(),
+        branch_map_all[["from_y", "to_y"]].to_numpy().tolist(),
         color="gray",
-        line_width="cap",
-        source=multi_line_source_all,
+        line_width=(
+            branch_map_all["rateA"] * all_branch_scale_factor + all_branch_min_width
+        ),
         alpha=0.5,
     )
     lines = p.multi_line(
