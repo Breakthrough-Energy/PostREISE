@@ -26,6 +26,7 @@ def map_risk_bind(
     all_branch_min_width=0.2,
     select_branch_scale_factor=1e-3,
     select_branch_min_width=2,
+    figsize=(1400, 800),
 ):
     """Makes map showing risk or binding incidents on US states map.
 
@@ -45,6 +46,7 @@ def map_risk_bind(
     :param int/float all_branch_min_width: minimum width for unhighlighted branches.
     :param int/float select_branch_scale_factor: scale factor for highlighted branches.
     :param int/float select_branch_min_width: minimum width for highlighted branches.
+    :param tuple(int, int) figsize: size of the bokeh figure (in pixels).
     :return:  -- map of lines with risk and bind incidents color coded
     """
     if us_states_dat is None:
@@ -113,10 +115,9 @@ def map_risk_bind(
         tools=tools,
         x_axis_location=None,
         y_axis_location=None,
-        plot_width=800,
-        plot_height=800,
+        plot_width=figsize[0],
+        plot_height=figsize[1],
         output_backend="webgl",
-        sizing_mode="stretch_both",
         match_aspect=True,
     )
     p.add_layout(color_bar, "center")
