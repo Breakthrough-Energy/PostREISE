@@ -147,6 +147,7 @@ def map_utilization(
     is_website=False,
     branch_scale_factor=5e-4,
     branch_min_width=0.2,
+    figsize=(1400, 800),
     plot_states_kwargs=None,
 ):
     """Makes map showing utilization. Utilization input can either be medians
@@ -160,6 +161,7 @@ def map_utilization(
     :param bool is_website: changes text/legend formatting to look better on the website
     :param int/float branch_scale_factor: scale factor for branches.
     :param int/float branch_min_width: minimum width for branches.
+    :param tuple(int, int) figsize: size of the bokeh figure (in pixels).
     :param dict plot_states_kwargs: keyword arguments to be passed to
         :func:`postreise.plot.plot_states.plot_states`.
     :return: (*bokeh.plotting.figure*) -- map of lines with median utilization color
@@ -211,10 +213,9 @@ def map_utilization(
         tools="pan,wheel_zoom,reset,save",
         x_axis_location=None,
         y_axis_location=None,
-        plot_width=800,
-        plot_height=800,
+        plot_width=figsize[0],
+        plot_height=figsize[1],
         output_backend="webgl",
-        sizing_mode="stretch_both",
         match_aspect=True,
     )
     p.add_layout(color_bar, "center")
