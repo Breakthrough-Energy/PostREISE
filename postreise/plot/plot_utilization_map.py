@@ -145,6 +145,7 @@ def map_utilization(
     vmin=None,
     vmax=None,
     is_website=False,
+    palette=None,
     branch_scale_factor=5e-4,
     branch_min_width=0.2,
     figsize=(1400, 800),
@@ -159,6 +160,9 @@ def map_utilization(
     :param int/float vmin: minimum value for color range. If None, use data minimum.
     :param int/float vmax: maximum value for color range. If None, use data maximum.
     :param bool is_website: changes text/legend formatting to look better on the website
+    :param iterable palette: sequence of colors used for color range, passed as
+        `palette` kwarg to :func:`bokeh.transform.linear_cmap`.
+        If None, default to `postreise.plot.colors.traffic_palette`.
     :param int/float branch_scale_factor: scale factor for branches.
     :param int/float branch_min_width: minimum width for branches.
     :param tuple(int, int) figsize: size of the bokeh figure (in pixels).
@@ -167,6 +171,9 @@ def map_utilization(
     :return: (*bokeh.plotting.figure*) -- map of lines with median utilization color
         coded.
     """
+    if palette is None:
+        palette = list(traffic_palette)
+
     branch_mask = branch.rateA != 0
     median_util = utilization_df[branch.loc[branch_mask].index].median()
     branch_utilization = pd.concat(
@@ -179,7 +186,7 @@ def map_utilization(
 
     mapper1 = linear_cmap(
         field_name="median_utilization",
-        palette=traffic_palette,
+        palette=palette,
         low=min_val,
         high=max_val,
     )
