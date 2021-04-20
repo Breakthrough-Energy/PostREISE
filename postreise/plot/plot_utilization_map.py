@@ -146,6 +146,8 @@ def map_utilization(
     vmin=None,
     vmax=None,
     is_website=False,
+    branch_scale_factor=5e-4,
+    branch_min_width=0.2,
     plot_states_kwargs=None,
 ):
     """Makes map showing utilization. Utilization input can either be medians
@@ -157,6 +159,8 @@ def map_utilization(
     :param int/float vmin: minimum value for color range. If None, use data minimum.
     :param int/float vmax: maximum value for color range. If None, use data maximum.
     :param bool is_website: changes text/legend formatting to look better on the website
+    :param int/float branch_scale_factor: scale factor for branches.
+    :param int/float branch_min_width: minimum width for branches.
     :param dict plot_states_kwargs: keyword arguments to be passed to
         :func:`postreise.plot.plot_states.plot_states`.
     :return: (*bokeh.plotting.figure*) -- map of lines with median utilization color
@@ -198,7 +202,7 @@ def map_utilization(
             "xs": branch_map[["from_x", "to_x"]].values.tolist(),
             "ys": branch_map[["from_y", "to_y"]].values.tolist(),
             "median_utilization": branch_map.median_utilization,
-            "cap": branch_map.rateA / 2000 + 0.2,
+            "width": branch_map.rateA * branch_scale_factor + branch_min_width,
             "util": branch_map.median_utilization.round(2),
             "capacity": branch_map.rateA.round(),
         }
@@ -225,7 +229,7 @@ def map_utilization(
         all_plot_states_kwargs = default_plot_states_kwargs
     plot_states(bokeh_figure=p, **all_plot_states_kwargs)
     lines = p.multi_line(
-        "xs", "ys", color=mapper1, line_width="cap", source=multi_line_source
+        "xs", "ys", color=mapper1, line_width="width", source=multi_line_source
     )
     hover = HoverTool(
         tooltips=[
