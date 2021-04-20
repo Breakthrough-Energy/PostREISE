@@ -149,6 +149,7 @@ def map_utilization(
     branch_scale_factor=5e-4,
     branch_min_width=0.2,
     figsize=(1400, 800),
+    show_color_bar=True,
     plot_states_kwargs=None,
 ):
     """Makes map showing utilization. Utilization input can either be medians
@@ -191,16 +192,6 @@ def map_utilization(
         high=max_val,
     )
 
-    color_bar = ColorBar(
-        color_mapper=mapper["transform"],
-        width=385 if is_website else 500,
-        height=5,
-        location=(0, 0),
-        title="median utilization",
-        orientation="horizontal",
-        padding=5,
-    )
-
     branch_map = project_branch(branch_utilization)
     branch_map = branch_map.sort_values(by=["median_utilization"])
     branch_map = branch_map[~branch_map.isin([np.nan, np.inf, -np.inf]).any(1)]
@@ -225,7 +216,17 @@ def map_utilization(
         output_backend="webgl",
         match_aspect=True,
     )
-    p.add_layout(color_bar, "center")
+    if show_color_bar:
+        color_bar = ColorBar(
+            color_mapper=mapper["transform"],
+            width=385 if is_website else 500,
+            height=5,
+            location=(0, 0),
+            title="median utilization",
+            orientation="horizontal",
+            padding=5,
+        )
+        p.add_layout(color_bar, "center")
     default_plot_states_kwargs = {"fill_alpha": 0.0, "line_width": 2}
     if plot_states_kwargs is not None:
         all_plot_states_kwargs = default_plot_states_kwargs.update(**plot_states_kwargs)
