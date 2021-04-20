@@ -47,7 +47,8 @@ def map_risk_bind(
     :param int/float select_branch_scale_factor: scale factor for highlighted branches.
     :param int/float select_branch_min_width: minimum width for highlighted branches.
     :param tuple(int, int) figsize: size of the bokeh figure (in pixels).
-    :return:  -- map of lines with risk and bind incidents color coded
+    :return: (*bokeh.plotting.figure*) -- map of lines with risk and bind incidents
+        color coded.
     """
     if us_states_dat is None:
         us_states_dat = get_state_borders()
