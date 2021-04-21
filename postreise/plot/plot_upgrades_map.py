@@ -249,21 +249,23 @@ def _map_upgrades(
     return p
 
 
-def map_upgrades(scenario1, scenario2, **plot_kwargs):
+def map_upgrades(scenario1, scenario2, b2b_indices=None, **plot_kwargs):
     """Plot capacity differences for branches & DC lines between two scenarios.
 
     :param powersimdata.scenario.scenario.Scenario scenario1: first scenario.
     :param powersimdata.scenario.scenario.Scenario scenario2: second scenario.
+    :param iterable b2b_indices: list/set/tuple of 'DC lines' which are back-to-backs.
     :param \\*\\*plot_kwargs: collected keyword arguments to be passed to _map_upgrades.
     :return: (*bokeh.plotting.figure.Figure*) -- Bokeh map plot of color-coded upgrades.
     """
-    if not {scenario1.info["interconnect"], scenario2.info["interconnect"]} == {"USA"}:
-        raise ValueError("Scenarios to compare must be USA")
+    if not (
+        scenario1.info["grid_model"] == scenario2.info["grid_model"]
+        and scenario1.info["interconnect"] == scenario2.info["interconnect"]
+    ):
+        raise ValueError("Scenarios to compare must be same grid_model & interconnect")
     grid1 = scenario1.state.get_grid()
     grid2 = scenario2.state.get_grid()
     branch_merge = get_branch_differences(grid1.branch, grid2.branch)
     dc_merge = get_dcline_differences(grid1.dcline, grid2.dcline, grid1.bus)
-    # Since we hardcode to USA only, we know that the first 9 DC Lines are really B2Bs
-    b2b_indices = list(range(9))
     map_plot = _map_upgrades(branch_merge, dc_merge, b2b_indices, **plot_kwargs)
     return map_plot
