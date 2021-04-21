@@ -7,14 +7,13 @@ from postreise.analyze.transmission.upgrades import (
     get_dcline_differences,
 )
 from postreise.plot import colors
-from postreise.plot.plot_states import get_state_borders
-from postreise.plot.projection_helpers import project_borders, project_branch
+from postreise.plot.plot_states import plot_states
+from postreise.plot.projection_helpers import project_branch
 
 
 def _map_upgrades(
     branch_merge,
     dc_merge,
-    state_shapes,
     b2b_indices=None,
     diff_threshold=100,
     all_branch_scale=1e-3,
@@ -27,11 +26,6 @@ def _map_upgrades(
 
     :param pandas.DataFrame branch_merge: branch of scenarios 1 and 2
     :param pandas.DataFrame dc_merge: dclines for scenarios 1 and 2
-    :param dict state_shapes: dictionary of state outlines. Keys are state
-        abbreviations, values are dict with keys of {"lat", "lon"}, values are
-        coordinates, padded by nan values to indicate the end of each polygon before
-        the start of the next one. Can be created from shapefile via
-        :func:postreise.plot.projection_helpers.`convert_shapefile_to_latlon_dict`.
     :param iterable b2b_indices: list/set/tuple of 'DC lines' which are back-to-backs.
     :param int/float diff_threshold: difference threshold (in MW), above which branches
         are highlighted.
@@ -51,7 +45,6 @@ def _map_upgrades(
     differences_alpha = 0.8
 
     # data prep
-    state_xs, state_ys = project_borders(state_shapes)
     branch_all = project_branch(branch_merge)
     branch_dc = project_branch(dc_merge)
 
@@ -194,14 +187,13 @@ def _map_upgrades(
 
     # Everything below gets plotted into the 'main' figure
     # state outlines
-    p.patches(
-        "xs",
-        "ys",
-        source=ColumnDataSource({"xs": state_xs, "ys": state_ys}),
-        fill_color="white",
+    plot_states(
+        bokeh_figure=p,
+        colors="white",
         line_color="slategrey",
         line_width=1,
         fill_alpha=1,
+        background_map=False,
     )
 
     background_plot_dicts = [
@@ -271,10 +263,7 @@ def map_upgrades(scenario1, scenario2, **plot_kwargs):
     grid2 = scenario2.state.get_grid()
     branch_merge = get_branch_differences(grid1.branch, grid2.branch)
     dc_merge = get_dcline_differences(grid1.dcline, grid2.dcline, grid1.bus)
-    state_shapes = get_state_borders()
     # Since we hardcode to USA only, we know that the first 9 DC Lines are really B2Bs
     b2b_indices = list(range(9))
-    map_plot = _map_upgrades(
-        branch_merge, dc_merge, state_shapes, b2b_indices, **plot_kwargs
-    )
+    map_plot = _map_upgrades(branch_merge, dc_merge, b2b_indices, **plot_kwargs)
     return map_plot
