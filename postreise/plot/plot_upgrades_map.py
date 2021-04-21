@@ -15,7 +15,7 @@ def _map_upgrades(
     branch_merge,
     dc_merge,
     state_shapes,
-    b2b_indices,
+    b2b_indices=None,
     diff_threshold=100,
     all_branch_scale=1e-3,
     diff_branch_scale=1e-3,
@@ -57,6 +57,7 @@ def _map_upgrades(
 
     # For these, we will plot a triangle for the B2B location, plus 'pseudo' AC lines
     # get_level_values allows us to index into MultiIndex as necessary
+    b2b_indices = {} if b2b_indices is None else b2b_indices
     b2b_mask = branch_dc.index.get_level_values(0).isin(b2b_indices)
     # .copy() avoids a pandas SettingWithCopyError later
     b2b = branch_dc.iloc[b2b_mask].copy()
