@@ -21,6 +21,8 @@ def _map_upgrades(
     all_branch_min=0.1,
     diff_branch_min=1.0,
     b2b_scale=5e-3,
+    x_range=None,
+    y_range=None,
 ):
     """Makes map of branches showing upgrades
 
@@ -36,6 +38,8 @@ def _map_upgrades(
     :param int/float diff_branch_min: minimum width to plot branches with significant
         differences.
     :param int/float b2b_scale: scale factor for plotting b2b facilities.
+    :param tuple(float, float) x_range: x range to zoom plot to (EPSG:3857).
+    :param tuple(float, float) y_range: y range to zoom plot to (EPSG:3857).
     :return: (*bokeh.plotting.figure.Figure*) -- Bokeh map plot of color-coded upgrades.
     """
     # plotting constants
@@ -127,6 +131,8 @@ def _map_upgrades(
         plot_height=800,
         output_backend="webgl",
         match_aspect=True,
+        x_range=x_range,
+        y_range=y_range,
     )
     p.xgrid.visible = False
     p.ygrid.visible = False
