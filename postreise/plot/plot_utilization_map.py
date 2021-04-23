@@ -21,9 +21,9 @@ def map_risk_bind(
     vmax=None,
     is_website=False,
     palette=None,
-    all_branch_scale_factor=5e-4,
+    all_branch_scale_factor=0.5,
     all_branch_min_width=0.2,
-    select_branch_scale_factor=1e-3,
+    select_branch_scale_factor=1,
     select_branch_min_width=2,
     figsize=(1400, 800),
     show_color_bar=True,
@@ -41,10 +41,14 @@ def map_risk_bind(
     :param iterable palette: sequence of colors used for color range, passed as
         `palette` kwarg to :func:`bokeh.transform.linear_cmap`.
         If None, default to `postreise.plot.colors.traffic_palette`.
-    :param int/float all_branch_scale_factor: scale factor for unhighlighted branches.
-    :param int/float all_branch_min_width: minimum width for unhighlighted branches.
-    :param int/float select_branch_scale_factor: scale factor for highlighted branches.
-    :param int/float select_branch_min_width: minimum width for highlighted branches.
+    :param int/float all_branch_scale_factor: scale factor for unhighlighted branches
+        (pixels/GW).
+    :param int/float all_branch_min_width: minimum width for unhighlighted branches
+        (pixels).
+    :param int/float select_branch_scale_factor: scale factor for highlighted branches
+        (pixels/GW).
+    :param int/float select_branch_min_width: minimum width for highlighted branches
+        (pixels).
     :param tuple(int, int) figsize: size of the bokeh figure (in pixels).
     :param bool show_color_bar: whether to render the color bar on the figure.
     :param dict plot_states_kwargs: keyword arguments to be passed to
@@ -82,7 +86,7 @@ def map_risk_bind(
             risk_or_bind: branch_map[risk_or_bind],
             "value": branch_map[risk_or_bind].round(),
             "cap": (
-                branch_map["capacity"] * select_branch_scale_factor
+                branch_map["capacity"] * select_branch_scale_factor / 1000
                 + select_branch_min_width
             ),
             "capacity": branch_map.rateA.round(),
@@ -122,7 +126,8 @@ def map_risk_bind(
         branch_map_all[["from_y", "to_y"]].to_numpy().tolist(),
         color="gray",
         line_width=(
-            branch_map_all["rateA"] * all_branch_scale_factor + all_branch_min_width
+            branch_map_all["rateA"] * all_branch_scale_factor / 1000
+            + all_branch_min_width
         ),
         alpha=0.5,
     )
@@ -147,7 +152,7 @@ def map_utilization(
     vmax=None,
     is_website=False,
     palette=None,
-    branch_scale_factor=5e-4,
+    branch_scale_factor=0.5,
     branch_min_width=0.2,
     figsize=(1400, 800),
     show_color_bar=True,
@@ -165,8 +170,8 @@ def map_utilization(
     :param iterable palette: sequence of colors used for color range, passed as
         `palette` kwarg to :func:`bokeh.transform.linear_cmap`.
         If None, default to `postreise.plot.colors.traffic_palette`.
-    :param int/float branch_scale_factor: scale factor for branches.
-    :param int/float branch_min_width: minimum width for branches.
+    :param int/float branch_scale_factor: scale factor for branches (pixels/GW).
+    :param int/float branch_min_width: minimum width for branches (pixels).
     :param tuple(int, int) figsize: size of the bokeh figure (in pixels).
     :param dict plot_states_kwargs: keyword arguments to be passed to
         :func:`postreise.plot.plot_states.plot_states`.
@@ -202,7 +207,7 @@ def map_utilization(
             "xs": branch_map[["from_x", "to_x"]].values.tolist(),
             "ys": branch_map[["from_y", "to_y"]].values.tolist(),
             "median_utilization": branch_map.median_utilization,
-            "width": branch_map.rateA * branch_scale_factor + branch_min_width,
+            "width": branch_map.rateA * branch_scale_factor / 1000 + branch_min_width,
             "util": branch_map.median_utilization.round(2),
             "capacity": branch_map.rateA.round(),
         }
