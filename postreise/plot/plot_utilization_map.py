@@ -97,6 +97,7 @@ def map_risk_bind(
         plot_width=figsize[0],
         plot_height=figsize[1],
         output_backend="webgl",
+        sizing_mode="scale_both",
         match_aspect=True,
     )
     if show_color_bar:
@@ -214,6 +215,7 @@ def map_utilization(
         plot_width=figsize[0],
         plot_height=figsize[1],
         output_backend="webgl",
+        sizing_mode="scale_both",
         match_aspect=True,
     )
     if show_color_bar:
