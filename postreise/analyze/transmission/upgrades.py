@@ -35,6 +35,12 @@ def get_branch_differences(branch1, branch2):
         branch2, how="outer", right_index=True, left_index=True, suffixes=(None, "_2")
     )
     branch_merge["diff"] = branch_merge.rateA_2.fillna(0) - branch_merge.rateA.fillna(0)
+    # Ensure that lats & lons get filled in as necessary from branch2 entries
+    latlon_columns = ["from_lat", "from_lon", "to_lat", "to_lon"]
+    missing_lat_indices = branch_merge.query("from_lat.isnull()").index
+    branch_merge.loc[missing_lat_indices, latlon_columns] = branch_merge.loc[
+        missing_lat_indices, [f"{l}_2" for l in latlon_columns]
+    ].to_numpy()
     return branch_merge
 
 
