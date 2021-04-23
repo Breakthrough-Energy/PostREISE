@@ -56,11 +56,10 @@ def map_risk_bind(
     :return: (*bokeh.plotting.figure*) -- map of lines with risk and bind incidents
         color coded.
     """
-    if risk_or_bind == "risk":
-        risk_or_bind_units = "Risk (MWH)"
-
-    if risk_or_bind == "bind":
-        risk_or_bind_units = "Binding incidents"
+    unit_labels = {"risk": "Risk (MWH)", "bind": "Binding incidents"}
+    if risk_or_bind not in unit_labels:
+        raise ValueError("risk_or_bind must be either 'risk' or 'bind'")
+    risk_or_bind_units = unit_labels[risk_or_bind]
 
     if palette is None:
         palette = list(traffic_palette)
