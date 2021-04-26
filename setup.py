@@ -8,5 +8,6 @@ setup(
     author="Kaspar Mueller",
     author_email="kaspar@breakthroughenergy.org",
     packages=find_packages(),
+    package_data={"postreise": ["data/*.csv"]},
     zip_safe=False,
 )
