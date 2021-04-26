@@ -140,6 +140,7 @@ def _map_upgrades(
         plot_height=figsize[1],
         output_backend="webgl",
         match_aspect=True,
+        sizing_mode="scale_both",
         x_range=x_range,
         y_range=y_range,
     )
