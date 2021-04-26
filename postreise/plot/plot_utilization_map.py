@@ -7,6 +7,10 @@ from bokeh.models import ColorBar, ColumnDataSource, HoverTool
 from bokeh.plotting import figure
 from bokeh.transform import linear_cmap
 
+from postreise.analyze.transmission.utilization import (
+    generate_cong_stats,
+    get_utilization,
+)
 from postreise.plot.colors import traffic_palette
 from postreise.plot.plot_states import plot_states
 from postreise.plot.projection_helpers import project_branch
@@ -14,8 +18,9 @@ from postreise.plot.projection_helpers import project_branch
 
 def map_risk_bind(
     risk_or_bind,
-    congestion_stats,
-    branch,
+    scenario=None,
+    congestion_stats=None,
+    branch=None,
     us_states_dat=None,
     vmin=None,
     vmax=None,
@@ -30,8 +35,10 @@ def map_risk_bind(
     plot_states_kwargs=None,
 ):
     """Makes map showing risk or binding incidents on US states map.
+    Either ``scenario`` XOR (``congestion_stats`` AND ``branch``) must be specified.
 
-    :param str risk_or_bind: specify plotting "risk" or "bind"
+    :param str risk_or_bind: specify plotting "risk" or "bind".
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario to analyze.
     :param pandas.DataFrame congestion_stats: data frame as returned by
         :func:`postreise.analyze.transmission.utilization.generate_cong_stats`.
     :param pandas.DataFrame branch: branch data frame.
@@ -60,6 +67,18 @@ def map_risk_bind(
     if risk_or_bind not in unit_labels:
         raise ValueError("risk_or_bind must be either 'risk' or 'bind'")
     risk_or_bind_units = unit_labels[risk_or_bind]
+
+    # Check that we've appropriately specified:
+    #    `scenario` XOR (`congestion_stats` AND `branch`)
+    if scenario is not None:
+        branch = scenario.state.get_grid().branch
+        congestion_stats = generate_cong_stats(scenario.state.get_pf(), branch)
+    elif congestion_stats is not None and branch is not None:
+        pass
+    else:
+        raise ValueError(
+            "Either scenario XOR (congestion_stats AND branch) must be specified"
+        )
 
     if palette is None:
         palette = list(traffic_palette)
@@ -145,8 +164,9 @@ def map_risk_bind(
 
 
 def map_utilization(
-    utilization_df,
-    branch,
+    scenario=None,
+    utilization_df=None,
+    branch=None,
     vmin=None,
     vmax=None,
     is_website=False,
@@ -158,8 +178,10 @@ def map_utilization(
     plot_states_kwargs=None,
 ):
     """Makes map showing utilization. Utilization input can either be medians
-    only, or can be normalized utilization dataframe
+    only, or can be normalized utilization dataframe.
+    Either ``scenario`` XOR (``utilization_df`` AND ``branch``) must be specified.
 
+    :param powersimdata.scenario.scenario.Scenario scenario: scenario to analyze.
     :param pandas.DataFrame utilization_df: utilization returned by
         :func:`postreise.analyze.transmission.utilization.get_utilization`
     :param pandas.DataFrame branch: branch data frame.
@@ -177,6 +199,18 @@ def map_utilization(
     :return: (*bokeh.plotting.figure*) -- map of lines with median utilization color
         coded.
     """
+    # Check that we've appropriately specified:
+    #    `scenario` XOR (`utilization_df` AND `branch`)
+    if scenario is not None:
+        branch = scenario.state.get_grid().branch
+        utilization_df = get_utilization(branch, scenario.state.get_pf(), median=True)
+    elif utilization_df is not None and branch is not None:
+        pass
+    else:
+        raise ValueError(
+            "Either scenario XOR (utilization_df AND branch) must be specified"
+        )
+
     if palette is None:
         palette = list(traffic_palette)
 
