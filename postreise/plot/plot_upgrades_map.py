@@ -16,8 +16,8 @@ def _map_upgrades(
     dc_merge,
     b2b_indices=None,
     diff_threshold=100,
-    all_branch_scale=1e-3,
-    diff_branch_scale=1e-3,
+    all_branch_scale=1,
+    diff_branch_scale=1,
     all_branch_min=0.1,
     diff_branch_min=1.0,
     b2b_scale=5e-3,
@@ -32,9 +32,10 @@ def _map_upgrades(
     :param iterable b2b_indices: list/set/tuple of 'DC lines' which are back-to-backs.
     :param int/float diff_threshold: difference threshold (in MW), above which branches
         are highlighted.
-    :param int/float all_branch_scale: scale factor for plotting all branches.
+    :param int/float all_branch_scale: scale factor for plotting all branches
+        (pixels/GW).
     :param int/float diff_branch_scale: scale factor for plotting branches with
-        differences above the threshold.
+        differences above the threshold (pixels/GW).
     :param int/float all_branch_min: minimum width to plot all branches.
     :param int/float diff_branch_min: minimum width to plot branches with significant
         differences.
@@ -81,7 +82,7 @@ def _map_upgrades(
         {
             "xs": branch_all[["from_x", "to_x"]].values.tolist(),
             "ys": branch_all[["from_y", "to_y"]].values.tolist(),
-            "cap": branch_all["rateA"] * all_branch_scale + all_branch_min,
+            "cap": branch_all["rateA"] / 1000 * all_branch_scale + all_branch_min,
             "color": branch_all["color"],
         }
     )
@@ -92,7 +93,8 @@ def _map_upgrades(
             "xs": ac_diff_branches[["from_x", "to_x"]].values.tolist(),
             "ys": ac_diff_branches[["from_y", "to_y"]].values.tolist(),
             "diff": (
-                ac_diff_branches["diff"].abs() * diff_branch_scale + diff_branch_min
+                ac_diff_branches["diff"].abs() / 1000 * diff_branch_scale
+                + diff_branch_min
             ),
             "color": ac_diff_branches["color"],
         }
@@ -101,7 +103,7 @@ def _map_upgrades(
         {
             "xs": branch_dc_lines[["from_x", "to_x"]].values.tolist(),
             "ys": branch_dc_lines[["from_y", "to_y"]].values.tolist(),
-            "cap": branch_dc_lines.Pmax * all_branch_scale + all_branch_min,
+            "cap": branch_dc_lines.Pmax / 1000 * all_branch_scale + all_branch_min,
             "color": branch_dc_lines["color"],
         }
     )
@@ -110,7 +112,9 @@ def _map_upgrades(
         {
             "xs": dc_diff_lines[["from_x", "to_x"]].values.tolist(),
             "ys": dc_diff_lines[["from_y", "to_y"]].values.tolist(),
-            "diff": dc_diff_lines["diff"].abs() * diff_branch_scale + diff_branch_min,
+            "diff": (
+                dc_diff_lines["diff"].abs() / 1000 * diff_branch_scale + diff_branch_min
+            ),
             "color": dc_diff_lines["color"],
         }
     )
@@ -118,8 +122,8 @@ def _map_upgrades(
         {
             "xs": b2b[["from_x", "to_x"]].values.tolist(),
             "ys": b2b[["from_y", "to_y"]].values.tolist(),
-            "cap": b2b.Pmax * all_branch_scale + all_branch_min,
-            "diff": b2b["diff"].abs() * diff_branch_scale + diff_branch_min,
+            "cap": b2b.Pmax / 1000 * all_branch_scale + all_branch_min,
+            "diff": b2b["diff"].abs() / 1000 * diff_branch_scale + diff_branch_min,
             "color": b2b["color"],
         }
     )
