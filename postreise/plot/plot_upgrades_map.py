@@ -54,9 +54,9 @@ def _map_upgrades(
     all_elements_alpha = 0.5
     differences_alpha = 0.8
     # convert scale factors from pixels/GW to pixels/MW (base units for our grid data)
-    all_branch_scale_MW = all_branch_scale / 1000
-    diff_branch_scale_MW = diff_branch_scale / 1000
-    b2b_scale_MW = b2b_scale / 1000
+    all_branch_scale_MW = all_branch_scale / 1000  # noqa: N806
+    diff_branch_scale_MW = diff_branch_scale / 1000  # noqa: N806
+    b2b_scale_MW = b2b_scale / 1000  # noqa: N806
 
     # data prep
     branch_all = project_branch(branch_merge)
