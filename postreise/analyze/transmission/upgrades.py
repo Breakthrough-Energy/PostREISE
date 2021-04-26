@@ -29,7 +29,7 @@ def get_branch_differences(branch1, branch2):
     _check_data_frame(branch1, "branch1")
     _check_data_frame(branch2, "branch2")
     if not ("rateA" in branch1.columns) and ("rateA" in branch2.columns):
-        raise ValueError("branch1 and branch2 both much have 'rateA' columns")
+        raise ValueError("branch1 and branch2 both must have 'rateA' columns")
     branch1, branch2 = _reindex_as_necessary(branch1, branch2)
     branch_merge = branch1.merge(
         branch2, how="outer", right_index=True, left_index=True, suffixes=(None, "_2")
