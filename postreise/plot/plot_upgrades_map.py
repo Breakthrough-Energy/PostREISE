@@ -20,7 +20,7 @@ def _map_upgrades(
     diff_branch_scale=1,
     all_branch_min=0.1,
     diff_branch_min=1.0,
-    b2b_scale=5e-3,
+    b2b_scale=5,
     figsize=(1400, 800),
     x_range=None,
     y_range=None,
@@ -40,7 +40,7 @@ def _map_upgrades(
     :param int/float all_branch_min: minimum width to plot all branches.
     :param int/float diff_branch_min: minimum width to plot branches with significant
         differences.
-    :param int/float b2b_scale: scale factor for plotting b2b facilities.
+    :param int/float b2b_scale: scale factor for plotting b2b facilities (pixels/GW).
     :param tuple(int, int) figsize: size of the bokeh figure (in pixels).
     :param tuple(float, float) x_range: x range to zoom plot to (EPSG:3857).
     :param tuple(float, float) y_range: y range to zoom plot to (EPSG:3857).
@@ -237,7 +237,7 @@ def _map_upgrades(
         y=b2b.from_y,
         color="gray",
         marker="triangle",
-        size=b2b["Pmax"].abs() * b2b_scale,
+        size=b2b["Pmax"].abs() * b2b_scale / 1000,
         alpha=all_elements_alpha,
     )
 
@@ -263,7 +263,7 @@ def _map_upgrades(
         y=b2b.from_y,
         color=colors.be_magenta,
         marker="triangle",
-        size=b2b["diff"].abs() * b2b_scale,
+        size=b2b["diff"].abs() * b2b_scale / 1000,
     )
 
     return p
