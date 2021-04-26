@@ -60,6 +60,8 @@ def map_risk_bind(
     :param bool show_color_bar: whether to render the color bar on the figure.
     :param dict plot_states_kwargs: keyword arguments to be passed to
         :func:`postreise.plot.plot_states.plot_states`.
+    :raises ValueError: if (``scenario`` XOR (``congestion_stats`` AND ``branch``)) are
+        not properly specified.
     :return: (*bokeh.plotting.figure*) -- map of lines with risk and bind incidents
         color coded.
     """
@@ -196,6 +198,8 @@ def map_utilization(
     :param tuple(int, int) figsize: size of the bokeh figure (in pixels).
     :param dict plot_states_kwargs: keyword arguments to be passed to
         :func:`postreise.plot.plot_states.plot_states`.
+    :raises ValueError: if (``scenario`` XOR (``utilization_df`` AND ``branch``)) are
+        not properly specified.
     :return: (*bokeh.plotting.figure*) -- map of lines with median utilization color
         coded.
     """
