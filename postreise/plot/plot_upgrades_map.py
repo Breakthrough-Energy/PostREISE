@@ -24,6 +24,7 @@ def _map_upgrades(
     figsize=(1400, 800),
     x_range=None,
     y_range=None,
+    plot_states_kwargs=None,
 ):
     """Makes map of branches showing upgrades
 
@@ -43,6 +44,8 @@ def _map_upgrades(
     :param tuple(int, int) figsize: size of the bokeh figure (in pixels).
     :param tuple(float, float) x_range: x range to zoom plot to (EPSG:3857).
     :param tuple(float, float) y_range: y range to zoom plot to (EPSG:3857).
+    :param dict plot_states_kwargs: keyword arguments to be passed to
+        :func:`postreise.plot.plot_states.plot_states`.
     :return: (*bokeh.plotting.figure.Figure*) -- Bokeh map plot of color-coded upgrades.
     """
     # plotting constants
@@ -199,14 +202,18 @@ def _map_upgrades(
 
     # Everything below gets plotted into the 'main' figure
     # state outlines
-    plot_states(
-        bokeh_figure=p,
-        colors="white",
-        line_color="slategrey",
-        line_width=1,
-        fill_alpha=1,
-        background_map=False,
-    )
+    default_plot_states_kwargs = {
+        "colors": "white",
+        "line_color": "slategrey",
+        "line_width": 1,
+        "fill_alpha": 1,
+        "background_map": False,
+    }
+    if plot_states_kwargs is not None:
+        all_plot_states_kwargs = default_plot_states_kwargs.update(**plot_states_kwargs)
+    else:
+        all_plot_states_kwargs = default_plot_states_kwargs
+    plot_states(bokeh_figure=p, **all_plot_states_kwargs)
 
     background_plot_dicts = [
         {"source": source_all_ac, "color": "gray", "line_width": "cap"},
