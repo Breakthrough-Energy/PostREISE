@@ -24,7 +24,7 @@ def get_branch_differences(branch1, branch2):
     :param pandas.DataFrame branch1: data frame containing rateA
     :param pandas.DataFrame branch2: data frame containing rateA
     :return: (*pandas.DataFrame*) -- data frame with all indices and 'diff' column.
-    :raises ValueError: if either dataframe doesn't have required columns.
+    :raises ValueError: if either data frame doesn't have required columns.
     """
     _check_data_frame(branch1, "branch1")
     _check_data_frame(branch2, "branch2")
