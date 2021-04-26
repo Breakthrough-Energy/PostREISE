@@ -24,7 +24,7 @@ def map_risk_bind(
     us_states_dat=None,
     vmin=None,
     vmax=None,
-    is_website=False,
+    color_bar_width=500,
     palette=None,
     all_branch_scale_factor=0.5,
     all_branch_min_width=0.2,
@@ -44,7 +44,7 @@ def map_risk_bind(
     :param pandas.DataFrame branch: branch data frame.
     :param int/float vmin: minimum value for color range. If None, use data minimum.
     :param int/float vmax: maximum value for color range. If None, use data maximum.
-    :param bool is_website: changes text/legend formatting to look better on the website
+    :param int color_bar_width: width of color bar (pixels).
     :param iterable palette: sequence of colors used for color range, passed as
         `palette` kwarg to :func:`bokeh.transform.linear_cmap`.
         If None, default to `postreise.plot.colors.traffic_palette`.
@@ -127,7 +127,7 @@ def map_risk_bind(
     if show_color_bar:
         color_bar = ColorBar(
             color_mapper=mapper["transform"],
-            width=385 if is_website else 500,
+            width=color_bar_width,
             height=5,
             location=(0, 0),
             title=risk_or_bind_units,
@@ -171,7 +171,7 @@ def map_utilization(
     branch=None,
     vmin=None,
     vmax=None,
-    is_website=False,
+    color_bar_width=500,
     palette=None,
     branch_scale_factor=0.5,
     branch_min_width=0.2,
@@ -189,7 +189,7 @@ def map_utilization(
     :param pandas.DataFrame branch: branch data frame.
     :param int/float vmin: minimum value for color range. If None, use data minimum.
     :param int/float vmax: maximum value for color range. If None, use data maximum.
-    :param bool is_website: changes text/legend formatting to look better on the website
+    :param int color_bar_width: width of color bar (pixels).
     :param iterable palette: sequence of colors used for color range, passed as
         `palette` kwarg to :func:`bokeh.transform.linear_cmap`.
         If None, default to `postreise.plot.colors.traffic_palette`.
@@ -263,7 +263,7 @@ def map_utilization(
     if show_color_bar:
         color_bar = ColorBar(
             color_mapper=mapper["transform"],
-            width=385 if is_website else 500,
+            width=color_bar_width,
             height=5,
             location=(0, 0),
             title="median utilization",
