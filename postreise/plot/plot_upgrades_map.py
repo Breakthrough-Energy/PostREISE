@@ -7,41 +7,45 @@ from postreise.analyze.transmission.upgrades import (
     get_dcline_differences,
 )
 from postreise.plot import colors
-from postreise.plot.plot_states import get_state_borders
-from postreise.plot.projection_helpers import project_borders, project_branch
+from postreise.plot.plot_states import plot_states
+from postreise.plot.projection_helpers import project_branch
 
 
 def _map_upgrades(
     branch_merge,
     dc_merge,
-    state_shapes,
-    b2b_indices,
+    b2b_indices=None,
     diff_threshold=100,
-    all_branch_scale=1e-3,
-    diff_branch_scale=1e-3,
+    all_branch_scale=1,
+    diff_branch_scale=1,
     all_branch_min=0.1,
     diff_branch_min=1.0,
-    b2b_scale=5e-3,
+    b2b_scale=5,
+    figsize=(1400, 800),
+    x_range=None,
+    y_range=None,
+    plot_states_kwargs=None,
 ):
     """Makes map of branches showing upgrades
 
     :param pandas.DataFrame branch_merge: branch of scenarios 1 and 2
     :param pandas.DataFrame dc_merge: dclines for scenarios 1 and 2
-    :param dict state_shapes: dictionary of state outlines. Keys are state
-        abbreviations, values are dict with keys of {"lat", "lon"}, values are
-        coordinates, padded by nan values to indicate the end of each polygon before
-        the start of the next one. Can be created from shapefile via
-        :func:postreise.plot.projection_helpers.`convert_shapefile_to_latlon_dict`.
     :param iterable b2b_indices: list/set/tuple of 'DC lines' which are back-to-backs.
     :param int/float diff_threshold: difference threshold (in MW), above which branches
         are highlighted.
-    :param int/float all_branch_scale: scale factor for plotting all branches.
+    :param int/float all_branch_scale: scale factor for plotting all branches
+        (pixels/GW).
     :param int/float diff_branch_scale: scale factor for plotting branches with
-        differences above the threshold.
+        differences above the threshold (pixels/GW).
     :param int/float all_branch_min: minimum width to plot all branches.
     :param int/float diff_branch_min: minimum width to plot branches with significant
         differences.
-    :param int/float b2b_scale: scale factor for plotting b2b facilities.
+    :param int/float b2b_scale: scale factor for plotting b2b facilities (pixels/GW).
+    :param tuple(int, int) figsize: size of the bokeh figure (in pixels).
+    :param tuple(float, float) x_range: x range to zoom plot to (EPSG:3857).
+    :param tuple(float, float) y_range: y range to zoom plot to (EPSG:3857).
+    :param dict plot_states_kwargs: keyword arguments to be passed to
+        :func:`postreise.plot.plot_states.plot_states`.
     :return: (*bokeh.plotting.figure.Figure*) -- Bokeh map plot of color-coded upgrades.
     """
     # plotting constants
@@ -49,14 +53,18 @@ def _map_upgrades(
     legend_alpha = 0.9
     all_elements_alpha = 0.5
     differences_alpha = 0.8
+    # convert scale factors from pixels/GW to pixels/MW (base units for our grid data)
+    all_branch_scale_MW = all_branch_scale / 1000  # noqa: N806
+    diff_branch_scale_MW = diff_branch_scale / 1000  # noqa: N806
+    b2b_scale_MW = b2b_scale / 1000  # noqa: N806
 
     # data prep
-    state_xs, state_ys = project_borders(state_shapes)
     branch_all = project_branch(branch_merge)
     branch_dc = project_branch(dc_merge)
 
     # For these, we will plot a triangle for the B2B location, plus 'pseudo' AC lines
     # get_level_values allows us to index into MultiIndex as necessary
+    b2b_indices = {} if b2b_indices is None else b2b_indices
     b2b_mask = branch_dc.index.get_level_values(0).isin(b2b_indices)
     # .copy() avoids a pandas SettingWithCopyError later
     b2b = branch_dc.iloc[b2b_mask].copy()
@@ -81,7 +89,7 @@ def _map_upgrades(
         {
             "xs": branch_all[["from_x", "to_x"]].values.tolist(),
             "ys": branch_all[["from_y", "to_y"]].values.tolist(),
-            "cap": branch_all["rateA"] * all_branch_scale + all_branch_min,
+            "cap": branch_all["rateA"] * all_branch_scale_MW + all_branch_min,
             "color": branch_all["color"],
         }
     )
@@ -92,7 +100,7 @@ def _map_upgrades(
             "xs": ac_diff_branches[["from_x", "to_x"]].values.tolist(),
             "ys": ac_diff_branches[["from_y", "to_y"]].values.tolist(),
             "diff": (
-                ac_diff_branches["diff"].abs() * diff_branch_scale + diff_branch_min
+                ac_diff_branches["diff"].abs() * diff_branch_scale_MW + diff_branch_min
             ),
             "color": ac_diff_branches["color"],
         }
@@ -101,7 +109,7 @@ def _map_upgrades(
         {
             "xs": branch_dc_lines[["from_x", "to_x"]].values.tolist(),
             "ys": branch_dc_lines[["from_y", "to_y"]].values.tolist(),
-            "cap": branch_dc_lines.Pmax * all_branch_scale + all_branch_min,
+            "cap": branch_dc_lines.Pmax * all_branch_scale_MW + all_branch_min,
             "color": branch_dc_lines["color"],
         }
     )
@@ -110,7 +118,9 @@ def _map_upgrades(
         {
             "xs": dc_diff_lines[["from_x", "to_x"]].values.tolist(),
             "ys": dc_diff_lines[["from_y", "to_y"]].values.tolist(),
-            "diff": dc_diff_lines["diff"].abs() * diff_branch_scale + diff_branch_min,
+            "diff": (
+                dc_diff_lines["diff"].abs() * diff_branch_scale_MW + diff_branch_min
+            ),
             "color": dc_diff_lines["color"],
         }
     )
@@ -118,8 +128,8 @@ def _map_upgrades(
         {
             "xs": b2b[["from_x", "to_x"]].values.tolist(),
             "ys": b2b[["from_y", "to_y"]].values.tolist(),
-            "cap": b2b.Pmax * all_branch_scale + all_branch_min,
-            "diff": b2b["diff"].abs() * diff_branch_scale + diff_branch_min,
+            "cap": b2b.Pmax * all_branch_scale_MW + all_branch_min,
+            "diff": b2b["diff"].abs() * diff_branch_scale_MW + diff_branch_min,
             "color": b2b["color"],
         }
     )
@@ -129,10 +139,13 @@ def _map_upgrades(
         tools=bokeh_tools,
         x_axis_location=None,
         y_axis_location=None,
-        plot_width=1400,
-        plot_height=800,
+        plot_width=figsize[0],
+        plot_height=figsize[1],
         output_backend="webgl",
         match_aspect=True,
+        sizing_mode="scale_both",
+        x_range=x_range,
+        y_range=y_range,
     )
     p.xgrid.visible = False
     p.ygrid.visible = False
@@ -193,15 +206,18 @@ def _map_upgrades(
 
     # Everything below gets plotted into the 'main' figure
     # state outlines
-    p.patches(
-        "xs",
-        "ys",
-        source=ColumnDataSource({"xs": state_xs, "ys": state_ys}),
-        fill_color="white",
-        line_color="slategrey",
-        line_width=1,
-        fill_alpha=1,
-    )
+    default_plot_states_kwargs = {
+        "colors": "white",
+        "line_color": "slategrey",
+        "line_width": 1,
+        "fill_alpha": 1,
+        "background_map": False,
+    }
+    if plot_states_kwargs is not None:
+        all_plot_states_kwargs = default_plot_states_kwargs.update(**plot_states_kwargs)
+    else:
+        all_plot_states_kwargs = default_plot_states_kwargs
+    plot_states(bokeh_figure=p, **all_plot_states_kwargs)
 
     background_plot_dicts = [
         {"source": source_all_ac, "color": "gray", "line_width": "cap"},
@@ -224,7 +240,7 @@ def _map_upgrades(
         y=b2b.from_y,
         color="gray",
         marker="triangle",
-        size=b2b["Pmax"].abs() * b2b_scale,
+        size=b2b["Pmax"].abs() * b2b_scale_MW,
         alpha=all_elements_alpha,
     )
 
@@ -250,30 +266,29 @@ def _map_upgrades(
         y=b2b.from_y,
         color=colors.be_magenta,
         marker="triangle",
-        size=b2b["diff"].abs() * b2b_scale,
+        size=b2b["diff"].abs() * b2b_scale_MW,
     )
 
     return p
 
 
-def map_upgrades(scenario1, scenario2, **plot_kwargs):
+def map_upgrades(scenario1, scenario2, b2b_indices=None, **plot_kwargs):
     """Plot capacity differences for branches & DC lines between two scenarios.
 
     :param powersimdata.scenario.scenario.Scenario scenario1: first scenario.
     :param powersimdata.scenario.scenario.Scenario scenario2: second scenario.
+    :param iterable b2b_indices: list/set/tuple of 'DC lines' which are back-to-backs.
     :param \\*\\*plot_kwargs: collected keyword arguments to be passed to _map_upgrades.
     :return: (*bokeh.plotting.figure.Figure*) -- Bokeh map plot of color-coded upgrades.
     """
-    if not {scenario1.info["interconnect"], scenario2.info["interconnect"]} == {"USA"}:
-        raise ValueError("Scenarios to compare must be USA")
+    if not (
+        scenario1.info["grid_model"] == scenario2.info["grid_model"]
+        and scenario1.info["interconnect"] == scenario2.info["interconnect"]
+    ):
+        raise ValueError("Scenarios to compare must be same grid_model & interconnect")
     grid1 = scenario1.state.get_grid()
     grid2 = scenario2.state.get_grid()
     branch_merge = get_branch_differences(grid1.branch, grid2.branch)
     dc_merge = get_dcline_differences(grid1.dcline, grid2.dcline, grid1.bus)
-    state_shapes = get_state_borders()
-    # Since we hardcode to USA only, we know that the first 9 DC Lines are really B2Bs
-    b2b_indices = list(range(9))
-    map_plot = _map_upgrades(
-        branch_merge, dc_merge, state_shapes, b2b_indices, **plot_kwargs
-    )
+    map_plot = _map_upgrades(branch_merge, dc_merge, b2b_indices, **plot_kwargs)
     return map_plot

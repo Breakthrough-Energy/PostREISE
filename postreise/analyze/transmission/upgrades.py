@@ -24,17 +24,23 @@ def get_branch_differences(branch1, branch2):
     :param pandas.DataFrame branch1: data frame containing rateA
     :param pandas.DataFrame branch2: data frame containing rateA
     :return: (*pandas.DataFrame*) -- data frame with all indices and 'diff' column.
-    :raises ValueError: if either dataframe doesn't have required columns.
+    :raises ValueError: if either data frame doesn't have required columns.
     """
     _check_data_frame(branch1, "branch1")
     _check_data_frame(branch2, "branch2")
     if not ("rateA" in branch1.columns) and ("rateA" in branch2.columns):
-        raise ValueError("branch1 and branch2 both much have 'rateA' columns")
+        raise ValueError("branch1 and branch2 both must have 'rateA' columns")
     branch1, branch2 = _reindex_as_necessary(branch1, branch2)
     branch_merge = branch1.merge(
         branch2, how="outer", right_index=True, left_index=True, suffixes=(None, "_2")
     )
     branch_merge["diff"] = branch_merge.rateA_2.fillna(0) - branch_merge.rateA.fillna(0)
+    # Ensure that lats & lons get filled in as necessary from branch2 entries
+    latlon_columns = ["from_lat", "from_lon", "to_lat", "to_lon"]
+    missing_lat_indices = branch_merge.query("from_lat.isnull()").index
+    branch_merge.loc[missing_lat_indices, latlon_columns] = branch_merge.loc[
+        missing_lat_indices, [f"{l}_2" for l in latlon_columns]
+    ].to_numpy()
     return branch_merge
 
 
