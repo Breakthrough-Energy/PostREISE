@@ -16,3 +16,18 @@ shadow_price_pallette = [
     "#d73027",
     "#8b0000",
 ]
+
+traffic_palette = [
+    "darkgreen",
+    "green",
+    "limegreen",
+    "lawngreen",
+    "yellowgreen",
+    "yellow",
+    "gold",
+    "goldenrod",
+    "orange",
+    "orangered",
+    "red",
+    "darkred",
+]
