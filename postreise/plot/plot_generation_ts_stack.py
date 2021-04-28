@@ -168,9 +168,9 @@ def plot_generation_time_series_stack(
         else:
             ax_storage.set_ylabel("Energy Storage (MW)", fontsize=label_fontsize)
 
-        ax_storage = pg_storage.plot(color=type2color["storage"], lw=4, ax=ax_storage)
+        pg_storage.plot(color=type2color["storage"], lw=4, ax=ax_storage)
         ax_storage.fill_between(
-            pg_storage.index.values,
+            pg_storage.index,
             0,
             pg_storage.values,
             color=type2color["storage"],
@@ -244,7 +244,7 @@ def plot_generation_time_series_stack(
         if r in available_resources:
             ind = available_resources.index(r)
             ax.fill_between(
-                pg_stack[available_resources].index.values,
+                pg_stack[available_resources].index,
                 pg_stack[available_resources].iloc[:, : ind + 1].sum(axis=1),
                 pg_stack[available_resources].iloc[:, :ind].sum(axis=1),
                 color="none",

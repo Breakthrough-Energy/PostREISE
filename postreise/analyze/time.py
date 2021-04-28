@@ -146,6 +146,7 @@ def change_time_zone(ts, tz):
     except pytz.exceptions.UnknownTimeZoneError:
         raise ValueError("Unknown time zone %s" % tz)
 
+    ts.index.name = tz
     if ts.index.tz is None:
         return ts.tz_localize("UTC").tz_convert(tz)
     else:
