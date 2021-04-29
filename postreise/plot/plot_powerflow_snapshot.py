@@ -1,5 +1,4 @@
 import pandas as pd
-from bokeh.io import show
 from bokeh.models import Arrow, VeeHead
 from bokeh.plotting import figure
 from powersimdata.utility.distance import haversine
@@ -118,7 +117,7 @@ def plot_powerflow_snapshot(
     :param str solar_color: color to plot solar generation.
     :param str wind_color: color to plot wind generation.
     :param str demand_color: color to plot demand.
-    :param tuple(int, int) figsize: size of the bokeh figure (in pixels).
+    :param tuple figsize: size of the bokeh figure (in pixels).
     :param int/float circle_scale_factor: scale factor for demand/solar/wind circles.
     :param int/float bg_width_scale_factor: scale factor for grid capacities.
     :param int/float pf_width_scale_factor: scale factor for power flows.
@@ -132,6 +131,7 @@ def plot_powerflow_snapshot(
     :param tuple(float, float) x_range: x range to zoom plot to (EPSG:3857).
     :param tuple(float, float) y_range: y range to zoom plot to (EPSG:3857).
     :param int/str legend_font_size: size to display legend specified as e.g. 12/'12pt'.
+    :return: (*bokeh.plotting.figure*) -- power flow snapshot map.
     """
     _check_scenario_is_in_analyze_state(scenario)
     _check_date_range_in_scenario(scenario, hour, hour)
@@ -173,6 +173,7 @@ def plot_powerflow_snapshot(
         plot_width=figsize[0],
         plot_height=figsize[1],
         output_backend="webgl",
+        sizing_mode="scale_both",
         match_aspect=True,
         x_range=x_range,
         y_range=y_range,
@@ -212,14 +213,15 @@ def plot_powerflow_snapshot(
         alpha=branch_alpha,
         line_width=(dcline[["Pmin", "Pmax"]].abs().max(axis=1) * bg_width_scale_factor),
     )
-    bokeh_figure.scatter(
-        x=b2b.from_x,
-        y=b2b.from_y,
-        color="gray",
-        alpha=0.5,
-        marker="triangle",
-        size=(b2b[["Pmin", "Pmax"]].abs().max(axis=1) * bg_width_scale_factor),
-    )
+    if b2b_dclines is not None:
+        bokeh_figure.scatter(
+            x=b2b.from_x,
+            y=b2b.from_y,
+            color="gray",
+            alpha=0.5,
+            marker="triangle",
+            size=(b2b[["Pmin", "Pmax"]].abs().max(axis=1) * bg_width_scale_factor),
+        )
 
     fake_location = branch.iloc[0].drop("x").rename({"from_x": "x", "from_y": "y"})
     # Legend entries
@@ -259,24 +261,26 @@ def plot_powerflow_snapshot(
         legend_label="Wind Gen.",
         visible=False,
     )
-    bokeh_figure.circle(
-        fake_location.x,
-        fake_location.y,
-        color=demand_color,
-        alpha=0.3,
-        size=5,
-        legend_label="Demand",
-        visible=False,
-    )
 
     # Plot demand
-    bokeh_figure.circle(
-        demand_centers.x,
-        demand_centers.y,
-        color=demand_color,
-        alpha=0.3,
-        size=(demand_centers.demand * circle_scale_factor) ** 0.5,
-    )
+    if demand_centers is not None:
+        bokeh_figure.circle(
+            fake_location.x,
+            fake_location.y,
+            color=demand_color,
+            alpha=0.3,
+            size=5,
+            legend_label="Demand",
+            visible=False,
+        )
+        bokeh_figure.circle(
+            demand_centers.x,
+            demand_centers.y,
+            color=demand_color,
+            alpha=0.3,
+            size=(demand_centers.demand * circle_scale_factor) ** 0.5,
+        )
+
     # Aggregate solar and wind for plotting
     plant_with_pg = plant.copy()
     plant_with_pg["pg"] = scenario.state.get_pg().loc[hour]
@@ -332,14 +336,15 @@ def plot_powerflow_snapshot(
         n=num_dc_arrows,
     )
     # B2Bs
-    bokeh_figure.scatter(
-        x=b2b.from_x,
-        y=b2b.from_y,
-        color=dc_branch_color,
-        alpha=0.5,
-        marker="triangle",
-        size=(b2b["pf"].abs() * pf_width_scale_factor * 5),
-    )
+    if b2b_dclines is not None:
+        bokeh_figure.scatter(
+            x=b2b.from_x,
+            y=b2b.from_y,
+            color=dc_branch_color,
+            alpha=0.5,
+            marker="triangle",
+            size=(b2b["pf"].abs() * pf_width_scale_factor * 5),
+        )
 
     bokeh_figure.legend.location = "bottom_left"
     if legend_font_size is not None:
@@ -347,4 +352,4 @@ def plot_powerflow_snapshot(
             legend_font_size = f"{legend_font_size}pt"
         bokeh_figure.legend.label_text_font_size = legend_font_size
 
-    show(bokeh_figure)
+    return bokeh_figure

@@ -11,16 +11,20 @@ from postreise.analyze.generation.costs import calculate_costs
 
 
 def generate_emissions_stats(scenario, pollutant="carbon", method="simple"):
-    """Generate emissions statistics from the input generation data. Method
-    descriptions: 'simple' uses a fixed ratio of CO2 to MWh, 'always-on' uses
-    generator heat-rate curves including non-zero intercepts, 'decommit' uses
-    generator heat-rate curves but de-commits generators if they are off
-    (detected by pg < 1 MW).
+    """Calculate hourly emissions for each generator.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param str pollutant: pollutant to analyze.
     :param str method: selected method to handle no-load fuel consumption.
-    :return: (*pandas.DataFrame*) -- emissions data frame.
+    :return: (*pandas.DataFrame*) -- emissions data frame. index: timestamps, column:
+        plant id, values: emission in tons.
+
+    .. note:: method descriptions:
+
+        - 'simple' uses a fixed ratio of CO2 to MWh
+        - 'always-on' uses generator heat-rate curves including non-zero intercepts
+        - 'decommit' uses generator heat-rate curves but de-commits generators if they
+          are off (detected by pg < 1 MW).
     """
     _check_scenario_is_in_analyze_state(scenario)
     mi = ModelImmutables(scenario.info["grid_model"])
@@ -72,9 +76,10 @@ def generate_emissions_stats(scenario, pollutant="carbon", method="simple"):
 
 
 def summarize_emissions_by_bus(emissions, grid):
-    """Summarize time series emissions dataframe by type and bus.
+    """Calculate total emissions by generator type and bus.
 
-    :param pandas.DataFrame emissions: hourly emissions by generator.
+    :param pandas.DataFrame emissions: hourly emissions by generator as returned by
+        :func:`generate_emissions_stats`.
     :param powersimdata.input.grid.Grid grid: grid object.
     :return: (*dict*) -- annual emissions by fuel and bus.
     """

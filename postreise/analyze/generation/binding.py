@@ -6,7 +6,7 @@ def pmin_constraints(scenario, epsilon=1e-3):
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param float epsilon: allowable 'fuzz' for whether constraint is binding.
-    :return: (*pandas.DataFrame*) -- Boolean data frame of same shape as PG.
+    :return: (*pandas.DataFrame*) -- boolean data frame of same shape as PG.
     """
     _check_scenario_is_in_analyze_state(scenario)
     _check_epsilon(epsilon)
@@ -24,7 +24,7 @@ def pmax_constraints(scenario, epsilon=1e-3):
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param float epsilon: allowable 'fuzz' for whether constraint is binding.
-    :return: (*pandas.DataFrame*) -- Boolean data frame of same shape as PG.
+    :return: (*pandas.DataFrame*) -- boolean data frame of same shape as PG.
     """
     _check_scenario_is_in_analyze_state(scenario)
     _check_epsilon(epsilon)
@@ -39,11 +39,12 @@ def pmax_constraints(scenario, epsilon=1e-3):
 
 def ramp_constraints(scenario, epsilon=1e-3):
     """Identify time periods in which generators have binding ramp constraints.
-    .. note:: The first time period will always return *False* for each column.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param float epsilon: allowable 'fuzz' for whether constraint is binding.
-    :return: (*pandas.DataFrame*) -- Boolean dataframe of same shape as PG.
+    :return: (*pandas.DataFrame*) -- boolean data frame of same shape as PG.
+
+    .. note:: The first time period will always return ``False`` for each column.
     """
     _check_scenario_is_in_analyze_state(scenario)
     _check_epsilon(epsilon)
