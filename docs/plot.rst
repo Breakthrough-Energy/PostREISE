@@ -191,6 +191,27 @@ Curtailment
   .. image:: img/single/curtailment_solar_eastern_ts.png
   .. image:: img/single/curtailment_wind_eastern_ts.png
 
+- plot capacity vs curtailment of generators in an area (`notebook
+  <https://github.com/Breakthrough-Energy/PostREISE/blob/develop/postreise/plot/demo/scatter_capacity_vs_curtailment_demo.ipynb>`__)
+
+  .. code-block:: python
+
+      from powersimdata.utility.helpers import PrintManager
+      from powersimdata.scenario.scenario import Scenario
+
+      from postreise.plot.plot_scatter_capacity_vs_curtailment import (
+          plot_scatter_capacity_vs_curtailment
+      )
+
+      with PrintManager():
+        scenario = Scenario(3287)
+
+        plot_scatter_capacity_vs_curtailment(
+            scenario, "Western", "solar", percentage=True
+        )
+
+  .. image:: img/single/capacity_vs_curtailment_solar_western_scatter.png
+
 
 Price
 #####
