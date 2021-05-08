@@ -147,24 +147,6 @@ Generator Capacity and Generation
 
   .. image:: img/single/capacity_vs_cf_solar_western_scatter.png
 
-- plot capacity vs cost curve slope of generators in an area (`notebook
-  <https://github.com/Breakthrough-Energy/PostREISE/blob/develop/postreise/plot/demo/scatter_capacity_vs_cost_curve_slope_demo.ipynb>`__)
-
-  .. code-block:: python
-
-      from powersimdata.scenario.scenario import Scenario
-      from powersimdata.utility.helpers import PrintManager
-      from postreise.plot.plot_scatter_capacity_vs_cost_curve_slope import (
-          plot_scatter_capacity_vs_cost_curve_slope
-      )
-
-      with PrintManager():
-        scenario = Scenario(3287)
-
-        plot_scatter_capacity_vs_cost_curve_slope(scenario, "Eastern", "coal")
-
-  .. image:: img/single/capacity_vs_cost_curve_slope_coal_eastern_scatter.png
-
 
 Curtailment
 ###########
@@ -232,6 +214,25 @@ Price
 
   .. raw:: html
       :file: img/single/lmp_usa_map.html
+
+
+  - plot capacity vs cost curve slope of generators in an area (`notebook
+    <https://github.com/Breakthrough-Energy/PostREISE/blob/develop/postreise/plot/demo/scatter_capacity_vs_cost_curve_slope_demo.ipynb>`__)
+
+    .. code-block:: python
+
+        from powersimdata.scenario.scenario import Scenario
+        from powersimdata.utility.helpers import PrintManager
+        from postreise.plot.plot_scatter_capacity_vs_cost_curve_slope import (
+            plot_scatter_capacity_vs_cost_curve_slope
+        )
+
+        with PrintManager():
+          scenario = Scenario(3287)
+
+          plot_scatter_capacity_vs_cost_curve_slope(scenario, "Eastern", "coal")
+
+    .. image:: img/single/capacity_vs_cost_curve_slope_coal_eastern_scatter.png
 
 
 General
