@@ -3,10 +3,10 @@
 
 import numpy as np
 import pandas as pd
+import pydeck as pdk
 from bokeh.models import ColorBar, ColumnDataSource, HoverTool
 from bokeh.plotting import figure
 from bokeh.transform import linear_cmap
-import pydeck as pdk
 
 from postreise.analyze.transmission.utilization import (
     generate_cong_stats,
@@ -259,7 +259,7 @@ def map_utilization(
     }
 
     layers = [grid_flow]
-    r = pdk.Deck(
+    p = pdk.Deck(
         layers=layers,
         initial_view_state=INITIAL_VIEW_STATE,
         map_style=pdk.map_styles.LIGHT,
