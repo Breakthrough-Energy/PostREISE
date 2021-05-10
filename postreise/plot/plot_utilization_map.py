@@ -6,6 +6,7 @@ import pandas as pd
 from bokeh.models import ColorBar, ColumnDataSource, HoverTool
 from bokeh.plotting import figure
 from bokeh.transform import linear_cmap
+import pydeck as pdk
 
 from postreise.analyze.transmission.utilization import (
     generate_cong_stats,
@@ -228,64 +229,40 @@ def map_utilization(
     min_val = lines["median_utilization"].min() if vmin is None else vmin
     max_val = lines["median_utilization"].max() if vmax is None else vmax
 
-    mapper = linear_cmap(
-        field_name="median_utilization",
-        palette=palette,
-        low=min_val,
-        high=max_val,
-    )
+    grid_flow_df = branch_utilization[
+        ["from_lat", "from_lon", "to_lat", "to_lon", "rateA", "median_utilization"]
+    ]
+    grid_flow_df["median_utilization"] = branch_utilization.median_utilization.round(2)
 
-    branch_map = project_branch(branch_utilization)
-    branch_map = branch_map.sort_values(by=["median_utilization"])
-    branch_map = branch_map[~branch_map.isin([np.nan, np.inf, -np.inf]).any(1)]
-
-    multi_line_source = ColumnDataSource(
-        {
-            "xs": branch_map[["from_x", "to_x"]].values.tolist(),
-            "ys": branch_map[["from_y", "to_y"]].values.tolist(),
-            "median_utilization": branch_map.median_utilization,
-            "width": branch_map.rateA * branch_scale_factor / 1000 + branch_min_width,
-            "util": branch_map.median_utilization.round(2),
-            "capacity": branch_map.rateA.round(),
-        }
-    )
-
-    p = figure(
-        tools="pan,wheel_zoom,reset,save",
-        x_axis_location=None,
-        y_axis_location=None,
-        plot_width=figsize[0],
-        plot_height=figsize[1],
-        output_backend="webgl",
-        sizing_mode="scale_both",
-        match_aspect=True,
-    )
-    if show_color_bar:
-        color_bar = ColorBar(
-            color_mapper=mapper["transform"],
-            width=color_bar_width,
-            height=5,
-            location=(0, 0),
-            title="median utilization",
-            orientation="horizontal",
-            padding=5,
-        )
-        p.add_layout(color_bar, "center")
-    default_plot_states_kwargs = {"fill_alpha": 0.0, "line_width": 2}
-    if plot_states_kwargs is not None:
-        all_plot_states_kwargs = default_plot_states_kwargs.update(**plot_states_kwargs)
-    else:
-        all_plot_states_kwargs = default_plot_states_kwargs
-    plot_states(bokeh_figure=p, **all_plot_states_kwargs)
-    lines = p.multi_line(
-        "xs", "ys", color=mapper, line_width="width", source=multi_line_source
-    )
-    hover = HoverTool(
-        tooltips=[
-            ("Capacity MW", "@capacity"),
-            ("Utilization", "@util{f0.00}"),
+    grid_flow = pdk.Layer(
+        "LineLayer",
+        grid_flow_df,
+        get_source_position=["from_lon", "from_lat"],
+        get_target_position=["to_lon", "to_lat"],
+        get_color=[
+            "median_utilization<0.5 ? (2*median_utilization*255) : 255",
+            "median_utilization > 0.5 ? (2*(1-median_utilization)*255) : 255",
+            0,
         ],
-        renderers=[lines],
+        get_width=f"((rateA*{branch_scale_factor})/1000)+{branch_min_width}",
+        highlight_color=[0, 0, 255],  # blue
+        picking_radius=15,
+        auto_highlight=True,
+        pickable=True,
     )
-    p.add_tools(hover)
+
+    INITIAL_VIEW_STATE = pdk.ViewState(
+        latitude=37.6, longitude=-95.665, zoom=3.3, pitch=0, bearing=0
+    )
+    tooltip = {
+        "html": "<b>Capacity:</b> {rateA} <br> <b>Utilization:</b> {median_utilization}"
+    }
+
+    layers = [grid_flow]
+    r = pdk.Deck(
+        layers=layers,
+        initial_view_state=INITIAL_VIEW_STATE,
+        map_style=pdk.map_styles.LIGHT,
+        tooltip=tooltip,
+    )
     return p
