@@ -16,9 +16,10 @@ Transmission
 
       from bokeh.io import show
       import pandas as pd
+      from powersimdata import Scenario
 
       from postreise.plot.plot_powerflow_snapshot import plot_powerflow_snapshot
-      from powersimdata import Scenario
+
 
       scenario = Scenario(3287)
       grid = scenario.get_grid()
@@ -39,9 +40,10 @@ Emission
   .. code-block:: python
 
       from bokeh.io import show
+      from powersimdata import Scenario
 
       from postreise.plot.plot_carbon_map import map_carbon_emission_generator
-      from powersimdata import Scenario
+
 
       scenario = Scenario(3287)
 
@@ -61,10 +63,12 @@ Generator Capacity and Generation
 
   .. code-block:: python
 
+      from powersimdata import Scenario
+
       from postreise.plot.plot_generation_ts_stack import (
         plot_generation_time_series_stack,
       )
-      from powersimdata import Scenario
+
 
       t2c = {
         "nuclear": "#173FA5",
@@ -134,9 +138,11 @@ Generator Capacity and Generation
 
       from powersimdata.scenario.scenario import Scenario
       from powersimdata.utility.helpers import PrintManager
+
       from postreise.plot.plot_scatter_capacity_vs_capacity_factor import (
         plot_scatter_capacity_vs_capacity_factor
       )
+
 
       with PrintManager():
         scenario = Scenario(1171)
@@ -156,9 +162,10 @@ Curtailment
   .. code-block:: python
 
       import matplotlib.pyplot as plt
+      from powersimdata import Scenario
 
       from postreise.plot.plot_curtailment_ts import plot_curtailment_time_series
-      from powersimdata import Scenario
+
 
       scenario = Scenario(403)
 
@@ -185,6 +192,7 @@ Curtailment
           plot_scatter_capacity_vs_curtailment
       )
 
+
       with PrintManager():
         scenario = Scenario(3287)
 
@@ -203,9 +211,10 @@ Price
   .. code-block:: python
 
       from bokeh.io import show
+      from powersimdata import Scenario
 
       from postreise.plot.plot_lmp_map import map_lmp
-      from powersimdata import Scenario
+
 
       scenario = Scenario(3287)
 
@@ -223,9 +232,11 @@ Price
 
         from powersimdata.scenario.scenario import Scenario
         from powersimdata.utility.helpers import PrintManager
+
         from postreise.plot.plot_scatter_capacity_vs_cost_curve_slope import (
             plot_scatter_capacity_vs_cost_curve_slope
         )
+
 
         with PrintManager():
           scenario = Scenario(3287)
@@ -249,6 +260,7 @@ General
         calculate_curtailment_time_series,
       )
       from postreise.plot.plot_heatmap import plot_heatmap
+
 
       scenario = Scenario(3287)
       curtailment = calculate_curtailment_time_series(scenario).sum(axis=1)
@@ -274,9 +286,10 @@ General
   .. code-block:: python
 
       from bokeh.io import show
+      from powersimdata import Scenario
 
       from postreise.plot.plot_interconnection_map import map_interconnections
-      from powersimdata import Scenario
+
 
       scenario = Scenario(3287)
       grid = scenario.get_grid()
@@ -297,10 +310,12 @@ Generator Capacity and Generation
 
   .. code-block:: python
 
+      from powersimdata.utility.helpers import PrintManager
+
       from postreise.plot.plot_bar_generation_vs_capacity import (
         plot_bar_generation_vs_capacity,
       )
-      from powersimdata.utility.helpers import PrintManager
+
 
       with PrintManager():
           plot_bar_generation_vs_capacity(
@@ -320,10 +335,12 @@ Generator Capacity and Generation
 
   .. code-block:: python
 
+      from powersimdata.utility.helpers import PrintManager
+
       from postreise.plot.plot_pie_generation_vs_capacity import (
         plot_pie_generation_vs_capacity,
       )
-      from powersimdata.utility.helpers import PrintManager
+
 
       with PrintManager():
           plot_pie_generation_vs_capacity(
@@ -344,13 +361,14 @@ Generator Capacity and Generation
 
       import inspect
       import os
+      from powersimdata.design.generation.clean_capacity_scaling import (
+        load_targets_from_csv,
+      )
       from powersimdata.utility.helpers import PrintManager
 
       import postreise
       from postreise.plot.plot_bar_shortfall import plot_bar_shortfall
-      from powersimdata.design.generation.clean_capacity_scaling import (
-        load_targets_from_csv,
-      )
+
 
       data = os.path.join(os.path.dirname(inspect.getfile(postreise)), "data")
       target = load_targets_from_csv(
@@ -381,9 +399,11 @@ Emission
 
   .. code-block:: python
 
-      from postreise.plot.plot_carbon_bar import plot_carbon_bar
       from powersimdata import Scenario
       from powersimdata.utility.helpers import PrintManager
+
+      from postreise.plot.plot_carbon_bar import plot_carbon_bar
+
 
       scenarioA = Scenario(2497)
       scenarioB = Scenario(3101)
@@ -409,9 +429,10 @@ Emission
   .. code-block:: python
 
       from bokeh.io import show
+      from powersimdata import Scenario
 
       from postreise.plot.plot_carbon_map import map_carbon_emission_difference
-      from powersimdata import Scenario
+
 
       scenarioA = Scenario(2497)
       scenarioB = Scenario(3101)
@@ -429,8 +450,10 @@ Emission
 
   .. code-block:: python
 
-      from postreise.plot.plot_energy_carbon_stack import plot_n_scenarios
       from powersimdata import Scenario
+
+      from postreise.plot.plot_energy_carbon_stack import plot_n_scenarios
+
 
       scenarioA = Scenario(2497)
       scenarioB = Scenario(3101)
