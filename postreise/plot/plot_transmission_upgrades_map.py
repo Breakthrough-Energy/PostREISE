@@ -214,7 +214,7 @@ def _map_transmission_upgrades(
         "background_map": False,
     }
     if plot_states_kwargs is not None:
-        all_plot_states_kwargs = default_plot_states_kwargs.update(**plot_states_kwargs)
+        all_plot_states_kwargs = {**default_plot_states_kwargs, **plot_states_kwargs}
     else:
         all_plot_states_kwargs = default_plot_states_kwargs
     plot_states(bokeh_figure=p, **all_plot_states_kwargs)
@@ -277,9 +277,9 @@ def map_transmission_upgrades(scenario1, scenario2, b2b_indices=None, **plot_kwa
 
     :param powersimdata.scenario.scenario.Scenario scenario1: first scenario.
     :param powersimdata.scenario.scenario.Scenario scenario2: second scenario.
-    :param list/set/tuple b2b_indices:  indices of HVDC lines which are back-to-backs.
+    :param list/set/tuple b2b_indices: indices of HVDC lines which are back-to-backs.
     :param \\*\\*plot_kwargs: collected keyword arguments to be passed to
-        :func:`_map_upgrades`.
+        :func:`_map_transmission_upgrades`.
     :return: (*bokeh.plotting.figure.Figure*) -- Bokeh map plot of color-coded upgrades.
     """
     if not (
