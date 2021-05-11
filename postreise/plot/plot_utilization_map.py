@@ -137,7 +137,7 @@ def map_risk_bind(
         p.add_layout(color_bar, "center")
     default_plot_states_kwargs = {"fill_alpha": 0.0, "background_map": True}
     if plot_states_kwargs is not None:
-        all_plot_states_kwargs = default_plot_states_kwargs.update(**plot_states_kwargs)
+        all_plot_states_kwargs = {**default_plot_states_kwargs, **plot_states_kwargs}
     else:
         all_plot_states_kwargs = default_plot_states_kwargs
     plot_states(bokeh_figure=p, **all_plot_states_kwargs)
@@ -273,7 +273,7 @@ def map_utilization(
         p.add_layout(color_bar, "center")
     default_plot_states_kwargs = {"fill_alpha": 0.0, "line_width": 2}
     if plot_states_kwargs is not None:
-        all_plot_states_kwargs = default_plot_states_kwargs.update(**plot_states_kwargs)
+        all_plot_states_kwargs = {**default_plot_states_kwargs, **plot_states_kwargs}
     else:
         all_plot_states_kwargs = default_plot_states_kwargs
     plot_states(bokeh_figure=p, **all_plot_states_kwargs)
