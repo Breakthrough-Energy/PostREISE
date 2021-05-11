@@ -11,7 +11,7 @@ from postreise.plot.plot_states import plot_states
 from postreise.plot.projection_helpers import project_branch
 
 
-def _map_upgrades(
+def _map_transmission_upgrades(
     branch_merge,
     dc_merge,
     b2b_indices=None,
@@ -26,11 +26,11 @@ def _map_upgrades(
     y_range=None,
     plot_states_kwargs=None,
 ):
-    """Makes map of branches showing upgrades
+    """Make map of branches showing upgrades.
 
     :param pandas.DataFrame branch_merge: branch of scenarios 1 and 2
     :param pandas.DataFrame dc_merge: dclines for scenarios 1 and 2
-    :param iterable b2b_indices: list/set/tuple of 'DC lines' which are back-to-backs.
+    :param list/set/tuple b2b_indices: indices of HVDC lines which are back-to-backs.
     :param int/float diff_threshold: difference threshold (in MW), above which branches
         are highlighted.
     :param int/float all_branch_scale: scale factor for plotting all branches
@@ -41,9 +41,9 @@ def _map_upgrades(
     :param int/float diff_branch_min: minimum width to plot branches with significant
         differences.
     :param int/float b2b_scale: scale factor for plotting b2b facilities (pixels/GW).
-    :param tuple(int, int) figsize: size of the bokeh figure (in pixels).
-    :param tuple(float, float) x_range: x range to zoom plot to (EPSG:3857).
-    :param tuple(float, float) y_range: y range to zoom plot to (EPSG:3857).
+    :param tuple figsize: size of the bokeh figure (in pixels).
+    :param tuple x_range: x range to zoom plot to (EPSG:3857).
+    :param tuple y_range: y range to zoom plot to (EPSG:3857).
     :param dict plot_states_kwargs: keyword arguments to be passed to
         :func:`postreise.plot.plot_states.plot_states`.
     :return: (*bokeh.plotting.figure.Figure*) -- Bokeh map plot of color-coded upgrades.
@@ -272,13 +272,14 @@ def _map_upgrades(
     return p
 
 
-def map_upgrades(scenario1, scenario2, b2b_indices=None, **plot_kwargs):
-    """Plot capacity differences for branches & DC lines between two scenarios.
+def map_transmission_upgrades(scenario1, scenario2, b2b_indices=None, **plot_kwargs):
+    """Plot capacity differences for branches & HVDC lines between two scenarios.
 
     :param powersimdata.scenario.scenario.Scenario scenario1: first scenario.
     :param powersimdata.scenario.scenario.Scenario scenario2: second scenario.
-    :param iterable b2b_indices: list/set/tuple of 'DC lines' which are back-to-backs.
-    :param \\*\\*plot_kwargs: collected keyword arguments to be passed to _map_upgrades.
+    :param list/set/tuple b2b_indices:  indices of HVDC lines which are back-to-backs.
+    :param \\*\\*plot_kwargs: collected keyword arguments to be passed to
+        :func:`_map_upgrades`.
     :return: (*bokeh.plotting.figure.Figure*) -- Bokeh map plot of color-coded upgrades.
     """
     if not (
@@ -290,5 +291,7 @@ def map_upgrades(scenario1, scenario2, b2b_indices=None, **plot_kwargs):
     grid2 = scenario2.state.get_grid()
     branch_merge = get_branch_differences(grid1.branch, grid2.branch)
     dc_merge = get_dcline_differences(grid1.dcline, grid2.dcline, grid1.bus)
-    map_plot = _map_upgrades(branch_merge, dc_merge, b2b_indices, **plot_kwargs)
+    map_plot = _map_transmission_upgrades(
+        branch_merge, dc_merge, b2b_indices, **plot_kwargs
+    )
     return map_plot
