@@ -1,7 +1,15 @@
+![logo](https://raw.githubusercontent.com/Breakthrough-Energy/docs/master/source/_static/img/BE_Sciences_RGB_Horizontal_Color.svg)
+
+[![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 ![Tests](https://github.com/Breakthrough-Energy/PostREISE/workflows/Pytest/badge.svg)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Documentation](https://github.com/Breakthrough-Energy/docs/actions/workflows/publish.yml/badge.svg)](https://breakthrough-energy.github.io/docs/)
+![GitHub contributors](https://img.shields.io/github/contributors/Breakthrough-Energy/PostREISE?logo=GitHub)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/Breakthrough-Energy/PostREISE?logo=GitHub)
+![GitHub last commit (branch)](https://img.shields.io/github/last-commit/Breakthrough-Energy/PostREISE/develop?logo=GitHub)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/Breakthrough-Energy/PostREISE?logo=GitHub)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code of Conduct](https://img.shields.io/badge/code%20of-conduct-ff69b4.svg?style=flat)](https://breakthrough-energy.github.io/docs/communication/code_of_conduct.html)
 
 
 # PostREISE
