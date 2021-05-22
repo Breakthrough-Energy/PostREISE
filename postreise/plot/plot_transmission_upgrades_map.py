@@ -290,7 +290,7 @@ def map_transmission_upgrades(scenario1, scenario2, b2b_indices=None, **plot_kwa
     grid1 = scenario1.state.get_grid()
     grid2 = scenario2.state.get_grid()
     branch_merge = get_branch_differences(grid1.branch, grid2.branch)
-    dc_merge = get_dcline_differences(grid1.dcline, grid2.dcline, grid1.bus)
+    dc_merge = get_dcline_differences(grid1, grid2)
     map_plot = _map_transmission_upgrades(
         branch_merge, dc_merge, b2b_indices, **plot_kwargs
     )
