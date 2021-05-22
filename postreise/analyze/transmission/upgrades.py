@@ -1,4 +1,4 @@
-from postreise.analyze.helpers import _check_data_frame
+from postreise.analyze.check import _check_data_frame, _check_grid
 
 
 def _reindex_as_necessary(df1, df2):
@@ -44,44 +44,37 @@ def get_branch_differences(branch1, branch2):
     return branch_merge
 
 
-def get_dcline_differences(dcline1, dcline2, bus):
+def get_dcline_differences(grid1, grid2):
     """Calculate capacity differences between dcline tables, and add to/from lat/lon.
 
-    :param pandas.DataFrame dcline1: data frame containing Pmax, from_bus_id, to_bus_id.
-    :param pandas.DataFrame dcline2: data frame containing Pmax, from_bus_id, to_bus_id.
-    :param pandas.DataFrame bus: data frame containing lat & lon.
-    :raises ValueError: if any dataframe doesn't have required columns.
+    :param powersimdata.input.grid.Grid grid1: first grid instance.
+    :param powersimdata.input.grid.Grid grid2: second grid instance.
     :return: (*pandas.DataFrame*) -- data frame with all indices, plus new columns:
         diff, from_lat, from_lon, to_lat, to_lon.
     """
-    _check_data_frame(dcline1, "dcline1")
-    _check_data_frame(dcline2, "dcline2")
-    _check_data_frame(bus, "bus")
-    dcline_req_cols = {"Pmax", "from_bus_id", "to_bus_id"}
-    if not dcline_req_cols <= set(dcline1.columns):
-        raise ValueError(f"dcline1 must have columns: {dcline_req_cols}")
-    if not dcline_req_cols <= set(dcline2.columns):
-        raise ValueError(f"dcline2 must have columns: {dcline_req_cols}")
-    if not {"lat", "lon"} <= set(bus.columns):
-        raise ValueError("bus must have 'lat' & 'lon' columns")
-    dcline1, dcline2 = _reindex_as_necessary(dcline1, dcline2)
+    _check_grid(grid1)
+    _check_grid(grid2)
+    dcline1, dcline2 = _reindex_as_necessary(grid1.dcline, grid2.dcline)
+    # Get latitudes and longitudes for to & from buses
+    for dcline, grid in [(dcline1, grid1), (dcline2, grid2)]:
+        dcline["from_lat"] = grid.bus.loc[dcline.from_bus_id, "lat"].to_numpy()
+        dcline["from_lon"] = grid.bus.loc[dcline.from_bus_id, "lon"].to_numpy()
+        dcline["to_lat"] = grid.bus.loc[dcline.to_bus_id, "lat"].to_numpy()
+        dcline["to_lon"] = grid.bus.loc[dcline.to_bus_id, "lon"].to_numpy()
     dc_merge = dcline1.merge(
         dcline2, how="outer", right_index=True, left_index=True, suffixes=(None, "_2")
     )
     # fillna for bus ids, since some lines in one frame won't be in the other frame
     dc_merge.fillna(
         {
-            "from_bus_id": dc_merge.from_bus_id_2,
-            "to_bus_id": dc_merge.to_bus_id_2,
+            "from_lat": dc_merge.from_lat_2,
+            "from_lon": dc_merge.from_lon_2,
+            "to_lat": dc_merge.to_lat_2,
+            "to_lon": dc_merge.to_lon_2,
         },
         inplace=True,
     )
     # Calculate differences in Pmax
     dc_merge["diff"] = dc_merge.Pmax_2.fillna(0) - dc_merge.Pmax.fillna(0)
-    # get lat lon for dclines
-    dc_merge["from_lon"] = bus.loc[dc_merge.from_bus_id, "lon"].values
-    dc_merge["from_lat"] = bus.loc[dc_merge.from_bus_id, "lat"].values
-    dc_merge["to_lon"] = bus.loc[dc_merge.to_bus_id, "lon"].values
-    dc_merge["to_lat"] = bus.loc[dc_merge.to_bus_id, "lat"].values
 
     return dc_merge
