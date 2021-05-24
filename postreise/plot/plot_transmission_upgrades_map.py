@@ -1,6 +1,7 @@
 import numpy as np
 from bokeh.models import ColumnDataSource
 from bokeh.plotting import figure
+from powersimdata.utility.distance import haversine
 
 from postreise.analyze.transmission.upgrades import (
     get_branch_differences,
@@ -21,6 +22,7 @@ def _map_transmission_upgrades(
     all_branch_min=0.1,
     diff_branch_min=1.0,
     b2b_scale=5,
+    dcline_upgrade_dist_threshold=0,
     figsize=(1400, 800),
     x_range=None,
     y_range=None,
@@ -43,6 +45,8 @@ def _map_transmission_upgrades(
     :param int/float diff_branch_min: minimum width to plot branches with significant
         differences.
     :param int/float b2b_scale: scale factor for plotting b2b facilities (pixels/GW).
+    :param int/float dcline_upgrade_dist_threshold: minimum distance (miles) for
+        plotting DC line upgrades (if none are longer, no legend entry will be created).
     :param tuple figsize: size of the bokeh figure (in pixels).
     :param tuple x_range: x range to zoom plot to (EPSG:3857).
     :param tuple y_range: y range to zoom plot to (EPSG:3857).
@@ -84,6 +88,12 @@ def _map_transmission_upgrades(
     b2b.loc[b2b["diff"] < -1 * diff_threshold, "color"] = colors.be_purple
     b2b = b2b[~b2b.color.isnull()]
     # Color DC lines based on upgraded capacity
+    branch_dc_lines["dist"] = branch_dc_lines.apply(
+        lambda x: haversine((x.from_lat, x.from_lon), (x.to_lat, x.to_lon)), axis=1
+    )
+    branch_dc_lines = branch_dc_lines.loc[
+        branch_dc_lines.dist >= dcline_upgrade_dist_threshold
+    ]
     branch_dc_lines.loc[:, "color"] = np.nan
     branch_dc_lines.loc[branch_dc_lines["diff"] > 0, "color"] = colors.be_green
     branch_dc_lines.loc[branch_dc_lines["diff"] < 0, "color"] = colors.be_lightblue
