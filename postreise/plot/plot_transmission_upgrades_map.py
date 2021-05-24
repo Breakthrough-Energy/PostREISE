@@ -25,6 +25,7 @@ def _map_transmission_upgrades(
     x_range=None,
     y_range=None,
     plot_states_kwargs=None,
+    legend_font_size=20,
 ):
     """Make map of branches showing upgrades.
 
@@ -46,6 +47,7 @@ def _map_transmission_upgrades(
     :param tuple y_range: y range to zoom plot to (EPSG:3857).
     :param dict plot_states_kwargs: keyword arguments to be passed to
         :func:`postreise.plot.plot_states.plot_states`.
+    :param int/float legend_font_size: font size for legend.
     :return: (*bokeh.plotting.figure.Figure*) -- Bokeh map plot of color-coded upgrades.
     """
     # plotting constants
@@ -202,7 +204,7 @@ def _map_transmission_upgrades(
             alpha=legend_alpha,
         )
     p.legend.location = "bottom_left"
-    p.legend.label_text_font_size = "20pt"
+    p.legend.label_text_font_size = f"{legend_font_size}pt"
 
     # Everything below gets plotted into the 'main' figure
     # state outlines
