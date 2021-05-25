@@ -12,7 +12,8 @@ from postreise.plot.plot_states import plot_states
 from postreise.plot.projection_helpers import project_branch
 
 
-def _map_transmission_upgrades(
+def add_transmission_upgrades(
+    bokeh_figure,
     branch_merge,
     dc_merge,
     b2b_indices=None,
@@ -26,6 +27,7 @@ def _map_transmission_upgrades(
 ):
     """Make map of branches showing upgrades.
 
+    :param bokeh.plotting.figure.Figure bokeh_figure: figure to add upgrades to.
     :param pandas.DataFrame branch_merge: branch of scenarios 1 and 2
     :param pandas.DataFrame dc_merge: dclines for scenarios 1 and 2
     :param list/set/tuple b2b_indices: indices of HVDC lines which are back-to-backs.
@@ -140,7 +142,7 @@ def _map_transmission_upgrades(
 
     # These are 'dummy' series to populate the legend with
     if len(branch_dc_lines[branch_dc_lines["diff"] > 0]) > 0:
-        p.multi_line(
+        bokeh_figure.multi_line(
             leg_x,
             leg_y,
             color=colors.be_green,
@@ -149,7 +151,7 @@ def _map_transmission_upgrades(
             legend_label="Additional HVDC Capacity",
         )
     if len(branch_dc_lines[branch_dc_lines["diff"] < 0]) > 0:
-        p.multi_line(
+        bokeh_figure.multi_line(
             leg_x,
             leg_y,
             color=colors.be_lightblue,
@@ -158,7 +160,7 @@ def _map_transmission_upgrades(
             legend_label="Reduced HVDC Capacity",
         )
     if len(branch_all[branch_all["diff"] < 0]) > 0:
-        p.multi_line(
+        bokeh_figure.multi_line(
             leg_x,
             leg_y,
             color=colors.be_purple,
@@ -167,7 +169,7 @@ def _map_transmission_upgrades(
             legend_label="Reduced AC Transmission",
         )
     if len(branch_all[branch_all["diff"] > 0]) > 0:
-        p.multi_line(
+        bokeh_figure.multi_line(
             leg_x,
             leg_y,
             color=colors.be_blue,
@@ -176,7 +178,7 @@ def _map_transmission_upgrades(
             legend_label="Upgraded AC transmission",
         )
     if len(b2b[b2b["diff"] > 0]) > 0:
-        p.scatter(
+        bokeh_figure.scatter(
             x=b2b.from_x[1],
             y=b2b.from_y[1],
             color=colors.be_magenta,
@@ -193,7 +195,7 @@ def _map_transmission_upgrades(
         {"source": source_pseudoac, "color": "gray", "line_width": "cap"},
     ]
     for d in background_plot_dicts:
-        p.multi_line(
+        bokeh_figure.multi_line(
             "xs",
             "ys",
             color=d["color"],
@@ -203,7 +205,7 @@ def _map_transmission_upgrades(
         )
 
     # all B2Bs
-    p.scatter(
+    bokeh_figure.scatter(
         x=b2b.from_x,
         y=b2b.from_y,
         color="gray",
@@ -219,7 +221,7 @@ def _map_transmission_upgrades(
     ]
 
     for d in difference_plot_dicts:
-        p.multi_line(
+        bokeh_figure.multi_line(
             "xs",
             "ys",
             color=d["color"],
@@ -229,7 +231,7 @@ def _map_transmission_upgrades(
         )
 
     # B2Bs with differences
-    p.scatter(
+    bokeh_figure.scatter(
         x=b2b.from_x,
         y=b2b.from_y,
         color=colors.be_magenta,
@@ -237,7 +239,7 @@ def _map_transmission_upgrades(
         size=b2b["diff"].abs() * b2b_scale_MW,
     )
 
-    return p
+    return bokeh_figure
 
 
 def map_transmission_upgrades(
@@ -265,7 +267,7 @@ def map_transmission_upgrades(
     :param int/float legend_font_size: font size for legend.
     :param str legend_location: location for legend.
     :param \\*\\*plot_kwargs: collected keyword arguments to be passed to
-        :func:`_map_transmission_upgrades`.
+        :func:`add_transmission_upgrades`.
     :return: (*bokeh.plotting.figure.Figure*) -- Bokeh map plot of color-coded upgrades.
     """
     # Validate inputs
@@ -311,8 +313,8 @@ def map_transmission_upgrades(
         all_plot_states_kwargs = default_plot_states_kwargs
     plot_states(bokeh_figure=p, **all_plot_states_kwargs)
 
-    map_plot = _map_transmission_upgrades(
-        branch_merge, dc_merge, b2b_indices, **plot_kwargs
+    map_plot = add_transmission_upgrades(
+        p, branch_merge, dc_merge, b2b_indices, **plot_kwargs
     )
 
     p.legend.location = legend_location
