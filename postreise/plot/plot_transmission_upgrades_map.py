@@ -24,8 +24,6 @@ def _map_transmission_upgrades(
     b2b_scale=5,
     dcline_upgrade_dist_threshold=0,
     plot_states_kwargs=None,
-    legend_font_size=20,
-    legend_location="bottom_left",
 ):
     """Make map of branches showing upgrades.
 
@@ -46,8 +44,6 @@ def _map_transmission_upgrades(
         plotting DC line upgrades (if none are longer, no legend entry will be created).
     :param dict plot_states_kwargs: keyword arguments to be passed to
         :func:`postreise.plot.plot_states.plot_states`.
-    :param int/float legend_font_size: font size for legend.
-    :param str legend_location: location for legend.
     :return: (*bokeh.plotting.figure.Figure*) -- Bokeh map plot of color-coded upgrades.
     """
     # plotting constants
@@ -192,8 +188,6 @@ def _map_transmission_upgrades(
             size=30,
             alpha=legend_alpha,
         )
-    p.legend.location = legend_location
-    p.legend.label_text_font_size = f"{legend_font_size}pt"
 
     # Everything below gets plotted into the 'main' figure
     # state outlines
@@ -270,6 +264,8 @@ def map_transmission_upgrades(
     figsize=(1400, 800),
     x_range=None,
     y_range=None,
+    legend_font_size=20,
+    legend_location="bottom_left",
     **plot_kwargs,
 ):
     """Plot capacity differences for branches & HVDC lines between two scenarios.
@@ -280,6 +276,8 @@ def map_transmission_upgrades(
     :param tuple figsize: size of the bokeh figure (in pixels).
     :param tuple x_range: x range to zoom plot to (EPSG:3857).
     :param tuple y_range: y range to zoom plot to (EPSG:3857).
+    :param int/float legend_font_size: font size for legend.
+    :param str legend_location: location for legend.
     :param \\*\\*plot_kwargs: collected keyword arguments to be passed to
         :func:`_map_transmission_upgrades`.
     :return: (*bokeh.plotting.figure.Figure*) -- Bokeh map plot of color-coded upgrades.
@@ -316,4 +314,8 @@ def map_transmission_upgrades(
     map_plot = _map_transmission_upgrades(
         branch_merge, dc_merge, b2b_indices, **plot_kwargs
     )
+
+    p.legend.location = legend_location
+    p.legend.label_text_font_size = f"{legend_font_size}pt"
+
     return map_plot
