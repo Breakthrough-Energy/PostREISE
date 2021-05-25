@@ -23,9 +23,6 @@ def _map_transmission_upgrades(
     diff_branch_min=1.0,
     b2b_scale=5,
     dcline_upgrade_dist_threshold=0,
-    figsize=(1400, 800),
-    x_range=None,
-    y_range=None,
     plot_states_kwargs=None,
     legend_font_size=20,
     legend_location="bottom_left",
@@ -47,9 +44,6 @@ def _map_transmission_upgrades(
     :param int/float b2b_scale: scale factor for plotting b2b facilities (pixels/GW).
     :param int/float dcline_upgrade_dist_threshold: minimum distance (miles) for
         plotting DC line upgrades (if none are longer, no legend entry will be created).
-    :param tuple figsize: size of the bokeh figure (in pixels).
-    :param tuple x_range: x range to zoom plot to (EPSG:3857).
-    :param tuple y_range: y range to zoom plot to (EPSG:3857).
     :param dict plot_states_kwargs: keyword arguments to be passed to
         :func:`postreise.plot.plot_states.plot_states`.
     :param int/float legend_font_size: font size for legend.
@@ -57,7 +51,6 @@ def _map_transmission_upgrades(
     :return: (*bokeh.plotting.figure.Figure*) -- Bokeh map plot of color-coded upgrades.
     """
     # plotting constants
-    bokeh_tools = "pan,wheel_zoom,reset,save"
     legend_alpha = 0.9
     all_elements_alpha = 0.5
     differences_alpha = 0.8
@@ -147,22 +140,6 @@ def _map_transmission_upgrades(
             "color": b2b["color"],
         }
     )
-
-    # Set up figure
-    p = figure(
-        tools=bokeh_tools,
-        x_axis_location=None,
-        y_axis_location=None,
-        plot_width=figsize[0],
-        plot_height=figsize[1],
-        output_backend="webgl",
-        match_aspect=True,
-        sizing_mode="scale_both",
-        x_range=x_range,
-        y_range=y_range,
-    )
-    p.xgrid.visible = False
-    p.ygrid.visible = False
 
     # Build the legend
     leg_x = [-8.1e6] * 2
@@ -286,25 +263,56 @@ def _map_transmission_upgrades(
     return p
 
 
-def map_transmission_upgrades(scenario1, scenario2, b2b_indices=None, **plot_kwargs):
+def map_transmission_upgrades(
+    scenario1,
+    scenario2,
+    b2b_indices=None,
+    figsize=(1400, 800),
+    x_range=None,
+    y_range=None,
+    **plot_kwargs,
+):
     """Plot capacity differences for branches & HVDC lines between two scenarios.
 
     :param powersimdata.scenario.scenario.Scenario scenario1: first scenario.
     :param powersimdata.scenario.scenario.Scenario scenario2: second scenario.
     :param list/set/tuple b2b_indices: indices of HVDC lines which are back-to-backs.
+    :param tuple figsize: size of the bokeh figure (in pixels).
+    :param tuple x_range: x range to zoom plot to (EPSG:3857).
+    :param tuple y_range: y range to zoom plot to (EPSG:3857).
     :param \\*\\*plot_kwargs: collected keyword arguments to be passed to
         :func:`_map_transmission_upgrades`.
     :return: (*bokeh.plotting.figure.Figure*) -- Bokeh map plot of color-coded upgrades.
     """
+    # Validate inputs
     if not (
         scenario1.info["grid_model"] == scenario2.info["grid_model"]
         and scenario1.info["interconnect"] == scenario2.info["interconnect"]
     ):
         raise ValueError("Scenarios to compare must be same grid_model & interconnect")
+
+    # Pre-plot data processing
     grid1 = scenario1.state.get_grid()
     grid2 = scenario2.state.get_grid()
     branch_merge = get_branch_differences(grid1.branch, grid2.branch)
     dc_merge = get_dcline_differences(grid1, grid2)
+
+    # Set up figure
+    p = figure(
+        tools="pan,wheel_zoom,reset,save",
+        x_axis_location=None,
+        y_axis_location=None,
+        plot_width=figsize[0],
+        plot_height=figsize[1],
+        output_backend="webgl",
+        match_aspect=True,
+        sizing_mode="scale_both",
+        x_range=x_range,
+        y_range=y_range,
+    )
+    p.xgrid.visible = False
+    p.ygrid.visible = False
+
     map_plot = _map_transmission_upgrades(
         branch_merge, dc_merge, b2b_indices, **plot_kwargs
     )
