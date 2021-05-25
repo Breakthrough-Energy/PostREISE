@@ -23,7 +23,6 @@ def _map_transmission_upgrades(
     diff_branch_min=1.0,
     b2b_scale=5,
     dcline_upgrade_dist_threshold=0,
-    plot_states_kwargs=None,
 ):
     """Make map of branches showing upgrades.
 
@@ -42,8 +41,6 @@ def _map_transmission_upgrades(
     :param int/float b2b_scale: scale factor for plotting b2b facilities (pixels/GW).
     :param int/float dcline_upgrade_dist_threshold: minimum distance (miles) for
         plotting DC line upgrades (if none are longer, no legend entry will be created).
-    :param dict plot_states_kwargs: keyword arguments to be passed to
-        :func:`postreise.plot.plot_states.plot_states`.
     :return: (*bokeh.plotting.figure.Figure*) -- Bokeh map plot of color-coded upgrades.
     """
     # plotting constants
@@ -190,20 +187,6 @@ def _map_transmission_upgrades(
         )
 
     # Everything below gets plotted into the 'main' figure
-    # state outlines
-    default_plot_states_kwargs = {
-        "colors": "white",
-        "line_color": "slategrey",
-        "line_width": 1,
-        "fill_alpha": 1,
-        "background_map": False,
-    }
-    if plot_states_kwargs is not None:
-        all_plot_states_kwargs = {**default_plot_states_kwargs, **plot_states_kwargs}
-    else:
-        all_plot_states_kwargs = default_plot_states_kwargs
-    plot_states(bokeh_figure=p, **all_plot_states_kwargs)
-
     background_plot_dicts = [
         {"source": source_all_ac, "color": "gray", "line_width": "cap"},
         {"source": source_all_dc, "color": "gray", "line_width": "cap"},
@@ -264,6 +247,7 @@ def map_transmission_upgrades(
     figsize=(1400, 800),
     x_range=None,
     y_range=None,
+    plot_states_kwargs=None,
     legend_font_size=20,
     legend_location="bottom_left",
     **plot_kwargs,
@@ -276,6 +260,8 @@ def map_transmission_upgrades(
     :param tuple figsize: size of the bokeh figure (in pixels).
     :param tuple x_range: x range to zoom plot to (EPSG:3857).
     :param tuple y_range: y range to zoom plot to (EPSG:3857).
+    :param dict plot_states_kwargs: keyword arguments to be passed to
+        :func:`postreise.plot.plot_states.plot_states`.
     :param int/float legend_font_size: font size for legend.
     :param str legend_location: location for legend.
     :param \\*\\*plot_kwargs: collected keyword arguments to be passed to
@@ -310,6 +296,20 @@ def map_transmission_upgrades(
     )
     p.xgrid.visible = False
     p.ygrid.visible = False
+
+    # Add state outlines
+    default_plot_states_kwargs = {
+        "colors": "white",
+        "line_color": "slategrey",
+        "line_width": 1,
+        "fill_alpha": 1,
+        "background_map": False,
+    }
+    if plot_states_kwargs is not None:
+        all_plot_states_kwargs = {**default_plot_states_kwargs, **plot_states_kwargs}
+    else:
+        all_plot_states_kwargs = default_plot_states_kwargs
+    plot_states(bokeh_figure=p, **all_plot_states_kwargs)
 
     map_plot = _map_transmission_upgrades(
         branch_merge, dc_merge, b2b_indices, **plot_kwargs
