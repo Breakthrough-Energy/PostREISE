@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 from powersimdata import Scenario
 
 from postreise.analyze.generation.curtailment import calculate_curtailment_time_series
