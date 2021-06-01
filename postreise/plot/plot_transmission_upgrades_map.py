@@ -1,6 +1,7 @@
 import numpy as np
 from bokeh.models import ColumnDataSource
 from bokeh.plotting import figure
+from powersimdata.utility.distance import haversine
 
 from postreise.analyze.transmission.upgrades import (
     get_branch_differences,
@@ -11,7 +12,8 @@ from postreise.plot.plot_states import plot_states
 from postreise.plot.projection_helpers import project_branch
 
 
-def _map_transmission_upgrades(
+def add_transmission_upgrades(
+    bokeh_figure,
     branch_merge,
     dc_merge,
     b2b_indices=None,
@@ -21,13 +23,11 @@ def _map_transmission_upgrades(
     all_branch_min=0.1,
     diff_branch_min=1.0,
     b2b_scale=5,
-    figsize=(1400, 800),
-    x_range=None,
-    y_range=None,
-    plot_states_kwargs=None,
+    dcline_upgrade_dist_threshold=0,
 ):
     """Make map of branches showing upgrades.
 
+    :param bokeh.plotting.figure.Figure bokeh_figure: figure to add upgrades to.
     :param pandas.DataFrame branch_merge: branch of scenarios 1 and 2
     :param pandas.DataFrame dc_merge: dclines for scenarios 1 and 2
     :param list/set/tuple b2b_indices: indices of HVDC lines which are back-to-backs.
@@ -41,15 +41,11 @@ def _map_transmission_upgrades(
     :param int/float diff_branch_min: minimum width to plot branches with significant
         differences.
     :param int/float b2b_scale: scale factor for plotting b2b facilities (pixels/GW).
-    :param tuple figsize: size of the bokeh figure (in pixels).
-    :param tuple x_range: x range to zoom plot to (EPSG:3857).
-    :param tuple y_range: y range to zoom plot to (EPSG:3857).
-    :param dict plot_states_kwargs: keyword arguments to be passed to
-        :func:`postreise.plot.plot_states.plot_states`.
+    :param int/float dcline_upgrade_dist_threshold: minimum distance (miles) for
+        plotting DC line upgrades (if none are longer, no legend entry will be created).
     :return: (*bokeh.plotting.figure.Figure*) -- Bokeh map plot of color-coded upgrades.
     """
     # plotting constants
-    bokeh_tools = "pan,wheel_zoom,reset,save"
     legend_alpha = 0.9
     all_elements_alpha = 0.5
     differences_alpha = 0.8
@@ -80,6 +76,12 @@ def _map_transmission_upgrades(
     b2b.loc[b2b["diff"] < -1 * diff_threshold, "color"] = colors.be_purple
     b2b = b2b[~b2b.color.isnull()]
     # Color DC lines based on upgraded capacity
+    branch_dc_lines["dist"] = branch_dc_lines.apply(
+        lambda x: haversine((x.from_lat, x.from_lon), (x.to_lat, x.to_lon)), axis=1
+    )
+    branch_dc_lines = branch_dc_lines.loc[
+        branch_dc_lines.dist >= dcline_upgrade_dist_threshold
+    ]
     branch_dc_lines.loc[:, "color"] = np.nan
     branch_dc_lines.loc[branch_dc_lines["diff"] > 0, "color"] = colors.be_green
     branch_dc_lines.loc[branch_dc_lines["diff"] < 0, "color"] = colors.be_lightblue
@@ -134,29 +136,13 @@ def _map_transmission_upgrades(
         }
     )
 
-    # Set up figure
-    p = figure(
-        tools=bokeh_tools,
-        x_axis_location=None,
-        y_axis_location=None,
-        plot_width=figsize[0],
-        plot_height=figsize[1],
-        output_backend="webgl",
-        match_aspect=True,
-        sizing_mode="scale_both",
-        x_range=x_range,
-        y_range=y_range,
-    )
-    p.xgrid.visible = False
-    p.ygrid.visible = False
-
     # Build the legend
     leg_x = [-8.1e6] * 2
     leg_y = [5.2e6] * 2
 
     # These are 'dummy' series to populate the legend with
     if len(branch_dc_lines[branch_dc_lines["diff"] > 0]) > 0:
-        p.multi_line(
+        bokeh_figure.multi_line(
             leg_x,
             leg_y,
             color=colors.be_green,
@@ -165,7 +151,7 @@ def _map_transmission_upgrades(
             legend_label="Additional HVDC Capacity",
         )
     if len(branch_dc_lines[branch_dc_lines["diff"] < 0]) > 0:
-        p.multi_line(
+        bokeh_figure.multi_line(
             leg_x,
             leg_y,
             color=colors.be_lightblue,
@@ -174,7 +160,7 @@ def _map_transmission_upgrades(
             legend_label="Reduced HVDC Capacity",
         )
     if len(branch_all[branch_all["diff"] < 0]) > 0:
-        p.multi_line(
+        bokeh_figure.multi_line(
             leg_x,
             leg_y,
             color=colors.be_purple,
@@ -183,7 +169,7 @@ def _map_transmission_upgrades(
             legend_label="Reduced AC Transmission",
         )
     if len(branch_all[branch_all["diff"] > 0]) > 0:
-        p.multi_line(
+        bokeh_figure.multi_line(
             leg_x,
             leg_y,
             color=colors.be_blue,
@@ -192,7 +178,7 @@ def _map_transmission_upgrades(
             legend_label="Upgraded AC transmission",
         )
     if len(b2b[b2b["diff"] > 0]) > 0:
-        p.scatter(
+        bokeh_figure.scatter(
             x=b2b.from_x[1],
             y=b2b.from_y[1],
             color=colors.be_magenta,
@@ -201,31 +187,15 @@ def _map_transmission_upgrades(
             size=30,
             alpha=legend_alpha,
         )
-    p.legend.location = "bottom_left"
-    p.legend.label_text_font_size = "20pt"
 
     # Everything below gets plotted into the 'main' figure
-    # state outlines
-    default_plot_states_kwargs = {
-        "colors": "white",
-        "line_color": "slategrey",
-        "line_width": 1,
-        "fill_alpha": 1,
-        "background_map": False,
-    }
-    if plot_states_kwargs is not None:
-        all_plot_states_kwargs = {**default_plot_states_kwargs, **plot_states_kwargs}
-    else:
-        all_plot_states_kwargs = default_plot_states_kwargs
-    plot_states(bokeh_figure=p, **all_plot_states_kwargs)
-
     background_plot_dicts = [
         {"source": source_all_ac, "color": "gray", "line_width": "cap"},
         {"source": source_all_dc, "color": "gray", "line_width": "cap"},
         {"source": source_pseudoac, "color": "gray", "line_width": "cap"},
     ]
     for d in background_plot_dicts:
-        p.multi_line(
+        bokeh_figure.multi_line(
             "xs",
             "ys",
             color=d["color"],
@@ -235,7 +205,7 @@ def _map_transmission_upgrades(
         )
 
     # all B2Bs
-    p.scatter(
+    bokeh_figure.scatter(
         x=b2b.from_x,
         y=b2b.from_y,
         color="gray",
@@ -251,7 +221,7 @@ def _map_transmission_upgrades(
     ]
 
     for d in difference_plot_dicts:
-        p.multi_line(
+        bokeh_figure.multi_line(
             "xs",
             "ys",
             color=d["color"],
@@ -261,7 +231,7 @@ def _map_transmission_upgrades(
         )
 
     # B2Bs with differences
-    p.scatter(
+    bokeh_figure.scatter(
         x=b2b.from_x,
         y=b2b.from_y,
         color=colors.be_magenta,
@@ -269,29 +239,87 @@ def _map_transmission_upgrades(
         size=b2b["diff"].abs() * b2b_scale_MW,
     )
 
-    return p
+    return bokeh_figure
 
 
-def map_transmission_upgrades(scenario1, scenario2, b2b_indices=None, **plot_kwargs):
+def map_transmission_upgrades(
+    scenario1,
+    scenario2,
+    b2b_indices=None,
+    figsize=(1400, 800),
+    x_range=None,
+    y_range=None,
+    plot_states_kwargs=None,
+    legend_font_size=20,
+    legend_location="bottom_left",
+    **plot_kwargs,
+):
     """Plot capacity differences for branches & HVDC lines between two scenarios.
 
     :param powersimdata.scenario.scenario.Scenario scenario1: first scenario.
     :param powersimdata.scenario.scenario.Scenario scenario2: second scenario.
     :param list/set/tuple b2b_indices: indices of HVDC lines which are back-to-backs.
+    :param tuple figsize: size of the bokeh figure (in pixels).
+    :param tuple x_range: x range to zoom plot to (EPSG:3857).
+    :param tuple y_range: y range to zoom plot to (EPSG:3857).
+    :param dict plot_states_kwargs: keyword arguments to be passed to
+        :func:`postreise.plot.plot_states.plot_states`.
+    :param int/float legend_font_size: font size for legend.
+    :param str legend_location: location for legend.
     :param \\*\\*plot_kwargs: collected keyword arguments to be passed to
-        :func:`_map_transmission_upgrades`.
+        :func:`add_transmission_upgrades`.
+    :raises ValueError: if ``scenario1`` and ``scenario2`` do not match both grid_model
+        and interconnect.
     :return: (*bokeh.plotting.figure.Figure*) -- Bokeh map plot of color-coded upgrades.
     """
+    # Validate inputs
     if not (
         scenario1.info["grid_model"] == scenario2.info["grid_model"]
         and scenario1.info["interconnect"] == scenario2.info["interconnect"]
     ):
         raise ValueError("Scenarios to compare must be same grid_model & interconnect")
+
+    # Pre-plot data processing
     grid1 = scenario1.state.get_grid()
     grid2 = scenario2.state.get_grid()
     branch_merge = get_branch_differences(grid1.branch, grid2.branch)
     dc_merge = get_dcline_differences(grid1, grid2)
-    map_plot = _map_transmission_upgrades(
-        branch_merge, dc_merge, b2b_indices, **plot_kwargs
+
+    # Set up figure
+    p = figure(
+        tools="pan,wheel_zoom,reset,save",
+        x_axis_location=None,
+        y_axis_location=None,
+        plot_width=figsize[0],
+        plot_height=figsize[1],
+        output_backend="webgl",
+        match_aspect=True,
+        sizing_mode="scale_both",
+        x_range=x_range,
+        y_range=y_range,
     )
+    p.xgrid.visible = False
+    p.ygrid.visible = False
+
+    # Add state outlines
+    default_plot_states_kwargs = {
+        "colors": "white",
+        "line_color": "slategrey",
+        "line_width": 1,
+        "fill_alpha": 1,
+        "background_map": False,
+    }
+    if plot_states_kwargs is not None:
+        all_plot_states_kwargs = {**default_plot_states_kwargs, **plot_states_kwargs}
+    else:
+        all_plot_states_kwargs = default_plot_states_kwargs
+    plot_states(bokeh_figure=p, **all_plot_states_kwargs)
+
+    map_plot = add_transmission_upgrades(
+        p, branch_merge, dc_merge, b2b_indices, **plot_kwargs
+    )
+
+    p.legend.location = legend_location
+    p.legend.label_text_font_size = f"{legend_font_size}pt"
+
     return map_plot
