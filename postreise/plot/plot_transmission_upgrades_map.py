@@ -268,6 +268,8 @@ def map_transmission_upgrades(
     :param str legend_location: location for legend.
     :param \\*\\*plot_kwargs: collected keyword arguments to be passed to
         :func:`add_transmission_upgrades`.
+    :raises ValueError: if ``scenario1`` and ``scenario2`` do not match both grid_model
+        and interconnect.
     :return: (*bokeh.plotting.figure.Figure*) -- Bokeh map plot of color-coded upgrades.
     """
     # Validate inputs
