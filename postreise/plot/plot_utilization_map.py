@@ -4,15 +4,16 @@
 import numpy as np
 import pandas as pd
 from bokeh.models import ColorBar, ColumnDataSource, HoverTool
-from bokeh.plotting import figure
 from bokeh.transform import linear_cmap
 
 from postreise.analyze.transmission.utilization import (
     generate_cong_stats,
     get_utilization,
 )
+from postreise.plot.canvas import create_map_canvas
+from postreise.plot.check import _check_func_kwargs
 from postreise.plot.colors import traffic_palette
-from postreise.plot.plot_states import plot_states
+from postreise.plot.plot_states import add_state_borders
 from postreise.plot.projection_helpers import project_branch
 
 
@@ -32,9 +33,9 @@ def map_risk_bind(
     select_branch_min_width=2,
     figsize=(1400, 800),
     show_color_bar=True,
-    plot_states_kwargs=None,
+    state_borders_kwargs=None,
 ):
-    """Makes map showing risk or binding incidents on US states map.
+    """Make map showing risk or binding incidents on US states map.
     Either ``scenario`` XOR (``congestion_stats`` AND ``branch``) must be specified.
 
     :param str risk_or_bind: specify plotting "risk" or "bind".
@@ -58,8 +59,8 @@ def map_risk_bind(
         (pixels).
     :param tuple(int, int) figsize: size of the bokeh figure (in pixels).
     :param bool show_color_bar: whether to render the color bar on the figure.
-    :param dict plot_states_kwargs: keyword arguments to be passed to
-        :func:`postreise.plot.plot_states.plot_states`.
+    :param dict state_borders_kwargs: keyword arguments to be passed to
+        :func:`postreise.plot.plot_states.add_state_borders`.
     :raises ValueError: if (``scenario`` XOR (``congestion_stats`` AND ``branch``)) are
         not properly specified.
     :return: (*bokeh.plotting.figure*) -- map of lines with risk and bind incidents
@@ -113,17 +114,22 @@ def map_risk_bind(
         }
     )
 
-    # Set up figure
-    p = figure(
-        tools="pan,wheel_zoom,reset,save",
-        x_axis_location=None,
-        y_axis_location=None,
-        plot_width=figsize[0],
-        plot_height=figsize[1],
-        output_backend="webgl",
-        sizing_mode="scale_both",
-        match_aspect=True,
+    # Create canvas
+    canvas = create_map_canvas(figsize=figsize)
+
+    # Add state borders
+    default_state_borders_kwargs = {"fill_alpha": 0.0, "background_map": True}
+    all_state_borders_kwargs = (
+        {**default_state_borders_kwargs, **state_borders_kwargs}
+        if state_borders_kwargs is not None
+        else default_state_borders_kwargs
     )
+    _check_func_kwargs(
+        add_state_borders, set(all_state_borders_kwargs), "state_borders_kwargs"
+    )
+    canvas = add_state_borders(canvas, **all_state_borders_kwargs)
+
+    # Add color bar
     if show_color_bar:
         color_bar = ColorBar(
             color_mapper=mapper["transform"],
@@ -134,14 +140,9 @@ def map_risk_bind(
             orientation="horizontal",
             padding=5,
         )
-        p.add_layout(color_bar, "center")
-    default_plot_states_kwargs = {"fill_alpha": 0.0, "background_map": True}
-    if plot_states_kwargs is not None:
-        all_plot_states_kwargs = {**default_plot_states_kwargs, **plot_states_kwargs}
-    else:
-        all_plot_states_kwargs = default_plot_states_kwargs
-    plot_states(bokeh_figure=p, **all_plot_states_kwargs)
-    p.multi_line(
+        canvas.add_layout(color_bar, "center")
+
+    canvas.multi_line(
         branch_map_all[["from_x", "to_x"]].to_numpy().tolist(),
         branch_map_all[["from_y", "to_y"]].to_numpy().tolist(),
         color="gray",
@@ -151,7 +152,7 @@ def map_risk_bind(
         ),
         alpha=0.5,
     )
-    lines = p.multi_line(
+    lines = canvas.multi_line(
         "xs", "ys", color=mapper, line_width="cap", source=multi_line_source
     )
     hover = HoverTool(
@@ -161,8 +162,8 @@ def map_risk_bind(
         ],
         renderers=[lines],
     )
-    p.add_tools(hover)
-    return p
+    canvas.add_tools(hover)
+    return canvas
 
 
 def map_utilization(
@@ -177,9 +178,9 @@ def map_utilization(
     branch_min_width=0.2,
     figsize=(1400, 800),
     show_color_bar=True,
-    plot_states_kwargs=None,
+    state_borders_kwargs=None,
 ):
-    """Makes map showing utilization. Utilization input can either be medians
+    """Make map showing utilization. Utilization input can either be medians
     only, or can be normalized utilization dataframe.
     Either ``scenario`` XOR (``utilization_df`` AND ``branch``) must be specified.
 
@@ -196,8 +197,8 @@ def map_utilization(
     :param int/float branch_scale_factor: scale factor for branches (pixels/GW).
     :param int/float branch_min_width: minimum width for branches (pixels).
     :param tuple(int, int) figsize: size of the bokeh figure (in pixels).
-    :param dict plot_states_kwargs: keyword arguments to be passed to
-        :func:`postreise.plot.plot_states.plot_states`.
+    :param dict state_borders_kwargs: keyword arguments to be passed to
+        :func:`postreise.plot.plot_states.add_state_borders`.
     :raises ValueError: if (``scenario`` XOR (``utilization_df`` AND ``branch``)) are
         not properly specified.
     :return: (*bokeh.plotting.figure*) -- map of lines with median utilization color
@@ -250,16 +251,22 @@ def map_utilization(
         }
     )
 
-    p = figure(
-        tools="pan,wheel_zoom,reset,save",
-        x_axis_location=None,
-        y_axis_location=None,
-        plot_width=figsize[0],
-        plot_height=figsize[1],
-        output_backend="webgl",
-        sizing_mode="scale_both",
-        match_aspect=True,
+    # Create canvas
+    canvas = create_map_canvas(figsize=figsize)
+
+    # Add state borders
+    default_state_borders_kwargs = {"fill_alpha": 0.0, "line_width": 2}
+    all_state_borders_kwargs = (
+        {**default_state_borders_kwargs, **state_borders_kwargs}
+        if state_borders_kwargs is not None
+        else default_state_borders_kwargs
     )
+    _check_func_kwargs(
+        add_state_borders, set(all_state_borders_kwargs), "state_borders_kwargs"
+    )
+    canvas = add_state_borders(canvas, **all_state_borders_kwargs)
+
+    # Add color bar
     if show_color_bar:
         color_bar = ColorBar(
             color_mapper=mapper["transform"],
@@ -270,14 +277,9 @@ def map_utilization(
             orientation="horizontal",
             padding=5,
         )
-        p.add_layout(color_bar, "center")
-    default_plot_states_kwargs = {"fill_alpha": 0.0, "line_width": 2}
-    if plot_states_kwargs is not None:
-        all_plot_states_kwargs = {**default_plot_states_kwargs, **plot_states_kwargs}
-    else:
-        all_plot_states_kwargs = default_plot_states_kwargs
-    plot_states(bokeh_figure=p, **all_plot_states_kwargs)
-    lines = p.multi_line(
+        canvas.add_layout(color_bar, "center")
+
+    lines = canvas.multi_line(
         "xs", "ys", color=mapper, line_width="width", source=multi_line_source
     )
     hover = HoverTool(
@@ -287,5 +289,5 @@ def map_utilization(
         ],
         renderers=[lines],
     )
-    p.add_tools(hover)
-    return p
+    canvas.add_tools(hover)
+    return canvas
