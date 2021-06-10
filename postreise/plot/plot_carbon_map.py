@@ -1,15 +1,16 @@
 import numpy as np
 import pandas as pd
 from bokeh.models import ColumnDataSource, HoverTool
-from bokeh.plotting import figure
 
 from postreise.analyze.check import _check_scenario_is_in_analyze_state
 from postreise.analyze.generation.emissions import (
     generate_emissions_stats,
     summarize_emissions_by_bus,
 )
+from postreise.plot.canvas import create_map_canvas
+from postreise.plot.check import _check_func_kwargs
 from postreise.plot.colors import be_green, be_purple, be_red
-from postreise.plot.plot_states import plot_states
+from postreise.plot.plot_states import add_state_borders
 from postreise.plot.projection_helpers import project_bus
 
 
@@ -120,40 +121,24 @@ def prepare_bus_data_difference(
     return grouped_bus_emission.query("amount != 0").sort_values(by=["color"])
 
 
-def construct_emission_visuals(emission_map, figsize, scale_factor, background_map):
-    """Use bokeh to plot formatted data.
+def add_emission(canvas, emission, scale_factor):
+    """Add emission.
 
-    :param pandas.DataFrame emission_map: emission data for plotting.
-    :param tuple figsize: size of the bokeh figure (in pixels).
+    :param pandas.DataFrame emission: emission data for plotting.
     :param float scale_factor: scaling factor for size of emissions circles glyphs.
-    :param bool background_map: whether to plot map tiles behind figure.
     :return: (*bokeh.plotting.figure*) -- carbon emission map.
     """
-    p = figure(
-        tools="pan,wheel_zoom,reset,save",
-        x_axis_location=None,
-        y_axis_location=None,
-        plot_width=figsize[0],
-        plot_height=figsize[1],
-        output_backend="webgl",
-        sizing_mode="scale_both",
-        match_aspect=True,
-    )
-    p.xgrid.visible = False
-    p.ygrid.visible = False
-
-    plot_states(bokeh_figure=p, background_map=background_map)
 
     # emissions as circles
     source = {
-        "x": emission_map["x"],
-        "y": emission_map["y"],
-        "size": np.log2(emission_map["amount"]) * scale_factor,
-        "tons": emission_map["amount"],
-        "color": emission_map["color"],
-        "type": emission_map["type"],
+        "x": emission["x"],
+        "y": emission["y"],
+        "size": np.log2(emission["amount"]) * scale_factor,
+        "tons": emission["amount"],
+        "color": emission["color"],
+        "type": emission["type"],
     }
-    circle = p.circle(
+    circle = canvas.circle(
         "x",
         "y",
         color="color",
@@ -169,12 +154,12 @@ def construct_emission_visuals(emission_map, figsize, scale_factor, background_m
         ],
         renderers=[circle],
     )
-    p.add_tools(hover)
+    canvas.add_tools(hover)
 
-    p.legend.location = "bottom_right"
-    p.legend.label_text_font_size = "12pt"
+    canvas.legend.location = "bottom_right"
+    canvas.legend.label_text_font_size = "12pt"
 
-    return p
+    return canvas
 
 
 def map_carbon_emission_generator(
@@ -184,7 +169,7 @@ def map_carbon_emission_generator(
     color_coal="black",
     color_ng=be_purple,
     scale_factor=1,
-    background_map=False,
+    state_borders_kwargs=None,
 ):
     """Make map of carbon emissions at bus level. Color of markers indicates generator
     type and size reflects emissions level.
@@ -195,28 +180,22 @@ def map_carbon_emission_generator(
     :param str color_ng: color assigned for ng, default to BE purple.
     :param str color_coal: color associated with coal, default to black/gray.
     :param int/float scale_factor: scaling factor for size of emissions circles glyphs.
-    :param bool background_map: whether to plot map tiles behind figure.
+    :param dict state_borders_kwargs: keyword arguments to be passed to
+        :func:`postreise.plot.plot_states.add_state_borders`.
     :return: (*bokeh.plotting.figure*) -- carbon emission map.
     :raises TypeError:
         if ``coordinate_rounding`` is not ``int``.
-        if ``figsize`` is not a tuple.
         if ``color_coal`` and ``color_ng`` are not ``str``.
         if ``scale_factor`` is not ``int`` or ``float``.
-        if ``background_map`` is not a ``bool``.
     :raises ValueError:
         if ``coordinate_rounding`` is negative.
         if ``scale_factor`` is negative.
-        if both elements of ``figsize`` are not positive.
     """
     _check_scenario_is_in_analyze_state(scenario)
     if not isinstance(coordinate_rounding, int):
         raise TypeError("coordinate_rounding must be an int")
     if coordinate_rounding < 0:
         raise ValueError("coordinate_rounding must be positive")
-    if not isinstance(figsize, tuple):
-        raise TypeError("figsize must be a tuple")
-    if not (len(figsize) == 2 and all(e > 0 for e in figsize)):
-        raise ValueError("both elemets of figsize must be positive")
     if not isinstance(color_coal, str):
         raise TypeError("color_coal must be a str")
     if not isinstance(color_ng, str):
@@ -225,16 +204,29 @@ def map_carbon_emission_generator(
         raise TypeError("scale_factor must be a int/float")
     if scale_factor < 0:
         raise ValueError("scale_factor must be positive")
-    if not isinstance(background_map, bool):
-        raise TypeError("background_map must be a bool")
 
+    # create canvas
+    canvas = create_map_canvas(figsize=figsize)
+
+    # add state borders
+    default_state_borders_kwargs = {"fill_alpha": 0.0, "background_map": False}
+    all_state_borders_kwargs = (
+        {**default_state_borders_kwargs, **state_borders_kwargs}
+        if state_borders_kwargs is not None
+        else default_state_borders_kwargs
+    )
+    _check_func_kwargs(
+        add_state_borders, set(all_state_borders_kwargs), "state_borders_kwargs"
+    )
+    canvas = add_state_borders(canvas, **all_state_borders_kwargs)
+
+    # add emission
     bus_emission = combine_bus_info_and_emission(scenario)
-    emission_map = prepare_bus_data_generator(
+    emission = prepare_bus_data_generator(
         bus_emission, coordinate_rounding, color_ng, color_coal
     )
-    return construct_emission_visuals(
-        emission_map, figsize, scale_factor, background_map
-    )
+    canvas = add_emission(canvas, emission, scale_factor)
+    return canvas
 
 
 def map_carbon_emission_difference(
@@ -245,7 +237,7 @@ def map_carbon_emission_difference(
     color_increase=be_red,
     color_decrease=be_green,
     scale_factor=1,
-    background_map=False,
+    state_borders_kwargs=None,
 ):
     """Make map of difference in emissions between two scenarios at bus level. Color of
     markers indicates increase/decrease in emissions (``scenario_2`` w.r,t.
@@ -258,18 +250,16 @@ def map_carbon_emission_difference(
     :param str color_increase: color assigned to increase in emissions.
     :param str color_decrease: color associated to decrease in emissions.
     :param float scale_factor: scaling factor for size of emissions circles glyphs.
-    :param bool background_map: whether to plot map tiles behind figure.
+    :param dict state_borders_kwargs: keyword arguments to be passed to
+        :func:`postreise.plot.plot_states.add_state_borders`.
     :return: (*bokeh.plotting.figure*) -- carbon emission map.
     :raises TypeError:
         if ``coordinate_rounding`` is not ``int``.
-        if ``figsize`` is not a tuple.
         if ``color_increase`` and ``color_decrease`` are not ``str``.
         if ``scale_factor`` is not ``int`` or ``float``.
-        if ``background_map`` is not a ``bool``.
     :raises ValueError:
         if ``coordinate_rounding`` is negative.
         if ``scale_factor`` is negative.
-        if both elements of ``figsize`` are not positive.
     """
     _check_scenario_is_in_analyze_state(scenario_1)
     _check_scenario_is_in_analyze_state(scenario_2)
@@ -277,10 +267,6 @@ def map_carbon_emission_difference(
         raise TypeError("coordinate_rounding must be an int")
     if coordinate_rounding < 0:
         raise ValueError("coordinate_rounding must be positive")
-    if not isinstance(figsize, tuple):
-        raise TypeError("figsize must be a tuple")
-    if not (len(figsize) == 2 and all(e > 0 for e in figsize)):
-        raise ValueError("both elemets of figsize must be positive")
     if not isinstance(color_increase, str):
         raise TypeError("color_increase must be a str")
     if not isinstance(color_decrease, str):
@@ -289,30 +275,41 @@ def map_carbon_emission_difference(
         raise TypeError("scale_factor must be a int/float")
     if scale_factor < 0:
         raise ValueError("scale_factor must be positive")
-    if not isinstance(background_map, bool):
-        raise TypeError("background_map must be a bool")
 
+    # create canvas
+    canvas = create_map_canvas(figsize=figsize)
+
+    # add state borders
+    default_state_borders_kwargs = {"fill_alpha": 0.0, "background_map": False}
+    all_state_borders_kwargs = (
+        {**default_state_borders_kwargs, **state_borders_kwargs}
+        if state_borders_kwargs is not None
+        else default_state_borders_kwargs
+    )
+    _check_func_kwargs(
+        add_state_borders, set(all_state_borders_kwargs), "state_borders_kwargs"
+    )
+    canvas = add_state_borders(canvas, **all_state_borders_kwargs)
+
+    # add emission
     bus_emission_1 = combine_bus_info_and_emission(scenario_1)
     bus_emission_2 = combine_bus_info_and_emission(scenario_2)
-    emission_map = bus_emission_1.merge(
+    emission = bus_emission_1.merge(
         bus_emission_2,
         right_index=True,
         left_index=True,
         suffixes=("_1", "_2"),
         how="outer",
     )
-    emission_map.fillna(0, inplace=True)
-    emission_map["amount"] = (
-        emission_map["ng_2"]
-        + emission_map["coal_2"]
-        - emission_map["ng_1"]
-        - emission_map["coal_1"]
+    emission.fillna(0, inplace=True)
+    emission["amount"] = (
+        emission["ng_2"] + emission["coal_2"] - emission["ng_1"] - emission["coal_1"]
     )
-    emission_map["lon"] = emission_map["lon_1"].fillna(emission_map["lon_2"])
-    emission_map["lat"] = emission_map["lat_1"].fillna(emission_map["lat_2"])
-    emission_map = prepare_bus_data_difference(
-        emission_map, coordinate_rounding, color_increase, color_decrease
+    emission["lon"] = emission["lon_1"].fillna(emission["lon_2"])
+    emission["lat"] = emission["lat_1"].fillna(emission["lat_2"])
+    emission = prepare_bus_data_difference(
+        emission, coordinate_rounding, color_increase, color_decrease
     )
-    return construct_emission_visuals(
-        emission_map, figsize, scale_factor, background_map
-    )
+    canvas = add_emission(canvas, emission, scale_factor)
+
+    return canvas
