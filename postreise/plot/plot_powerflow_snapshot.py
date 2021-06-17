@@ -1,20 +1,21 @@
 import pandas as pd
 from bokeh.models import Arrow, VeeHead
-from bokeh.plotting import figure
 from powersimdata.utility.distance import haversine
 
 from postreise.analyze.check import (
     _check_date_range_in_scenario,
     _check_scenario_is_in_analyze_state,
 )
-from postreise.plot.plot_states import plot_states
+from postreise.plot.canvas import create_map_canvas
+from postreise.plot.check import _check_func_kwargs
+from postreise.plot.plot_states import add_state_borders
 from postreise.plot.projection_helpers import project_branch, project_bus
 
 
-def plot_arrows(bokeh_figure, branch, color, pf_threshold=0, dist_threshold=0, n=1):
+def add_arrows(canvas, branch, color, pf_threshold=0, dist_threshold=0, n=1):
     """Add addorws for powerflow to figure.
 
-    :param bokeh.plotting.figure.Figure bokeh_figure: figure to plot arrows onto.
+    :param bokeh.plotting.figure.Figure canvas: canvas to plot arrows onto.
     :param pandas.DataFrame branch: data frame containing:
         'pf', 'dist', 'arrow_size', 'from_x', 'from_y', 'to_x', 'to_y'.
         x/y coordinates for to/from can be obtained from lat/lon coordinates
@@ -40,7 +41,7 @@ def plot_arrows(bokeh_figure, branch, color, pf_threshold=0, dist_threshold=0, n
         start_fraction = i / n
         end_fraction = (i + 1) / n
         arrows.apply(
-            lambda a: bokeh_figure.add_layout(
+            lambda a: canvas.add_layout(
                 Arrow(
                     end=VeeHead(
                         line_color="black",
@@ -98,7 +99,7 @@ def plot_powerflow_snapshot(
     num_dc_arrows=1,
     min_arrow_size=5,
     branch_alpha=0.5,
-    background_map=False,
+    state_borders_kwargs=None,
     x_range=None,
     y_range=None,
     legend_font_size=None,
@@ -127,7 +128,8 @@ def plot_powerflow_snapshot(
     :param int num_dc_arrows: number of arrows for each DC branch.
     :param int/float min_arrow_size: minimum arrow size.
     :param int/float branch_alpha: opaqueness of branches.
-    :param bool background_map: whether to plot map tiles behind figure.
+    :param dict state_borders_kwargs: keyword arguments to be passed to
+        :func:`postreise.plot.plot_states.add_state_borders`.
     :param tuple(float, float) x_range: x range to zoom plot to (EPSG:3857).
     :param tuple(float, float) y_range: y range to zoom plot to (EPSG:3857).
     :param int/str legend_font_size: size to display legend specified as e.g. 12/'12pt'.
@@ -166,22 +168,20 @@ def plot_powerflow_snapshot(
         demand_centers["demand"] = demand.loc[hour]
         demand_centers = project_bus(demand_centers)
 
-    bokeh_figure = figure(
-        tools="pan,wheel_zoom,reset,save",
-        x_axis_location=None,
-        y_axis_location=None,
-        plot_width=figsize[0],
-        plot_height=figsize[1],
-        output_backend="webgl",
-        sizing_mode="scale_both",
-        match_aspect=True,
-        x_range=x_range,
-        y_range=y_range,
-    )
-    bokeh_figure.xgrid.visible = False
-    bokeh_figure.ygrid.visible = False
+    # create canvas
+    canvas = create_map_canvas(figsize=figsize, x_range=x_range, y_range=y_range)
 
-    plot_states(bokeh_figure=bokeh_figure, background_map=background_map)
+    # Add state borders
+    default_state_borders_kwargs = {"fill_alpha": 0.0, "background_map": False}
+    all_state_borders_kwargs = (
+        {**default_state_borders_kwargs, **state_borders_kwargs}
+        if state_borders_kwargs is not None
+        else default_state_borders_kwargs
+    )
+    _check_func_kwargs(
+        add_state_borders, set(all_state_borders_kwargs), "state_borders_kwargs"
+    )
+    canvas = add_state_borders(canvas, **all_state_borders_kwargs)
 
     if b2b_dclines is not None:
         # Append the pseudo AC lines to the branch dataframe, remove from dcline
@@ -199,14 +199,14 @@ def plot_powerflow_snapshot(
         dcline = dcline.loc[~dcline.index.isin(all_b2b_dclines)]
 
     # Plot grid background in grey
-    bokeh_figure.multi_line(
+    canvas.multi_line(
         branch[["from_x", "to_x"]].to_numpy().tolist(),
         branch[["from_y", "to_y"]].to_numpy().tolist(),
         color="gray",
         alpha=branch_alpha,
         line_width=(branch["rateA"].abs() * bg_width_scale_factor),
     )
-    bokeh_figure.multi_line(
+    canvas.multi_line(
         dcline[["from_x", "to_x"]].to_numpy().tolist(),
         dcline[["from_y", "to_y"]].to_numpy().tolist(),
         color="gray",
@@ -214,7 +214,7 @@ def plot_powerflow_snapshot(
         line_width=(dcline[["Pmin", "Pmax"]].abs().max(axis=1) * bg_width_scale_factor),
     )
     if b2b_dclines is not None:
-        bokeh_figure.scatter(
+        canvas.scatter(
             x=b2b.from_x,
             y=b2b.from_y,
             color="gray",
@@ -225,7 +225,7 @@ def plot_powerflow_snapshot(
 
     fake_location = branch.iloc[0].drop("x").rename({"from_x": "x", "from_y": "y"})
     # Legend entries
-    bokeh_figure.multi_line(
+    canvas.multi_line(
         (fake_location.x, fake_location.x),
         (fake_location.y, fake_location.y),
         color=dc_branch_color,
@@ -234,7 +234,7 @@ def plot_powerflow_snapshot(
         legend_label="HVDC powerflow",
         visible=False,
     )
-    bokeh_figure.multi_line(
+    canvas.multi_line(
         (fake_location.x, fake_location.x),
         (fake_location.y, fake_location.y),
         color=ac_branch_color,
@@ -243,7 +243,7 @@ def plot_powerflow_snapshot(
         legend_label="AC powerflow",
         visible=False,
     )
-    bokeh_figure.circle(
+    canvas.circle(
         fake_location.x,
         fake_location.y,
         color=solar_color,
@@ -252,7 +252,7 @@ def plot_powerflow_snapshot(
         legend_label="Solar Gen.",
         visible=False,
     )
-    bokeh_figure.circle(
+    canvas.circle(
         fake_location.x,
         fake_location.y,
         color=wind_color,
@@ -264,7 +264,7 @@ def plot_powerflow_snapshot(
 
     # Plot demand
     if demand_centers is not None:
-        bokeh_figure.circle(
+        canvas.circle(
             fake_location.x,
             fake_location.y,
             color=demand_color,
@@ -273,7 +273,7 @@ def plot_powerflow_snapshot(
             legend_label="Demand",
             visible=False,
         )
-        bokeh_figure.circle(
+        canvas.circle(
             demand_centers.x,
             demand_centers.y,
             color=demand_color,
@@ -287,14 +287,14 @@ def plot_powerflow_snapshot(
     grouped_solar = aggregate_plant_generation(plant_with_pg.query("type == 'solar'"))
     grouped_wind = aggregate_plant_generation(plant_with_pg.query("type == 'wind'"))
     # Plot solar, wind
-    bokeh_figure.circle(
+    canvas.circle(
         grouped_solar.x,
         grouped_solar.y,
         color=solar_color,
         alpha=0.6,
         size=(grouped_solar.pg * circle_scale_factor) ** 0.5,
     )
-    bokeh_figure.circle(
+    canvas.circle(
         grouped_wind.x,
         grouped_wind.y,
         color=wind_color,
@@ -303,15 +303,15 @@ def plot_powerflow_snapshot(
     )
 
     # Plot powerflow on AC branches
-    bokeh_figure.multi_line(
+    canvas.multi_line(
         branch[["from_x", "to_x"]].to_numpy().tolist(),
         branch[["from_y", "to_y"]].to_numpy().tolist(),
         color=ac_branch_color,
         alpha=branch_alpha,
         line_width=(branch["pf"].abs() * pf_width_scale_factor),
     )
-    plot_arrows(
-        bokeh_figure,
+    add_arrows(
+        canvas,
         branch,
         color=ac_branch_color,
         pf_threshold=arrow_pf_threshold,
@@ -320,15 +320,15 @@ def plot_powerflow_snapshot(
     )
 
     # Plot powerflow on DC lines
-    bokeh_figure.multi_line(
+    canvas.multi_line(
         dcline[["from_x", "to_x"]].to_numpy().tolist(),
         dcline[["from_y", "to_y"]].to_numpy().tolist(),
         color=dc_branch_color,
         alpha=branch_alpha,
         line_width=(dcline["pf"].abs() * pf_width_scale_factor),
     )
-    plot_arrows(
-        bokeh_figure,
+    add_arrows(
+        canvas,
         dcline,
         color=dc_branch_color,
         pf_threshold=0,
@@ -337,7 +337,7 @@ def plot_powerflow_snapshot(
     )
     # B2Bs
     if b2b_dclines is not None:
-        bokeh_figure.scatter(
+        canvas.scatter(
             x=b2b.from_x,
             y=b2b.from_y,
             color=dc_branch_color,
@@ -346,10 +346,10 @@ def plot_powerflow_snapshot(
             size=(b2b["pf"].abs() * pf_width_scale_factor * 5),
         )
 
-    bokeh_figure.legend.location = "bottom_left"
+    canvas.legend.location = "bottom_left"
     if legend_font_size is not None:
         if isinstance(legend_font_size, (int, float)):
             legend_font_size = f"{legend_font_size}pt"
-        bokeh_figure.legend.label_text_font_size = legend_font_size
+        canvas.legend.label_text_font_size = legend_font_size
 
-    return bokeh_figure
+    return canvas

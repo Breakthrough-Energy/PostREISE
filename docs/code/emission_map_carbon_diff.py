@@ -7,6 +7,6 @@ scenarioA = Scenario(2497)
 scenarioB = Scenario(3101)
 
 emission_difference_map = map_carbon_emission_difference(
-    scenarioA, scenarioB, coordinate_rounding=0
+    scenarioA, scenarioB, coordinate_rounding=1
 )
 show(emission_difference_map)

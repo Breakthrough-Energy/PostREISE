@@ -2,11 +2,13 @@ import json
 import os
 import urllib
 
-from bokeh.models import ColumnDataSource, HoverTool, Label
-from bokeh.plotting import figure
+import pandas as pd
+from bokeh.models import ColumnDataSource, HoverTool, Legend, LegendItem
 from bokeh.sampledata import us_states
 from bokeh.tile_providers import Vendors, get_provider
 
+from postreise.plot.canvas import create_map_canvas
+from postreise.plot.check import _check_func_kwargs
 from postreise.plot.projection_helpers import project_borders
 
 
@@ -64,157 +66,246 @@ def get_state_borders():
     return us_states_dat
 
 
-def plot_states(
+def expand_data_source(patches, state2data, key_name):
+    """Add data to a bokeh patch object
+
+    :param bokeh.models.renderers.GlyphRenderer patches: states as glyphs.
+    :param dict state2data: keys are states abbreviation and values are data.
+    :param str key_name: name to use for the key in data source.
+    :return: (*bokeh.models.renderers.GlyphRenderer*) -- updated patches.
+    :raises TypeError:
+        if ``state2data`` is not a dict.
+        if ``key_name`` is not a str.
+    :raises ValueError:
+        if states in ``state2data`` and  ``patches`` differ.
+    """
+    if not isinstance(state2data, dict):
+        raise TypeError("state2data must be a dict")
+    if not isinstance(key_name, str):
+        raise TypeError("key_name must be a str")
+
+    if len(set(patches.data_source.data["state_name"]) - set(state2data.keys())) != 0:
+        raise ValueError("states in patches are missing from state2data")
+
+    patches.data_source.data[key_name] = [
+        state2data[s] for s in patches.data_source.data["state_name"]
+    ]
+    return patches
+
+
+def add_state_borders(
+    canvas,
     state_list=None,
-    colors=None,
+    background_map=False,
     line_color="grey",
     line_width=1,
     fill_alpha=1,
-    labels_list=None,
-    legend_colors=None,
-    legend_labels=None,
-    legend_title=None,
-    font_size="10pt",
-    bokeh_figure=None,
-    tooltip_name=None,
-    us_states_dat=None,
-    background_map=True,
 ):
-    """Plots US state borders and allows color coding by state,
-    for example to represent different emissions goals.
+    """Add state borders onto canvas.
 
-    :param list state_list: list of us states to color code.
-    :param str/iterable colors: color or colors associated with states in state_list.
+    :param bokeh.plotting.figure canvas: canvas.
+    :param list state_list: list of states to display, default to continental US.
+    :param bool background_map: add background behind state borders.
     :param str line_color: color of state outlines.
     :param int/float line_width: thickness of state outlines.
-    :param int/float fill_alpha: fill opaqueness for state patches.
-    :param iterable labels_list: list of labels for us states.
-    :param iterable legend_colors: list of colors for legend.
-    :param iterable legend_labels: list of labels for colors in legend.
-    :param str legend_title: title for legend.
-    :param float font_size: citation font size, for non web version only
-    :param bokeh.plotting.figure.Figure bokeh_figure: figure to plot onto, if provided.
-        If not, a new figure will be created.
-    :param str tooltip_name: name for the web tooltip. Trigger web version.
-    :param dict us_states_dat: dictionary of state border lats/lons. If None, get
-        from :func:`postreise.plot.plot_states.get_state_borders`.
-    :param bool background_map: if True, plot a map background behind state borders.
-    :raises TypeError: if inputs are wrong type.
-    :raises ValueError: if inputs have wrong values.
-    :return: (*bokeh.plotting.figure.Figure*) -- map of us states with option to color
-        by value.
+    :param int/float fill_alpha: opaqueness for state patches.
+    :return: (*bokeh.plotting.figure.Figure*) -- canvas with state borders.
+    :raises TypeError:
+        if ``background_map`` is not a boolean.
+        if ``line_color`` is not a str.
+        if ``line_width`` is not a int or float.
+        if ``fill_alpha`` is not a int or float.
     """
-    # Get state borders data if necessary
-    if us_states_dat is None:
-        us_states_dat = get_state_borders()
+    if not isinstance(background_map, bool):
+        raise TypeError("background map must be a bool")
+    if not isinstance(line_color, str):
+        raise TypeError("line_color must be a str")
+    if not isinstance(line_width, (int, float)):
+        raise TypeError("line_width must be a int or float")
+    if not isinstance(fill_alpha, (int, float)):
+        raise TypeError("fill_alpha must be a int or float")
+
+    us_states_dat = get_state_borders()
     if state_list is None:
-        # Default to continental US from state borders data, w/ no colors, no labels.
-        if labels_list is not None:
-            raise TypeError("Cannot specify labels_list without state_list")
-        if colors is not None and not isinstance(colors, str):
-            raise TypeError("Cannot specify list of colors without state_list")
-        state_list = list(set(us_states_dat.keys()) - {"AK", "HI", "DC", "PR"})
-    else:
-        if colors is not None:
-            if not isinstance(colors, str):
-                try:
-                    if len(state_list) != len(colors):
-                        raise ValueError("state_list and colors must be same length")
-                except TypeError:
-                    raise TypeError("colors must be str or iterable")
-        if labels_list is not None:
-            try:
-                if len(state_list) != len(labels_list):
-                    raise ValueError("state_list and labels_list must be same length")
-            except TypeError:
-                raise TypeError("labels_list must be an iterable")
-    if legend_colors is not None or legend_labels is not None:
-        try:
-            if len(legend_colors) != len(legend_labels):
-                raise ValueError("Length of legend_colors and legend_labels must match")
-        except TypeError:
-            raise TypeError("legend_colors and legend_labels must be iterables or None")
-    # If no color specified, default to white. Either way, apply to all states.
-    colors = "white" if colors is None else colors
-    colors = [colors for s in state_list] if isinstance(colors, str) else colors
+        state_list = set(us_states_dat.keys()) - {"AK", "HI", "DC", "PR"}
     all_state_xs, all_state_ys = project_borders(us_states_dat, state_list=state_list)
-    # Initialize figure if necessary
-    if bokeh_figure is None:
-        p = figure(
-            tools="pan,wheel_zoom,reset,save",
-            x_axis_location=None,
-            y_axis_location=None,
-            plot_width=800,
-            plot_height=800,
-            output_backend="webgl",
-            sizing_mode="stretch_both",
-            match_aspect=True,
-        )
-    else:
-        p = bokeh_figure
-    # if legend info is passed, plot legend squares behind graph so they're hidden
-    if legend_colors is not None:
-        for i, c in enumerate(legend_colors):
-            p.square(
-                -8.1e6,
-                [5.2e6, 5.3e6],
-                fill_color=c,
-                color=c,
-                size=300,
-                legend_label=legend_labels[i],
-            )
-    # Tiles for map background
+
     if background_map:
-        p.add_tile(get_provider(Vendors.CARTODBPOSITRON_RETINA))
-    # State patches
-    state_patch_info = {
-        "xs": all_state_xs,
-        "ys": all_state_ys,
-        "color": colors,
-        "state_name": state_list,
-    }
-    if labels_list is not None:
-        state_patch_info["label"] = labels_list
-    patch = p.patches(
+        canvas.add_tile(get_provider(Vendors.CARTODBPOSITRON_RETINA))
+
+    canvas.patches(
         "xs",
         "ys",
-        source=ColumnDataSource(state_patch_info),
-        fill_alpha=fill_alpha,
-        fill_color="color",
+        source=ColumnDataSource(
+            {
+                "xs": all_state_xs,
+                "ys": all_state_ys,
+                "state_color": ["white"] * len(state_list),
+                "state_name": list(state_list),
+            }
+        ),
+        fill_color="state_color",
         line_color=line_color,
+        fill_alpha=fill_alpha,
         line_width=line_width,
+        name="states",
     )
-    if labels_list is not None:
-        if tooltip_name is not None:
-            # For the web, add hover-over functionality
-            hover = HoverTool(
-                tooltips=[("State", "@state_name"), (f"{tooltip_name}", "@label")],
-                renderers=[patch],
-            )
-            p.add_tools(hover)
-        else:
-            # For not the web, add static labels
-            for i, state in enumerate(state_list):
-                a1, b1 = project_borders(us_states_dat, state_list=[state])
-                citation = Label(
-                    x=min(a1[0]) + 100000,
-                    y=(max(b1[0]) + min(b1[0])) / 2,
-                    x_units="data",
-                    y_units="data",
-                    text_font_size=font_size,
-                    text=labels_list[i],
-                    render_mode="css",
-                    border_line_color="black",
-                    border_line_alpha=0,
-                    background_fill_color="white",
-                    background_fill_alpha=0.8,
-                )
-                p.add_layout(citation)
 
-    if legend_colors is not None:
-        if legend_title is not None:
-            p.legend.title = legend_title
-        p.legend.location = "bottom_right"
-        p.legend.label_text_font_size = "12pt"
-        p.legend.title_text_font_size = "12pt"
-    return p
+    return canvas
+
+
+def add_state_tooltips(canvas, tooltip_title, state2label):
+    """Add tooltip to states.
+
+    :param bokeh.plotting.figure canvas: canvas.
+    :param dict state2label: keys are states abbreviation and values are labels.
+    :return: (*bokeh.plotting.figure.Figure*) -- canvas with toolips.
+    """
+    if not isinstance(tooltip_title, str):
+        raise TypeError("tooltip title must be a str")
+
+    patches = canvas.select_one({"name": "states"})
+    patches = expand_data_source(patches, state2label, "state_label")
+
+    hover = HoverTool(
+        tooltips=[("State", "@state_name"), (f"{tooltip_title}", "@state_label")],
+        renderers=[patches],
+    )
+    canvas.add_tools(hover)
+
+    return canvas
+
+
+def add_state_colors(canvas, state2color):
+    """Color states.
+
+    :param bokeh.plotting.figure canvas: canvas.
+    :param dict state2color: keys are states abbreviation and values are colors.
+    :return: (*bokeh.plotting.figure.Figure*) -- canvas with colored state.
+    """
+    patches = canvas.select_one({"name": "states"})
+    patches = expand_data_source(patches, state2color, "state_color")
+
+    return canvas
+
+
+def add_state_legends(
+    canvas,
+    state2label=None,
+    title=None,
+    location="bottom_right",
+    title_size="12pt",
+    label_size="12pt",
+):
+    """Add legend.
+
+    :param bokeh.plotting.figure canvas: canvas.
+    :param dict state2label: keys are states abbreviation and values are labels.
+    :param str title: title for legend.
+    :param str location: legend location on canvas. Default is bottom right.
+    :param str title_size: legend title font size. Default is 12pt.
+    :param str label_size: legend labels font size. Default is 12pt.
+    :return: (*bokeh.plotting.figure.Figure*) -- canvas with colored state.
+    :raises TypeError:
+        if ``title`` is not None or str.
+        if ``location`` is not a str.
+        if ``title_size`` is not a str.
+        if ``label_size`` is not a str.
+    """
+    if title is not None and not isinstance(title, str):
+        raise TypeError("title must be a str")
+    if location is not None and not isinstance(location, str):
+        raise TypeError("location must be a str")
+    if title_size is not None and not isinstance(title_size, str):
+        raise TypeError("title_size must be a str")
+    if label_size is not None and not isinstance(label_size, str):
+        raise TypeError("label_size must be a str")
+
+    patches = canvas.select_one({"name": "states"})
+    patches = expand_data_source(patches, state2label, "state_legend")
+
+    group_legend = (
+        pd.DataFrame({"legend": patches.data_source.data["state_legend"]})
+        .groupby(["legend"])
+        .groups
+    )
+
+    legend = Legend(
+        items=[
+            LegendItem(index=i[0], label=l, renderers=[patches])
+            for l, i in group_legend.items()
+        ]
+    )
+    canvas.add_layout(legend)
+
+    if title is not None:
+        canvas.legend.title = title
+    canvas.legend.location = location
+    canvas.legend.label_text_font_size = label_size
+    canvas.legend.title_text_font_size = title_size
+
+    return canvas
+
+
+def plot_states(
+    figsize=(1400, 800),
+    state_borders_kwargs=None,
+    state_colors_args=None,
+    state_tooltips_args=None,
+    state_legends_kwargs=None,
+):
+    """Add states on canvas and optionally add colors, tooltips and legends.
+
+    :param tuple figsize: size of the bokeh figure (in pixels).
+    :param dict state_borders_kwargs: keyword argument(s) to be passed to
+        :func:`postreise.add_state_borders`.
+    :param dict state_colors_args: arguments to be passed to
+        :func:`postreise.add_state_colors`.
+    :param dict state_tooltips_args: argument(s) to be passed to
+        :func:`postreise.add_state_tooltips`.
+    :param dict state_legends_kwargs: keyword argument(s) to be passed to
+        :func:`postreise.add_state_legends`.
+    :raises TypeError:
+        if ``state_borders_kwargs`` is not None or dict.
+        if ``state_colors_args`` is not None or dict.
+        if ``state_tooltips_args`` is not None or dict.
+        if ``state_legends_kwargs`` is not None or dict.
+    :return: (*bokeh.plotting.figure.Figure*) -- map of us states.
+    """
+    for label in [
+        "state_borders_kwargs",
+        "state_colors_args",
+        "state_tooltips_args",
+        "state_legends_kwargs",
+    ]:
+        var = eval(label)
+        if var is not None and not isinstance(var, dict):
+            raise TypeError(f"{label} must be a dict")
+
+    # create canvas
+    canvas = create_map_canvas(figsize)
+
+    # add state borders
+    if state_borders_kwargs is not None:
+        _check_func_kwargs(
+            add_state_borders, set(state_borders_kwargs), "state_borders_kwargs"
+        )
+        canvas = add_state_borders(canvas, **state_borders_kwargs)
+    else:
+        canvas = add_state_borders(canvas)
+
+    if state_colors_args is not None:
+        canvas = add_state_colors(canvas, state_colors_args)
+
+    if state_tooltips_args is not None:
+        canvas = add_state_tooltips(
+            canvas, state_tooltips_args["title"], state_tooltips_args["label"]
+        )
+
+    if state_legends_kwargs is not None:
+        _check_func_kwargs(
+            add_state_legends, set(state_legends_kwargs), "state_legends_kwargs"
+        )
+        canvas = add_state_legends(canvas, **state_legends_kwargs)
+
+    return canvas

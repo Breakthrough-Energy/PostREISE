@@ -1,10 +1,11 @@
 import pandas as pd
-from bokeh.plotting import figure
 from powersimdata.network.model import ModelImmutables
 from powersimdata.utility import distance
 
 from postreise.analyze.check import _check_grid
-from postreise.plot.plot_states import plot_states
+from postreise.plot.canvas import create_map_canvas
+from postreise.plot.check import _check_func_kwargs
+from postreise.plot.plot_states import add_state_borders, add_state_tooltips
 from postreise.plot.projection_helpers import project_branch
 
 
@@ -14,7 +15,7 @@ def count_nodes_per_state(grid):
     :param powersimdata.input.grid.Grid grid: grid object.
     :return: (*pandas.Series*) -- index: state names, values: number of nodes.
     """
-    id2state = ModelImmutables(grid.get_grid_model()).zones["id2abv"]
+    id2state = ModelImmutables(grid.grid_model).zones["id2abv"]
     grid.bus["state"] = grid.bus["zone_id"].map(id2state)
     counts = pd.Series(grid.bus["state"].value_counts())
 
@@ -28,7 +29,7 @@ def map_interconnections(
     branch_width_scale_factor=0.5,
     hvdc_width_scale_factor=1,
     b2b_size_scale_factor=50,
-    background_map=False,
+    state_borders_kwargs=None,
 ):
     """Map transmission lines color coded by interconnection.
 
@@ -38,18 +39,16 @@ def map_interconnections(
     :param int/float branch_width_scale_factor: scale factor for branch capacities.
     :param int/float hvdc_width_scale_factor: scale factor for hvdc capacities.
     :param int/float b2b_size_scale_factor: scale factor for back-to_back capacities.
-    :param bool background_map: whether to plot map tiles behind figure.
-    :return: (*bokeh.plotting.figure*) -- map of transmission lines.
+    :param dict state_borders_kwargs: keyword arguments to be passed to
+        :func:`postreise.plot.plot_states.add_state_borders`.
+    :return: (*bokeh.plotting.figure*) -- interconnection map with lines and nodes.
     :raises TypeError:
         if ``branch_device_cutoff`` is not ``float``.
-        if ``figsize`` is not a tuple.
         if ``branch_width_scale_factor`` is not ``int`` or ``float``.
         if ``hvdc_width_scale_factor`` is not ``int`` or ``float``.
         if ``b2b_size_scale_factor`` is not ``int`` or ``float``.
-        if ``background_map`` is not a ``bool``.
     :raises ValueError:
         if ``branch_device_cutoff`` is negative.
-        if both elements of ``figsize`` are not positive.
         if ``branch_width_scale_factor`` is negative.
         if ``hvdc_width_scale_factor`` is negative.
         if ``b2b_size_scale_factor`` is negative.
@@ -60,10 +59,6 @@ def map_interconnections(
         raise TypeError("branch_distance_cutoff must be an int")
     if branch_distance_cutoff <= 0:
         raise ValueError("branch_distance_cutoff must be strictly positive")
-    if not isinstance(figsize, tuple):
-        raise TypeError("figsize must be a tuple")
-    if not (len(figsize) == 2 and all(e > 0 for e in figsize)):
-        raise ValueError("both elemets of figsize must be positive")
     if not isinstance(branch_width_scale_factor, (int, float)):
         raise TypeError("branch_width_scale_factor must be a int/float")
     if branch_width_scale_factor < 0:
@@ -76,8 +71,6 @@ def map_interconnections(
         raise TypeError("b2b_size_scale_factor must be a int/float")
     if b2b_size_scale_factor < 0:
         raise ValueError("b2b_size_scale_factor must be positive")
-    if not isinstance(background_map, bool):
-        raise TypeError("background_map must be a bool")
 
     # branches
     branch = grid.branch.copy()
@@ -101,37 +94,38 @@ def map_interconnections(
     all_dcline["to_lat"] = grid.bus.loc[all_dcline["to_bus_id"], "lat"].values
     all_dcline = project_branch(all_dcline)
 
-    if grid.get_grid_model() == "usa_tamu":
+    if grid.grid_model == "usa_tamu":
         b2b_id = range(9)
     else:
         raise ValueError("grid model is not supported")
     dcline = all_dcline.iloc[~all_dcline.index.isin(b2b_id)]
     b2b = all_dcline.iloc[b2b_id]
 
-    p = figure(
-        tools="pan,wheel_zoom,reset,save",
-        x_axis_location=None,
-        y_axis_location=None,
-        plot_width=figsize[0],
-        plot_height=figsize[1],
-        output_backend="webgl",
-        sizing_mode="scale_both",
-        match_aspect=True,
+    # create canvas
+    canvas = create_map_canvas(figsize=figsize)
+
+    # add state borders
+    default_state_borders_kwargs = {
+        "line_width": 2,
+        "fill_alpha": 0,
+        "background_map": False,
+    }
+    all_state_borders_kwargs = (
+        {**default_state_borders_kwargs, **state_borders_kwargs}
+        if state_borders_kwargs is not None
+        else default_state_borders_kwargs
     )
+    _check_func_kwargs(
+        add_state_borders, set(all_state_borders_kwargs), "state_borders_kwargs"
+    )
+    canvas = add_state_borders(canvas, **all_state_borders_kwargs)
 
-    p.xgrid.visible = False
-    p.ygrid.visible = False
-
+    # add state tooltips
     state_counts = count_nodes_per_state(grid)
-    plot_states(
-        bokeh_figure=p,
-        background_map=background_map,
-        state_list=state_counts.index,
-        labels_list=state_counts.to_numpy(),
-        tooltip_name="nodes",
-    )
+    state2label = {s: c for s, c in zip(state_counts.index, state_counts.to_numpy())}
+    canvas = add_state_tooltips(canvas, "nodes", state2label)
 
-    p.multi_line(
+    canvas.multi_line(
         branch_west[["from_x", "to_x"]].to_numpy().tolist(),
         branch_west[["from_y", "to_y"]].to_numpy().tolist(),
         color="#006ff9",
@@ -139,7 +133,7 @@ def map_interconnections(
         legend_label="Western",
     )
 
-    p.multi_line(
+    canvas.multi_line(
         branch_east[["from_x", "to_x"]].to_numpy().tolist(),
         branch_east[["from_y", "to_y"]].to_numpy().tolist(),
         color="#8B36FF",
@@ -147,7 +141,7 @@ def map_interconnections(
         legend_label="Eastern",
     )
 
-    p.multi_line(
+    canvas.multi_line(
         branch_tx[["from_x", "to_x"]].to_numpy().tolist(),
         branch_tx[["from_y", "to_y"]].to_numpy().tolist(),
         color="#01D4ED",
@@ -155,7 +149,7 @@ def map_interconnections(
         legend_label="Texas",
     )
 
-    p.multi_line(
+    canvas.multi_line(
         dcline[["from_x", "to_x"]].to_numpy().tolist(),
         dcline[["from_y", "to_y"]].to_numpy().tolist(),
         color="#FF2370",
@@ -163,7 +157,7 @@ def map_interconnections(
         legend_label="HVDC",
     )
 
-    p.scatter(
+    canvas.scatter(
         x=b2b["from_x"],
         y=b2b["from_y"],
         color="#FF2370",
@@ -172,7 +166,7 @@ def map_interconnections(
         legend_label="Back-to-Back",
     )
 
-    p.legend.location = "bottom_left"
-    p.legend.label_text_font_size = "12pt"
+    canvas.legend.location = "bottom_left"
+    canvas.legend.label_text_font_size = "12pt"
 
-    return p
+    return canvas

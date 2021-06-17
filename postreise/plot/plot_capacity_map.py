@@ -1,13 +1,13 @@
 # This plotting module has a corresponding demo notebook in
 #   PostREISE/postreise/plot/demo: capacity_map_demo.py
-
 import pandas as pd
 from bokeh.models import ColumnDataSource, HoverTool
-from bokeh.plotting import figure
 from matplotlib import colors as mcolors
-from powersimdata import Scenario
 
-from postreise.plot.plot_states import plot_states
+from postreise.analyze.check import _check_scenario_is_in_analyze_state
+from postreise.plot.canvas import create_map_canvas
+from postreise.plot.check import _check_func_kwargs
+from postreise.plot.plot_states import add_state_borders
 from postreise.plot.projection_helpers import project_bus
 
 
@@ -18,66 +18,58 @@ def map_plant_capacity(
     x_range=None,
     y_range=None,
     disaggregation=None,
-    plot_states_kwargs=None,
+    state_borders_kwargs=None,
     min_capacity=1,
     size_factor=1,
     alpha=0.5,
     legend_font_size=12,
     legend_location="bottom_right",
 ):
-    """Makes map of plant capacities, optionally disaggregated by new/existing. Area
+    """Make map of plant capacities, optionally disaggregated by new/existing. Area
     is proportional to capacity.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param iterable resources: which types of resources to plot.
     :param tuple figsize: size of the bokeh figure (in pixels).
-    :param tuple(float, float) x_range: x range to zoom plot to (EPSG:3857).
-    :param tuple(float, float) y_range: y range to zoom plot to (EPSG:3857).
+    :param tuple x_range: x range to zoom plot to (EPSG:3857).
+    :param tuple y_range: y range to zoom plot to (EPSG:3857).
     :param str disaggregation: method used to disaggregate plants:
         if "new_vs_existing_plants": separates plants into added vs. existing.
         if None, no disaggregation.
-    :param dict plot_states_kwargs: keyword arguments to pass to
-        :func:`postreise.plot.plot_states.plot_states`.
+    :param dict state_borders_kwargs: keyword arguments to pass to
+        :func:`postreise.plot.plot_states.add_state_borders`.
     :param float/int min_capacity: minimum bus capacity (MW) for markers to be plotted.
     :param float/int size_factor: scale size of glyphs.
     :param float/int alpha: opacity of circles (between 0 and 1).
     :param int/float legend_font_size: font size for legend.
     :param str legend_location: location for legend.
-    :raises TypeError: if scenario is not a Scenario object.
-    :return: (*bokeh.plotting.figure.Figure*) -- Bokeh map plot of color-coded upgrades.
+    :return: (*bokeh.plotting.figure.Figure*) -- map with color-coded upgrades.
     """
+    _check_scenario_is_in_analyze_state(scenario)
 
-    if not isinstance(scenario, Scenario):
-        raise TypeError(f"scenario must be a {Scenario} object")
+    # create canvas
+    canvas = create_map_canvas(figsize=figsize, x_range=x_range, y_range=y_range)
 
-    p = figure(
-        tools="pan,wheel_zoom,reset,save",
-        x_axis_location=None,
-        y_axis_location=None,
-        plot_width=figsize[0],
-        plot_height=figsize[1],
-        output_backend="webgl",
-        sizing_mode="scale_both",
-        match_aspect=True,
-        x_range=x_range,
-        y_range=y_range,
-    )
-
-    # state borders
-    default_plot_states_kwargs = {
+    # add state borders
+    default_state_borders_kwargs = {
         "line_color": "gray",
         "line_width": 2,
         "fill_alpha": 0,
         "background_map": True,
     }
-    if plot_states_kwargs is not None:
-        all_plot_states_kwargs = {**default_plot_states_kwargs, **plot_states_kwargs}
-    else:
-        all_plot_states_kwargs = default_plot_states_kwargs
-    plot_states(bokeh_figure=p, **all_plot_states_kwargs)
+    all_state_borders_kwargs = (
+        {**default_state_borders_kwargs, **state_borders_kwargs}
+        if state_borders_kwargs is not None
+        else default_state_borders_kwargs
+    )
+    _check_func_kwargs(
+        add_state_borders, set(all_state_borders_kwargs), "state_borders_kwargs"
+    )
+    canvas = add_state_borders(canvas, **all_state_borders_kwargs)
 
+    # add plant capacity
     add_plant_capacity(
-        p,
+        canvas,
         scenario,
         resources,
         disaggregation,
@@ -86,14 +78,14 @@ def map_plant_capacity(
         alpha,
     )
 
-    p.legend.label_text_font_size = f"{legend_font_size}pt"
-    p.legend.location = legend_location
+    canvas.legend.label_text_font_size = f"{legend_font_size}pt"
+    canvas.legend.location = legend_location
 
-    return p
+    return canvas
 
 
 def add_plant_capacity(
-    bokeh_figure,
+    canvas,
     scenario,
     resources,
     disaggregation=None,
@@ -103,22 +95,20 @@ def add_plant_capacity(
 ):
     """Adds renewables capacity to a plot.
 
-    :param bokeh.plotting.figure.Figure bokeh_figure: figure to plot capacities onto.
+    :param bokeh.plotting.figure.Figure canvas: canvas to plot capacities onto.
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param iterable resources: which types of resources to plot.
     :param tuple figsize: size of the bokeh figure (in pixels).
-    :param tuple(float, float) x_range: x range to zoom plot to (EPSG:3857).
-    :param tuple(float, float) y_range: y range to zoom plot to (EPSG:3857).
+    :param tuple x_range: x range to zoom plot to (EPSG:3857).
+    :param tuple y_range: y range to zoom plot to (EPSG:3857).
     :param str disaggregation: method used to disaggregate plants:
         if "new_vs_existing_plants": separates plants into added vs. existing.
         if None, no disaggregation.
-    :param dict plot_states_kwargs: keyword arguments to pass to
-        :func:`postreise.plot.plot_states.plot_states`.
     :param float/int min_capacity: minimum bus capacity (MW) for markers to be plotted.
     :param float/int size_factor: scale size of glyphs.
     :param float/int alpha: opacity of circles (between 0 and 1).
     :raises ValueError: if ``disaggregation`` is not 'new_vs_existing_plants' or None.
-    :return: (*bokeh.plotting.figure.Figure*) -- Bokeh map plot of color-coded upgrades.
+    :return: (*bokeh.plotting.figure.Figure*) -- map with color-coded upgrades.
     """
     ct = scenario.get_ct()
     grid = scenario.get_grid()
@@ -168,7 +158,7 @@ def add_plant_capacity(
                 "capacity": matching_plants["Pmax"],
                 "radius": matching_plants["Pmax"] ** 0.5 * size_factor,
             }
-            circle = bokeh_figure.circle(
+            circle = canvas.circle(
                 "x",
                 "y",
                 color=mcolors.to_hex(type_colors[resource]),
@@ -181,11 +171,11 @@ def add_plant_capacity(
 
     hover = HoverTool(
         tooltips=[
-            ("Capacity (MW)", "@capacitymw"),
+            ("Capacity (MW)", "@capacity"),
         ],
         renderers=renderers,
     )
 
-    bokeh_figure.add_tools(hover)
+    canvas.add_tools(hover)
 
-    return bokeh_figure
+    return canvas
