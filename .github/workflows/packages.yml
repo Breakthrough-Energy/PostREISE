@@ -46,6 +46,7 @@ jobs:
           token: ${{ secrets.CI_TOKEN_CLONE_REPO }}
           commit-message: Update dependencies
           title: Update dependencies
+          labels: dependencies
           body: |
             ### Summary of changes
 
