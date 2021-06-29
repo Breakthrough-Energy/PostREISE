@@ -1,12 +1,9 @@
 import numpy as np
 import pandas as pd
+from powersimdata.input.check import _check_grid_type, _check_time_series
 from powersimdata.network.model import ModelImmutables
+from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
 
-from postreise.analyze.check import (
-    _check_grid,
-    _check_scenario_is_in_analyze_state,
-    _check_time_series,
-)
 from postreise.analyze.generation.costs import calculate_costs
 
 
@@ -88,7 +85,7 @@ def summarize_emissions_by_bus(emissions, grid):
     if (emissions < -1e-3).any(axis=None):
         raise ValueError("emissions must be non-negative")
 
-    _check_grid(grid)
+    _check_grid_type(grid)
     plant = grid.plant
 
     # sum by generator
