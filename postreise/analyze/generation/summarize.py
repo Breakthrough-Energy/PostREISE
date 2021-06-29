@@ -8,7 +8,7 @@ from postreise.analyze.check import (
     _check_resources_and_format,
     _check_scenario_is_in_analyze_state,
 )
-from postreise.analyze.helpers import (
+from powersimdata.input.helpers import (
     get_plant_id_for_resources_in_area,
     get_storage_id_in_area,
 )

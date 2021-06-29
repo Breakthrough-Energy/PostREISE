@@ -8,7 +8,7 @@ from postreise.analyze.check import (
 from postreise.analyze.generation.summarize import (
     get_generation_time_series_by_resources,
 )
-from postreise.analyze.helpers import (
+from powersimdata.input.helpers import (
     decompose_plant_data_frame_into_areas,
     decompose_plant_data_frame_into_areas_and_resources,
     decompose_plant_data_frame_into_resources,
