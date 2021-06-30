@@ -1,14 +1,13 @@
 import numpy as np
-
-from postreise.analyze.check import (
+from powersimdata.input.check import (
     _check_number_hours_to_analyze,
     _check_resources_are_in_grid_and_format,
-    _check_scenario_is_in_analyze_state,
 )
-from postreise.analyze.helpers import (
+from powersimdata.input.helpers import (
     get_plant_id_for_resources_in_area,
     get_storage_id_in_area,
 )
+from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
 
 
 def calculate_NLDC(scenario, resources, hours=100):  # noqa: N802

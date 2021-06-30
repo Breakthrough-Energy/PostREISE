@@ -1,4 +1,5 @@
-from postreise.analyze.check import _check_epsilon, _check_scenario_is_in_analyze_state
+from powersimdata.input.check import _check_epsilon
+from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
 
 
 def pmin_constraints(scenario, epsilon=1e-3):

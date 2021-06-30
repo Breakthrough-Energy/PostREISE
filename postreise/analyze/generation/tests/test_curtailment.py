@@ -2,6 +2,7 @@ import unittest
 
 import pandas as pd
 from numpy.testing import assert_array_equal
+from powersimdata.input.tests.test_helpers import check_dataframe_matches
 from powersimdata.tests.mock_scenario import MockScenario
 
 from postreise.analyze.generation.curtailment import (
@@ -11,7 +12,6 @@ from postreise.analyze.generation.curtailment import (
     summarize_curtailment_by_bus,
     summarize_curtailment_by_location,
 )
-from postreise.analyze.tests.test_helpers import check_dataframe_matches
 
 # plant_id is the index
 mock_plant = {

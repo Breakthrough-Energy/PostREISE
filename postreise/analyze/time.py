@@ -2,8 +2,10 @@ import re
 
 import pandas as pd
 import pytz
-
-from postreise.analyze.check import _check_date_range_in_time_series, _check_time_series
+from powersimdata.input.check import (
+    _check_date_range_in_time_series,
+    _check_time_series,
+)
 
 
 def is_24_hour_format(time):

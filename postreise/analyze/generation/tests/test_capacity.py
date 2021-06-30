@@ -1,5 +1,6 @@
 import pandas as pd
 import pytest
+from powersimdata.input.tests.test_helpers import check_dataframe_matches
 from powersimdata.tests.mock_scenario import MockScenario
 from pytest import approx
 
@@ -11,7 +12,6 @@ from postreise.analyze.generation.capacity import (
     get_storage_capacity,
     sum_capacity_by_type_zone,
 )
-from postreise.analyze.tests.test_helpers import check_dataframe_matches
 
 mock_plant = {
     "plant_id": [101, 102, 103],
