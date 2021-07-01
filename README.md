@@ -33,7 +33,10 @@ For now, only the source code is available. Clone or Fork the code here on GitHu
 
 ## Dependencies
 **PostREISE** relies on:
-* **PowerSimData**, another package developed by Breakthrough Energy Sciences and available [here][PowerSimData].
+* **PowerSimData**, another package developed by Breakthrough Energy Sciences and
+available [here][PowerSimData]. You must have **PowerSimData** cloned in a folder
+adjacent to your clone of **PostREISE** as the installation of packages depends on
+files in **PowerSimData**.
 * Several Python packages all available on [PyPi](https://pypi.org/) whose list can be
 found in the ***requirements.txt*** or ***Pipfile*** files both located at the root of
 this package.
