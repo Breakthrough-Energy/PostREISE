@@ -3,8 +3,8 @@ import datetime as dt
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
+from powersimdata.input.check import _check_time_series
 
-from postreise.analyze.check import _check_time_series
 from postreise.analyze.time import change_time_zone
 
 

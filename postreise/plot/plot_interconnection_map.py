@@ -1,8 +1,8 @@
 import pandas as pd
+from powersimdata.input.check import _check_grid_type
 from powersimdata.network.model import ModelImmutables
 from powersimdata.utility import distance
 
-from postreise.analyze.check import _check_grid
 from postreise.plot.canvas import create_map_canvas
 from postreise.plot.check import _check_func_kwargs
 from postreise.plot.plot_states import add_state_borders, add_state_tooltips
@@ -54,7 +54,7 @@ def map_interconnections(
         if ``b2b_size_scale_factor`` is negative.
         if grid model is not supported.
     """
-    _check_grid(grid)
+    _check_grid_type(grid)
     if not isinstance(branch_distance_cutoff, (int, float)):
         raise TypeError("branch_distance_cutoff must be an int")
     if branch_distance_cutoff <= 0:
