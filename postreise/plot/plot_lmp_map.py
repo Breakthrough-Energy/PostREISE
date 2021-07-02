@@ -10,8 +10,8 @@ from bokeh.models import (
 )
 from bokeh.palettes import Turbo256
 from matplotlib.colors import BoundaryNorm
+from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
 
-from postreise.analyze.check import _check_scenario_is_in_analyze_state
 from postreise.plot.canvas import create_map_canvas
 from postreise.plot.check import _check_func_kwargs
 from postreise.plot.plot_states import add_state_borders

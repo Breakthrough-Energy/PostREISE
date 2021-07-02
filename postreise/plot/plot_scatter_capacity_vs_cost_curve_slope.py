@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
-
-from postreise.analyze.check import _check_scenario_is_in_analyze_state
-from postreise.analyze.helpers import get_plant_id_for_resources_in_area
+from powersimdata.input.helpers import get_plant_id_for_resources_in_area
+from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
 
 
 def plot_scatter_capacity_vs_cost_curve_slope(

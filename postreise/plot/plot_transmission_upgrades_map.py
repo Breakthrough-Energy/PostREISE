@@ -1,11 +1,11 @@
 import numpy as np
 from bokeh.models import ColumnDataSource
+from powersimdata.design.compare.transmission import (
+    calculate_branch_difference,
+    calculate_dcline_difference,
+)
 from powersimdata.utility.distance import haversine
 
-from postreise.analyze.transmission.upgrades import (
-    get_branch_differences,
-    get_dcline_differences,
-)
 from postreise.plot import colors
 from postreise.plot.canvas import create_map_canvas
 from postreise.plot.check import _check_func_kwargs
@@ -282,8 +282,8 @@ def map_transmission_upgrades(
     # Pre-plot data processing
     grid1 = scenario1.state.get_grid()
     grid2 = scenario2.state.get_grid()
-    branch_merge = get_branch_differences(grid1.branch, grid2.branch)
-    dc_merge = get_dcline_differences(grid1, grid2)
+    branch_merge = calculate_branch_difference(grid1.branch, grid2.branch)
+    dc_merge = calculate_dcline_difference(grid1, grid2)
 
     # Set up figure
     canvas = create_map_canvas(figsize=figsize, x_range=x_range, y_range=y_range)
