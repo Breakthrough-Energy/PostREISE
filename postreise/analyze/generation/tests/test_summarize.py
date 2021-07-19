@@ -4,6 +4,7 @@ import unittest
 import pandas as pd
 import pytest
 from numpy.testing import assert_array_almost_equal
+from powersimdata.input.tests.test_helpers import check_dataframe_matches
 from powersimdata.tests.mock_scenario import MockScenario
 
 from postreise.analyze.generation.summarize import (
@@ -13,7 +14,6 @@ from postreise.analyze.generation.summarize import (
     sum_generation_by_type_zone,
     summarize_hist_gen,
 )
-from postreise.analyze.tests.test_helpers import check_dataframe_matches
 
 # plant_id is the index
 mock_plant = {

@@ -4,6 +4,7 @@ import pytz
 
 from postreise.analyze.time import (
     change_time_zone,
+    is_24_hour_format,
     is_dst,
     resample_time_series,
     slice_time_series,
@@ -20,14 +21,41 @@ ts_as_series = pd.Series(
 )
 
 
+def test_is_24_hour_format():
+    assert is_24_hour_format("01:00")
+    assert not is_24_hour_format("24:00")
+
+
+def test_slicing_argument_value():
+    start = pd.Timestamp(2016, 3, 1)
+    end = pd.Timestamp(2016, 3, 31)
+    arg = (ts_as_data_frame, ts_as_series)
+    for a in arg:
+        with pytest.raises(TypeError):
+            slice_time_series(a, start, end, between_time="16:00")
+        with pytest.raises(ValueError):
+            slice_time_series(a, start, end, between_time=["1", "2", "3"])
+        with pytest.raises(TypeError):
+            slice_time_series(a, start, end, between_time=[16, 17])
+        with pytest.raises(ValueError):
+            slice_time_series(a, start, end, between_time=["24:00", "17:00"])
+        with pytest.raises(TypeError):
+            slice_time_series(a, start, end, dayofweek=1)
+        with pytest.raises(ValueError):
+            slice_time_series(a, start, end, dayofweek={6, 7})
+
+
 def test_slicing():
     start = pd.Timestamp(2016, 3, 1)
     end = pd.Timestamp(2016, 3, 31)
     arg = (ts_as_data_frame, ts_as_series)
     for a in arg:
-        ts_sliced = slice_time_series(a, start, end)
-        assert ts_sliced.index[0] == start
-        assert ts_sliced.index[-1] == end
+        ts_sliced = slice_time_series(
+            a, start, end, between_time=["16:00", "17:00"], dayofweek={1, 3}
+        )
+        assert ts_sliced.index[0] == pd.Timestamp(2016, 3, 1, 16)
+        assert ts_sliced.index[-1] == pd.Timestamp(2016, 3, 29, 17)
+        assert len(ts_sliced.index) == 18
 
 
 def test_resampling_argument_value():
@@ -438,7 +466,7 @@ def test_monthly_resampling_sum():
     for i, a in enumerate(arg):
         ts_resampled = resample_time_series(a, "M")
         assert len(a) != len(ts_resampled)
-        # 12 full monts are available in 2016 when resampling using mean.
+        # 12 full months are available in 2016 when resampling using mean.
         assert len(ts_resampled) == 12
         assert str(ts_resampled.index[1]) == str(pd.Timestamp(2016, 2, 1))
         if i == 0:

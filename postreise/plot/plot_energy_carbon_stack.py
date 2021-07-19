@@ -18,8 +18,8 @@ all_possible = possible_carbon + ["other"] + possible_clean
 def plot_n_scenarios(*args):
     """For 1-to-n scenarios, plot stacked energy and carbon side-by-side.
 
-    :param powersimdata.scenario.scenario.Scenario args: scenarios in
-        Analyze state.
+    :param powersimdata.scenario.scenario.Scenario args: scenario instances.
+    :raises ValueError: if arguments are not scenario instances.
     """
     if not all([isinstance(a, Scenario) for a in args]):
         raise ValueError("all inputs must be Scenario objects")
@@ -31,7 +31,7 @@ def plot_n_scenarios(*args):
     plant = {k: v.plant for k, v in grid.items()}
     # First scenario is chosen to set fuel colors
     type2color = ModelImmutables(args[0].info["grid_model"]).plants["type2color"]
-    carbon_by_type, energy_by_type, type2color = {}, {}
+    carbon_by_type, energy_by_type = {}, {}
     for id, scenario in scenarios.items():
         # Calculate raw numbers
         annual_plant_energy = scenario.state.get_pg().sum()
@@ -115,11 +115,11 @@ def plot_n_scenarios(*args):
             energy_total[s] / 1e6, renewable_share, clean_share
         )
         annotation_x = 2 * (j - 0.08)
-        plt.annotate(xy=(annotation_x, energy_total[s]), s=annotation_str)
+        plt.annotate(xy=(annotation_x, energy_total[s]), text=annotation_str)
         annotation_str = carbon_fmt.format(carbon_total / 1e6)
         annotation_x = 2 * (j - 0.08) + 1
         annotation_y = carbon_total * carbon_multiplier
-        plt.annotate(xy=(annotation_x, annotation_y), s=annotation_str)
+        plt.annotate(xy=(annotation_x, annotation_y), text=annotation_str)
 
     # Plot formatting
     plt.ylim((0, max(energy_total.values()) * 1.2))

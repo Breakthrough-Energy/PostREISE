@@ -1,14 +1,9 @@
 import pandas as pd
-
-from postreise.analyze.check import (
+from powersimdata.input.check import (
     _check_areas_are_in_grid_and_format,
     _check_resources_are_renewable_and_format,
-    _check_scenario_is_in_analyze_state,
 )
-from postreise.analyze.generation.summarize import (
-    get_generation_time_series_by_resources,
-)
-from postreise.analyze.helpers import (
+from powersimdata.input.helpers import (
     decompose_plant_data_frame_into_areas,
     decompose_plant_data_frame_into_areas_and_resources,
     decompose_plant_data_frame_into_resources,
@@ -18,13 +13,18 @@ from postreise.analyze.helpers import (
     summarize_plant_to_bus,
     summarize_plant_to_location,
 )
+from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
+
+from postreise.analyze.generation.summarize import (
+    get_generation_time_series_by_resources,
+)
 
 
 def calculate_curtailment_time_series(scenario):
-    """Calculate a time series of curtailment for renewable resources.
+    """Calculate hourly curtailment for each renewable generator.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
-    :return: (*pandas.DataFrame*) -- time series of curtailment
+    :return: (*pandas.DataFrame*) -- time series of curtailment.
     """
     _check_scenario_is_in_analyze_state(scenario)
     grid = scenario.state.get_grid()
@@ -45,13 +45,13 @@ def calculate_curtailment_time_series(scenario):
 
 
 def calculate_curtailment_time_series_by_resources(scenario, resources=None):
-    """Calculate a time series of curtailment for a set of valid resources.
+    """Calculate hourly curtailment by generator type(s).
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param str/tuple/list/set resources: names of resources to analyze. Default is
         all renewable esources.
     :return: (*dict*) -- keys are resources, values are data frames indexed by
-        (datetime, plant) where plant is only plants of matching type.
+        (datetime, plant id).
     """
     curtailment = calculate_curtailment_time_series(scenario)
     grid = scenario.state.get_grid()
@@ -73,14 +73,14 @@ def calculate_curtailment_time_series_by_resources(scenario, resources=None):
 
 
 def calculate_curtailment_time_series_by_areas(scenario, areas=None):
-    """Calculate a time series of curtailment for a set of valid areas.
+    """Calculate hourly curtailment by area(s).
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param dict areas: keys are area types ('*loadzone*', '*state*' or
         '*interconnect*'), values are a list of areas. Default is the interconnect of
         the scenario. Default is the scenario interconnect.
     :return: (*dict*) -- keys are areas, values are data frames indexed by
-        (datetime, plant) where plant is only renewable plants in specified area.
+        (datetime, plant id).
     """
     curtailment = calculate_curtailment_time_series(scenario)
     grid = scenario.state.get_grid()
@@ -99,12 +99,13 @@ def calculate_curtailment_time_series_by_areas(scenario, areas=None):
 
 
 def calculate_curtailment_percentage_by_resources(scenario, resources=None):
-    """Calculate scenario-long average curtailment for selected resources.
+    """Calculate scenario-long average curtailment fraction for a set of generator
+    type(s).
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param str/tuple/list/set resources: names of resources to analyze. Default is
         all renewable resources.
-    :return: (*float*) -- Average curtailment fraction over the scenario.
+    :return: (*float*) -- average curtailment fraction over the scenario.
     """
     curtailment = calculate_curtailment_time_series_by_resources(scenario, resources)
     resources = set(curtailment.keys())
@@ -128,17 +129,17 @@ def calculate_curtailment_percentage_by_resources(scenario, resources=None):
 def calculate_curtailment_time_series_by_areas_and_resources(
     scenario, areas=None, resources=None
 ):
-    """Calculate a time series of curtailment for a set of valid areas and resources.
+    """Calculate hourly curtailment of each generator located in area(s) area and
+    fueled by resource(s).
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param dict areas: keys are area types ('*loadzone*', '*state*' or
-        '*interconnect*'), values are a list of areas. Default is the interconnect of
-        the scenario. Default is the scenario interconnect.
+        '*interconnect*'), values are a list of areas. Default is the scenario
+        interconnect(s).
     :param str/tuple/list/set resources: names of resources to analyze. Default is
         all renewable resources.
     :return: (*dict*) -- keys are areas, values are dictionaries whose keys are
-        resources and values are data frames indexed by (datetime, plant) where plant
-        is only plants of matching type and located in area.
+        resources and values are data frames indexed by (datetime, plant id).
     """
     curtailment = calculate_curtailment_time_series(scenario)
     grid = scenario.state.get_grid()
@@ -169,17 +170,17 @@ def calculate_curtailment_time_series_by_areas_and_resources(
 def calculate_curtailment_time_series_by_resources_and_areas(
     scenario, areas=None, resources=None
 ):
-    """Calculate a time series of curtailment for a set of valid resources and areas.
+    """Calculate hourly curtailment of each generator fueled by resources and located
+    in area(s).
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
-    :param str/tuple/list/set resources: names of resources to analyze. Default is
-        all renewable resources.
+    :param str/tuple/list/set resources: names of resources. Default is all renewable
+        resources.
     :param dict areas: keys are area types ('*loadzone*', '*state*' or
-        '*interconnect*'), values are a list of areas. Default is the interconnect of
-        the scenario. Default is the scenario interconnect.
+        '*interconnect*'), values are a list of areas. Default is the scenario
+        interconnect(s).
     :return: (*dict*) -- keys are areas, values are dictionaries whose keys are
-        resources and values are data frames indexed by (datetime, plant) where plant
-        is only plants of matching type and located in area.
+        resources and values are data frames indexed by (timestamp, plant id).
     """
     curtailment = calculate_curtailment_time_series(scenario)
     grid = scenario.state.get_grid()
@@ -208,7 +209,7 @@ def calculate_curtailment_time_series_by_resources_and_areas(
 
 
 def summarize_curtailment_by_bus(scenario):
-    """Calculate total curtailment for selected resources, by bus.
+    """Calculate total curtailment by bus.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :return: (*dict*) -- keys are resources, values are dict of
@@ -226,7 +227,7 @@ def summarize_curtailment_by_bus(scenario):
 
 
 def summarize_curtailment_by_location(scenario):
-    """Calculate total curtailment for selected resources, by location.
+    """Calculate total curtailment by location.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :return: (*dict*) -- keys are resources, values are dict of
@@ -244,15 +245,15 @@ def summarize_curtailment_by_location(scenario):
 
 
 def get_curtailment_time_series(scenario, area, area_type=None):
-    """Get time series curtailments for each available resource in a certain area of
-    a scenario
+    """Get hourly curtailment for each available resource(s) in area.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
     :param str area: one of *loadzone*, *state*, *state abbreviation*,
         *interconnect*, *'all'*
     :param str area_type: one of *'loadzone'*, *'state'*, *'state_abbr'*,
         *'interconnect'*
-    :return: (*pandas.DataFrame*) -- index: time stamps, columns: available resources
+    :return: (*pandas.DataFrame*) -- index: timestamps, columns: available renewable
+        resource(s).
     """
     renewables = ["wind", "wind_offshore", "solar"]
     curtailment = get_generation_time_series_by_resources(

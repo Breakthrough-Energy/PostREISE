@@ -1,20 +1,69 @@
+import re
+
 import pandas as pd
 import pytz
+from powersimdata.input.check import (
+    _check_date_range_in_time_series,
+    _check_time_series,
+)
 
-from postreise.analyze.check import _check_date_range_in_time_series, _check_time_series
+
+def is_24_hour_format(time):
+    """Check if the input string is in 24-hour format
+
+    :param str time: input string
+    :return: (*bool*) -- the input string is in 24-hour format or not
+    """
+    regex = "^([01]?[0-9]|2[0-3]):[0-5][0-9]$"
+    p = re.compile(regex)
+    m = re.search(p, time)
+    return m is not None
 
 
-def slice_time_series(ts, start, end):
+def slice_time_series(ts, start, end, between_time=None, dayofweek=None):
     """Slice a time series.
 
     :param pandas.DataFrame/pandas.Series ts: time series to slice.
     :param pandas.Timestamp/numpy.datetime64/datetime.datetime start: start date.
     :param pandas.Timestamp/numpy.datetime64/datetime.datetime end: end date.
+    :param list between_time: specify the start hour and end hour of each day
+        inclusively, default to None, which includes every hour of a day. Note that if
+        the end hour is set before the start hour, the complementary hours of a day are
+        picked.
+    :param set dayofweek: specify the interest days of week, which is a subset of
+        integers in [0, 6] with 0 being Monday and 6 being Sunday, default to None,
+        which includes every day of a week.
     :return: (*pandas.DataFrame/pandas.Series*) -- the sliced time series.
+    :raises TypeError:
+        if between_time is provided but not a list and/or
+        if not all elements of between_time are strings and/or
+        if dayofweek is provided but not a set.
+    :raises ValueError:
+        if between_time is provided but does not have exactly two elements and/or
+        if not all elements of between_time are in 24 hour format and/or
+        if dayofweek is provided but not a subset of integers in [0, 6].
     """
     _check_date_range_in_time_series(ts, start, end)
+    ts = ts[start:end]
+    if between_time is not None and not isinstance(between_time, list):
+        raise TypeError("between_time must be a list")
+    if between_time:
+        if len(between_time) != 2:
+            raise ValueError("between_time must be a list with start_time and end_time")
+        if not all([isinstance(t, str) for t in between_time]):
+            raise TypeError("every element of between_time must be a string")
+        if not all([is_24_hour_format(t) for t in between_time]):
+            raise ValueError("every element of between_time must be in 24 hour format")
+        ts = ts.between_time(*between_time)
 
-    return ts[start:end]
+    if dayofweek is not None and not isinstance(dayofweek, set):
+        raise TypeError("dayofweek must be a set")
+    if dayofweek:
+        if not dayofweek.issubset(set(range(7))):
+            raise ValueError(f"dayofweek must be a subset of {set(range(7))}")
+        ts = ts[ts.index.dayofweek.isin(dayofweek)]
+
+    return ts
 
 
 def resample_time_series(ts, freq, agg="sum"):
@@ -99,6 +148,7 @@ def change_time_zone(ts, tz):
     except pytz.exceptions.UnknownTimeZoneError:
         raise ValueError("Unknown time zone %s" % tz)
 
+    ts.index.name = tz
     if ts.index.tz is None:
         return ts.tz_localize("UTC").tz_convert(tz)
     else:

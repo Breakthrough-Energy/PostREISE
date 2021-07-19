@@ -2,12 +2,10 @@ import os
 
 import matplotlib.pyplot as plt
 import pandas as pd
+from powersimdata.input.check import _check_resources_and_format
 from powersimdata.network.model import ModelImmutables
+from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
 
-from postreise.analyze.check import (
-    _check_resources_and_format,
-    _check_scenario_is_in_analyze_state,
-)
 from postreise.analyze.demand import get_demand_time_series
 from postreise.analyze.generation.curtailment import get_curtailment_time_series
 from postreise.analyze.generation.summarize import (
@@ -91,14 +89,13 @@ def plot_curtailment_time_series(
     demand = get_demand_time_series(scenario, area, area_type=area_type)
     curtailment = get_curtailment_time_series(scenario, area, area_type=area_type)
 
-    if time_zone != "utc":
-        resource_pg = change_time_zone(resource_pg, time_zone)
-        demand = change_time_zone(demand, time_zone)
-        curtailment = change_time_zone(curtailment, time_zone)
+    resource_pg = change_time_zone(resource_pg, time_zone)
+    demand = change_time_zone(demand, time_zone)
+    curtailment = change_time_zone(curtailment, time_zone)
     if not time_range:
         time_range = (
-            pd.Timestamp(scenario.info["start_date"]),
-            pd.Timestamp(scenario.info["end_date"]),
+            pd.Timestamp(scenario.info["start_date"], tz="utc"),
+            pd.Timestamp(scenario.info["end_date"], tz="utc"),
         )
     resource_pg = slice_time_series(resource_pg, time_range[0], time_range[1])
     demand = slice_time_series(demand, time_range[0], time_range[1])
