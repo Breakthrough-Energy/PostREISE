@@ -1,6 +1,6 @@
 FROM ghcr.io/breakthrough-energy/powersimdata:latest
 
-WORKDIR /PostRIESE
+WORKDIR /PostREISE
 COPY Pipfile .
 COPY Pipfile.lock .
 RUN pip install -U pip pipenv jupyterlab ipywidgets; \
