@@ -1,5 +1,5 @@
 ![logo](https://raw.githubusercontent.com/Breakthrough-Energy/docs/master/source/_static/img/BE_Sciences_RGB_Horizontal_Color.svg)
-![PyPI](https://img.shields.io/pypi/v/postreise?color=purple)
+[![PyPI](https://img.shields.io/pypi/v/postreise?color=purple)](https://pypi.org/project/postreise/)
 [![codecov](https://codecov.io/gh/Breakthrough-Energy/PostREISE/branch/develop/graph/badge.svg?token=UFZ9CW4GND)](https://codecov.io/gh/Breakthrough-Energy/PostREISE)
 [![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
