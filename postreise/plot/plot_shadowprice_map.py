@@ -5,9 +5,9 @@ from bokeh.models import ColorBar, ColumnDataSource
 from bokeh.plotting import figure
 from bokeh.tile_providers import Vendors, get_provider
 from bokeh.transform import linear_cmap
+from powersimdata.input.check import _check_date
 from powersimdata.scenario.scenario import Scenario
 
-from postreise.analyze.check import _check_date
 from postreise.plot.colors import shadow_price_pallette
 from postreise.plot.projection_helpers import project_branch, project_bus
 

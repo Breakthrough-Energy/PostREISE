@@ -1,10 +1,9 @@
 import numpy as np
 import pandas as pd
+from powersimdata.input.helpers import summarize_plant_to_bus
 from powersimdata.input.input_data import get_bus_demand
 from powersimdata.scenario.analyze import Analyze
 from powersimdata.scenario.scenario import Scenario
-
-from postreise.analyze.helpers import summarize_plant_to_bus
 
 
 def calculate_congestion_surplus(scenario):

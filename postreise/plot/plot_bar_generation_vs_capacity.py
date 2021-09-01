@@ -3,7 +3,7 @@ import pandas as pd
 from powersimdata.network.model import ModelImmutables, area_to_loadzone
 from powersimdata.scenario.scenario import Scenario
 
-from postreise.analyze.generation.capacity_value import sum_capacity_by_type_zone
+from postreise.analyze.generation.capacity import sum_capacity_by_type_zone
 from postreise.analyze.generation.summarize import sum_generation_by_type_zone
 
 
@@ -23,26 +23,25 @@ def plot_bar_generation_vs_capacity(
     scenario - generation and capacity.
 
     :param list/str areas: list of area(s), each area is one of *loadzone*, *state*,
-        *state abbreviation*, *interconnect*, *'all'*
+        *state abbreviation*, *interconnect*, *'all'*.
     :param list/str area_types: list of area_type(s), each area_type is one of
         *'loadzone'*, *'state'*, *'state_abbr'*, *'interconnect'*, defaults to None.
     :param int/list/str scenario_ids: list of scenario id(s), defaults to None.
     :param list/str scenario_names: list of scenario name(s) of same len as scenario
-        ids, defaults to None
+        ids, defaults to None.
     :param tuple time_range: [start_timestamp, end_timestamp] where each time stamp
         is pandas.Timestamp/numpy.datetime64/datetime.datetime. If None, the entire
         time range is used for the given scenario.
     :param str time_zone: new time zone, defaults to None, which uses UTC.
     :param list custom_data: list of dictionaries with each element being
-        hand-generated data as returned by
-        :func:`postreise.plot_bar_generation_vs_capacity.make_gen_cap_custom_data`,
-        defaults to None.
+        hand-generated data as returned by :func:`make_gen_cap_custom_data`, defaults
+        to None.
     :param list/str resource_types: list of resource type(s) to show, defaults to None,
         which shows all available resources in the area of the corresponding scenario.
     :param dict resource_labels: a dictionary with keys being resource_types and values
         being labels to show in the plots, defaults to None, which uses
         resource_types as labels.
-    :param bool horizontal: display bars horizontally, default to False
+    :param bool horizontal: display bars horizontally, default to False.
     """
     if isinstance(areas, str):
         areas = [areas]
@@ -267,8 +266,7 @@ def _get_bar_display_val(val):
 
 
 def make_gen_cap_custom_data(areas, label, gen_data=None, cap_data=None):
-    """Format custom data for :func:`postreise.plot_bar_generation_vs_capacity
-    .plot_bar_generation_vs_capacity.
+    """Format custom data for :func:`plot_bar_generation_vs_capacity`.
 
     :param list/str areas: list of interest area(s).
     :param str label: the name of the custom scenario to be shown in the plot.

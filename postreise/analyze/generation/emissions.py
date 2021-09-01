@@ -1,27 +1,27 @@
 import numpy as np
 import pandas as pd
-from numpy.polynomial.polynomial import polyval
+from powersimdata.input.check import _check_grid_type, _check_time_series
 from powersimdata.network.model import ModelImmutables
+from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
 
-from postreise.analyze.check import (
-    _check_gencost,
-    _check_grid,
-    _check_scenario_is_in_analyze_state,
-    _check_time_series,
-)
+from postreise.analyze.generation.costs import calculate_costs
 
 
 def generate_emissions_stats(scenario, pollutant="carbon", method="simple"):
-    """Generate emissions statistics from the input generation data. Method
-    descriptions: 'simple' uses a fixed ratio of CO2 to MWh, 'always-on' uses
-    generator heat-rate curves including non-zero intercepts, 'decommit' uses
-    generator heat-rate curves but de-commits generators if they are off
-    (detected by pg < 1 MW).
+    """Calculate hourly emissions for each generator.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param str pollutant: pollutant to analyze.
     :param str method: selected method to handle no-load fuel consumption.
-    :return: (*pandas.DataFrame*) -- emissions data frame.
+    :return: (*pandas.DataFrame*) -- emissions data frame. index: timestamps, column:
+        plant id, values: emission in tons.
+
+    .. note:: method descriptions:
+
+        - 'simple' uses a fixed ratio of CO2 to MWh
+        - 'always-on' uses generator heat-rate curves including non-zero intercepts
+        - 'decommit' uses generator heat-rate curves but de-commits generators if they
+          are off (detected by pg < 1 MW).
     """
     _check_scenario_is_in_analyze_state(scenario)
     mi = ModelImmutables(scenario.info["grid_model"])
@@ -55,13 +55,15 @@ def generate_emissions_stats(scenario, pollutant="carbon", method="simple"):
     elif method in ("decommit", "always-on"):
         decommit = True if method == "decommit" else False
 
-        costs = calc_costs(pg, grid.gencost["before"], decommit=decommit)
+        costs = calculate_costs(
+            pg=pg, gencost=grid.gencost["before"], decommit=decommit
+        )
         heat = np.zeros_like(costs)
 
         for fuel, val in mi.plants["carbon_per_mmbtu"].items():
             indices = (grid.plant["type"] == fuel).to_numpy()
             heat[:, indices] = (
-                costs[:, indices] / grid.plant["GenFuelCost"].values[indices]
+                costs.iloc[:, indices] / grid.plant["GenFuelCost"].values[indices]
             )
             emissions.loc[:, indices] = heat[:, indices] * val * 44 / 12 / 1000
     else:
@@ -71,9 +73,10 @@ def generate_emissions_stats(scenario, pollutant="carbon", method="simple"):
 
 
 def summarize_emissions_by_bus(emissions, grid):
-    """Summarize time series emissions dataframe by type and bus.
+    """Calculate total emissions by generator type and bus.
 
-    :param pandas.DataFrame emissions: hourly emissions by generator.
+    :param pandas.DataFrame emissions: hourly emissions by generator as returned by
+        :func:`generate_emissions_stats`.
     :param powersimdata.input.grid.Grid grid: grid object.
     :return: (*dict*) -- annual emissions by fuel and bus.
     """
@@ -82,7 +85,7 @@ def summarize_emissions_by_bus(emissions, grid):
     if (emissions < -1e-3).any(axis=None):
         raise ValueError("emissions must be non-negative")
 
-    _check_grid(grid)
+    _check_grid_type(grid)
     plant = grid.plant
 
     # sum by generator
@@ -107,37 +110,3 @@ def summarize_emissions_by_bus(emissions, grid):
     }
 
     return bus_totals_by_type
-
-
-def calc_costs(pg, gencost, decommit=False):
-    """Calculate individual generator costs at given powers. If decommit is
-    True, costs will be zero below the decommit threshold (1 MW).
-
-    :param pandas.DataFrame pg: Generation solution data frame.
-    :param pandas.DataFrame gencost: cost curve polynomials.
-    :param boolean decommit: Whether to decommit generator at very low power.
-    :return: (*pandas.DataFrame*) -- data frame of costs.
-    """
-
-    decommit_threshold = 1
-
-    _check_gencost(gencost)
-    _check_time_series(pg, "PG")
-    if (pg < -1e-3).any(axis=None):
-        raise ValueError("PG must be non-negative")
-
-    # get ordered polynomial coefficients in columns, discarding non-coeff data
-    # coefs = gencost.values.T[-2:3:-1,:]
-    # coefs = gencost[['c0', 'c1', 'c2']].values.T
-    num_coefs = gencost["n"].iloc[0]
-    coef_columns = ["c" + str(i) for i in range(num_coefs)]
-    coefs = gencost[coef_columns].to_numpy().T
-
-    # elementwise, evaluate polynomial where x = value
-    costs = polyval(pg.to_numpy(), coefs, tensor=False)
-
-    if decommit:
-        # mask values where pg is 0 to 0 cost (assume uncommitted, no cost)
-        costs = np.where(pg.to_numpy() < decommit_threshold, 0, costs)
-
-    return costs

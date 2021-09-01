@@ -1,0 +1,17 @@
+version: '3.7'
+
+services:
+  postreise:
+    container_name: postreise
+    hostname: postreise
+    image: ghcr.io/breakthrough-energy/postreise:latest
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+    working_dir: /app
+    volumes:
+      - ~/PlotData:/mnt/bes/pcm
+      - ./:/app
+    ports:
+      - "10000:10000"
+    environment:
+      - DEPLOYMENT_MODE=1
