@@ -8,22 +8,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout PostREISE
-        uses: actions/checkout@v2
-        with:
-          path: PostREISE
-
-      - name: Checkout PowerSimData
-        uses: actions/checkout@v2
-        with:
-          repository: Breakthrough-Energy/PowerSimData
-          path: PowerSimData
+      - uses: actions/checkout@v2
 
       - name: Pipenv lock
         id: pipenv_lock
         uses: Breakthrough-Energy/actions/update-packages@main
-        with:
-          repo-dir: PostREISE
 
       - name: Parse JSON
         id: parse_json
@@ -67,4 +56,3 @@ jobs:
 
             [1]: https://github.com/peter-evans/create-pull-request
           branch: update-dependencies
-          path: PostREISE
