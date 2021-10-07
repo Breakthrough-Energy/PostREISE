@@ -55,7 +55,8 @@ software ecosystem.
 
 
 ## Documentation
-The official documentation can be found [here][docs].
+[Code documentation][docstrings] in form of Python docstrings along with an overview of
+the [package][docs] are available on our [website][website].
 
 
 ## Communication Channels
@@ -70,5 +71,7 @@ Guide](https://breakthrough-energy.github.io/docs/dev/contribution_guide.html).
 
 
 
-[docs]: https://breakthrough-energy.github.io/docs/index.html
+[docs]: https://breakthrough-energy.github.io/docs/postreise/index.html
+[docstrings]: https://breakthrough-energy.github.io/docs/postreise.html
+[website]: https://breakthrough-energy.github.io/docs/
 [PowerSimData]: https://github.com/Breakthrough-Energy/PowerSimData
