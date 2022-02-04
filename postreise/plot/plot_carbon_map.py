@@ -150,7 +150,7 @@ def add_emission(canvas, emission, scale_factor):
     hover = HoverTool(
         tooltips=[
             ("Type", "@type"),
-            (u"Tons CO\u2082", "@tons"),
+            ("Tons CO\u2082", "@tons"),
         ],
         renderers=[circle],
     )
