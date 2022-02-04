@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 from powersimdata.input.helpers import summarize_plant_to_bus
-from powersimdata.input.input_data import get_bus_demand
 from powersimdata.scenario.analyze import Analyze
 from powersimdata.scenario.scenario import Scenario
 
@@ -22,7 +21,7 @@ def calculate_congestion_surplus(scenario):
     lmp = scenario.state.get_lmp()
     pg = scenario.state.get_pg()
 
-    bus_demand = get_bus_demand(scenario.info, grid).to_numpy()
+    bus_demand = scenario.get_bus_demand()
     bus_pg = summarize_plant_to_bus(pg, grid, all_buses=True)
 
     congestion_surplus = (lmp.to_numpy() * (bus_demand - bus_pg)).sum(axis=1)
