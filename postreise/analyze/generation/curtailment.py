@@ -30,11 +30,13 @@ def calculate_curtailment_time_series(scenario):
     grid = scenario.state.get_grid()
     pg = scenario.state.get_pg()
 
-    plant_id = get_plant_id_for_resources(
-        grid.model_immutables.plants["renewable_resources"].intersection(
-            set(grid.plant.type)
-        ),
-        grid,
+    plant_id = list(
+        get_plant_id_for_resources(
+            grid.model_immutables.plants["renewable_resources"].intersection(
+                set(grid.plant.type)
+            ),
+            grid,
+        )
     )
     profiles = pd.concat(
         [scenario.state.get_solar(), scenario.state.get_wind()], axis=1
@@ -120,7 +122,7 @@ def calculate_curtailment_percentage_by_resources(scenario, resources=None):
 
     curtailment_percentage = (
         sum(v for v in total_curtailment.values())
-        / total_potential.loc[resources].sum()
+        / total_potential.loc[list(resources)].sum()
     )
 
     return curtailment_percentage

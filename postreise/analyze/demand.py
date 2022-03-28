@@ -22,7 +22,7 @@ def get_demand_time_series(scenario, area, area_type=None):
     )
     loadzone_id_set = {grid.zone2id[lz] for lz in loadzone_set if lz in grid.zone2id}
 
-    return scenario.state.get_demand()[loadzone_id_set].sum(axis=1)
+    return scenario.state.get_demand()[list(loadzone_id_set)].sum(axis=1)
 
 
 def get_net_demand_time_series(scenario, area, area_type=None):
