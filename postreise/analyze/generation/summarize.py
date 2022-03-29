@@ -139,7 +139,7 @@ def summarize_hist_gen(
     result.loc["Texas interconnection"] = ercot
     result.loc["All"] = all
 
-    result = result.loc[:, filtered_colnames]
+    result = result.loc[:, list(filtered_colnames)]
     result.rename(columns=mi.plants["type2label"], inplace=True)
 
     return result
