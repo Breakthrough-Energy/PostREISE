@@ -33,7 +33,7 @@ def plot_bar_generation_max_min_actual(
     :param plot_show: show the plot or not, defaults to True.
     :return: (*matplotlib.axes.Axes*) -- axes object of the plot.
     """
-    grid = scenario.state.get_grid()
+    grid = scenario.get_grid()
     plant = grid.plant[grid.plant.type == gen_type]
     mi = ModelImmutables(scenario.info["grid_model"])
     hour_num = (

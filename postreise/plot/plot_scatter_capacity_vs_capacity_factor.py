@@ -83,7 +83,7 @@ def plot_scatter_capacity_vs_capacity_factor(
     plant_id = get_plant_id_for_resources_in_area(
         scenario, area, resources, area_type=area_type
     )
-    plant_df = scenario.state.get_grid().plant.loc[plant_id]
+    plant_df = scenario.get_grid().plant.loc[plant_id]
     if total_cap == 0:
         data_avg = 0
     else:

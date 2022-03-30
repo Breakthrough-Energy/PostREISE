@@ -36,7 +36,7 @@ def plot_carbon_bar(*args, labels=None, labels_size=15, show_plot=True):
 
     carbon_val = {"coal": [], "ng": []}
     for i, s in enumerate(args):
-        grid = s.state.get_grid()
+        grid = s.get_grid()
         carbon_by_bus = summarize_emissions_by_bus(generate_emissions_stats(s), grid)
         carbon_val["coal"].append(sum(carbon_by_bus["coal"].values()))
         carbon_val["ng"].append(sum(carbon_by_bus["ng"].values()))
@@ -70,10 +70,10 @@ def carbon_diff(scenario_1, scenario_2):
     :return: (*float*) -- relative difference in emission in percent.
     """
     carbon_by_bus_1 = summarize_emissions_by_bus(
-        generate_emissions_stats(scenario_1), scenario_1.state.get_grid()
+        generate_emissions_stats(scenario_1), scenario_1.get_grid()
     )
     carbon_by_bus_2 = summarize_emissions_by_bus(
-        generate_emissions_stats(scenario_2), scenario_2.state.get_grid()
+        generate_emissions_stats(scenario_2), scenario_2.get_grid()
     )
 
     sum_1 = sum(carbon_by_bus_1["coal"].values()) + sum(carbon_by_bus_1["ng"].values())

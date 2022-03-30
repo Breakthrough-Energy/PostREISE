@@ -280,8 +280,8 @@ def map_transmission_upgrades(
         raise ValueError("Scenarios to compare must be same grid model & interconnect")
 
     # Pre-plot data processing
-    grid1 = scenario1.state.get_grid()
-    grid2 = scenario2.state.get_grid()
+    grid1 = scenario1.get_grid()
+    grid2 = scenario2.get_grid()
     branch_merge = calculate_branch_difference(grid1.branch, grid2.branch)
     dc_merge = calculate_dcline_difference(grid1, grid2)
 

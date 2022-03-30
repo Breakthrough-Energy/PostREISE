@@ -127,7 +127,7 @@ def plot_bar_generation_stack(
         all_loadzone_data[sid] = pd.concat(
             [
                 sum_generation_by_type_zone(scenario).T,
-                scenario.state.get_demand().sum().T.rename("load"),
+                scenario.get_demand().sum().T.rename("load"),
                 curtailment,
             ],
             axis=1,

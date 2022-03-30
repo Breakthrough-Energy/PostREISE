@@ -67,8 +67,8 @@ def map_lmp(
     if scale_factor < 0:
         raise ValueError("scale_factor must be positive")
 
-    grid = scenario.state.get_grid()
-    lmp = scenario.state.get_lmp()
+    grid = scenario.get_grid()
+    lmp = scenario.get_lmp()
     bus_with_lmp = grid.bus.copy()
     bus_with_lmp["lmp"] = lmp.mean()
 

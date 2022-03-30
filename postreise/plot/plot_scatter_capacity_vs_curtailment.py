@@ -84,16 +84,14 @@ def plot_scatter_capacity_vs_curtailment(
         between_time=between_time,
         dayofweek=dayofweek,
     )
-    profiles = pd.concat(
-        [scenario.state.get_solar(), scenario.state.get_wind()], axis=1
-    )
+    profiles = pd.concat([scenario.get_solar(), scenario.get_wind()], axis=1)
     curtailment = curtailment.sum() / profiles[curtailment.columns].sum()
     if percentage:
         curtailment = (curtailment * 100).round(2)
     total_cap = get_capacity_by_resources(
         scenario, area, resources, area_type=area_type
     ).sum()
-    plant_df = scenario.state.get_grid().plant.loc[plant_list]
+    plant_df = scenario.get_grid().plant.loc[plant_list]
     if total_cap == 0:
         data_avg = 0
     else:

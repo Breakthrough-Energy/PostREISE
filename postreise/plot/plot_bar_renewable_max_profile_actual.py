@@ -36,12 +36,12 @@ def plot_bar_renewable_max_profile_actual(
     mi = ModelImmutables(scenario.info["grid_model"])
     if gen_type not in mi.plants["renewable_resources"]:
         raise ValueError("gen_type must be one of renewable resources")
-    grid = scenario.state.get_grid()
+    grid = scenario.get_grid()
     plant = grid.plant[grid.plant.type == gen_type]
     if "wind" in gen_type:
-        profile = scenario.state.get_wind().sum()
+        profile = scenario.get_wind().sum()
     else:
-        profile = scenario.state.get_solar().sum()
+        profile = scenario.get_solar().sum()
     hour_num = (
         pd.Timestamp(scenario.info["end_date"])
         - pd.Timestamp(scenario.info["start_date"])

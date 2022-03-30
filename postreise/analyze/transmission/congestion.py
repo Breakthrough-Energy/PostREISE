@@ -12,9 +12,9 @@ def calculate_congestion_surplus(scenario):
     """
     _check_scenario_is_in_analyze_state(scenario)
 
-    grid = scenario.state.get_grid()
-    lmp = scenario.state.get_lmp()
-    pg = scenario.state.get_pg()
+    grid = scenario.get_grid()
+    lmp = scenario.get_lmp()
+    pg = scenario.get_pg()
 
     bus_demand = scenario.get_bus_demand()
     bus_pg = summarize_plant_to_bus(pg, grid, all_buses=True)

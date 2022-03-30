@@ -16,13 +16,13 @@ def get_demand_time_series(scenario, area, area_type=None):
     :return: (*pandas.Series*) -- time series of total demand, index: time stamps,
         column: demand values
     """
-    grid = scenario.state.get_grid()
+    grid = scenario.get_grid()
     loadzone_set = area_to_loadzone(
         scenario.info["grid_model"], area, area_type=area_type
     )
     loadzone_id_set = {grid.zone2id[lz] for lz in loadzone_set if lz in grid.zone2id}
 
-    return scenario.state.get_demand()[list(loadzone_id_set)].sum(axis=1)
+    return scenario.get_demand()[list(loadzone_id_set)].sum(axis=1)
 
 
 def get_net_demand_time_series(scenario, area, area_type=None):
