@@ -26,7 +26,7 @@ def sum_generation_by_type_zone(
     """
     _check_scenario_is_in_analyze_state(scenario)
 
-    pg = scenario.state.get_pg()
+    pg = scenario.get_pg().copy()
     if time_zone:
         pg = change_time_zone(pg, time_zone)
     if time_range:
