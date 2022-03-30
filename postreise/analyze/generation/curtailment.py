@@ -181,8 +181,8 @@ def calculate_curtailment_time_series_by_resources_and_areas(
     :param dict areas: keys are area types ('*loadzone*', '*state*' or
         '*interconnect*'), values are a list of areas. Default is the scenario
         interconnect(s).
-    :return: (*dict*) -- keys are areas, values are dictionaries whose keys are
-        resources and values are data frames indexed by (timestamp, plant id).
+    :return: (*dict*) -- keys are resources, values are dictionaries whose keys are
+        areas and values are data frames indexed by (timestamp, plant id).
     """
     curtailment = calculate_curtailment_time_series(scenario)
     grid = scenario.state.get_grid()
