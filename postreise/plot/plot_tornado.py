@@ -3,8 +3,7 @@ import pandas as pd
 
 
 def plot_tornado(title, data, sorted=False):
-    """
-    Plots a tornado graph (horizontal bar with both positive and neg values)
+    """Plots a tornado graph (horizontal bar with both positive and neg values)
 
     :param str title: Title of the plot
     :param dict data: dictionary of data to be plotted
