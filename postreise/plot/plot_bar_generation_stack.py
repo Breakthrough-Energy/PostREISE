@@ -112,7 +112,12 @@ def plot_bar_generation_stack(
     all_loadzone_data = dict()
     for sid, scenario in zip(scenario_ids, s_list):
         curtailment = calculate_curtailment_time_series_by_areas_and_resources(
-            scenario, areas={"loadzone": mi.zones["loadzone"]}
+            scenario,
+            areas={
+                "loadzone": mi.zones["interconnect2loadzone"][
+                    scenario.info["interconnect"]
+                ]
+            },
         )
         for area in curtailment:
             for r in curtailment[area]:
@@ -196,7 +201,7 @@ def plot_bar_generation_stack(
         if scenario_names:
             labels = scenario_names
         else:
-            labels = [s.info["name'"] for s in s_list]
+            labels = [s.info["name"] for s in s_list]
         ax.set_xticks([i * x_scale for i in range(len(s_list))])
         ax.set_xticklabels(labels, fontsize=12)
         ax.set_ylabel("TWh", fontsize=12)
