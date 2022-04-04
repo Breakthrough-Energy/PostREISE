@@ -18,6 +18,7 @@ def plot_bar_generation_vs_capacity(
     resource_types=None,
     resource_labels=None,
     horizontal=False,
+    plot_show=True,
 ):
     """Plot any number of scenarios as bar or horizontal bar charts with two columns per
     scenario - generation and capacity.
@@ -42,6 +43,7 @@ def plot_bar_generation_vs_capacity(
         being labels to show in the plots, defaults to None, which uses
         resource_types as labels.
     :param bool horizontal: display bars horizontally, default to False.
+    :return: (*matplotlib.axes.Axes*) -- axes object of the plot.
     """
     if isinstance(areas, str):
         areas = [areas]
@@ -152,9 +154,14 @@ def plot_bar_generation_vs_capacity(
             )
 
         if horizontal:
-            _construct_hbar_visuals(area, ax_data_list)
+            axes = _construct_hbar_visuals(area, ax_data_list)
         else:
-            _construct_bar_visuals(area, ax_data_list)
+            axes = _construct_bar_visuals(area, ax_data_list)
+
+        if plot_show:
+            plt.show()
+        else:
+            return axes
 
 
 def _construct_bar_visuals(zone, ax_data_list):
@@ -201,7 +208,7 @@ def _construct_bar_visuals(zone, ax_data_list):
             )
 
     axes[1].get_legend().remove()
-    plt.show()
+    return axes
 
 
 def _construct_hbar_visuals(zone, ax_data_list):
@@ -249,7 +256,7 @@ def _construct_hbar_visuals(zone, ax_data_list):
                 fontsize=14,
                 verticalalignment="top",
             )
-    plt.show()
+    return axes
 
 
 def _get_bar_display_val(val):
