@@ -52,9 +52,7 @@ def plot_bar_generation_vs_capacity(
     if not area_types:
         area_types = [None] * len(areas)
     if len(areas) != len(area_types):
-        raise ValueError(
-            "ERROR: if area_types are provided, it should have the same number of entries with areas."
-        )
+        raise ValueError("area_types must have same size as areas")
 
     if not scenario_ids:
         scenario_ids = []
@@ -63,21 +61,17 @@ def plot_bar_generation_vs_capacity(
     if isinstance(scenario_names, str):
         scenario_names = [scenario_names]
     if scenario_names and len(scenario_names) != len(scenario_ids):
-        raise ValueError(
-            "ERROR: if scenario names are provided, number of scenario names must match number of scenario ids"
-        )
+        raise ValueError("scenario_names must have same size as scenario_ids")
     if not custom_data:
         custom_data = {}
     if len(scenario_ids) + len(custom_data) <= 1:
-        raise ValueError(
-            "ERROR: must include at least two scenario ids and/or custom data"
-        )
+        raise ValueError("two scenario and/or custom data must be provided")
     if isinstance(resource_types, str):
         resource_types = [resource_types]
     if not resource_labels:
         resource_labels = dict()
     if not isinstance(resource_labels, dict):
-        raise TypeError("ERROR: resource_labels should be a dictionary")
+        raise TypeError("resource_labels must be a dict")
 
     all_loadzone_data = {}
     scenario_data = {}
