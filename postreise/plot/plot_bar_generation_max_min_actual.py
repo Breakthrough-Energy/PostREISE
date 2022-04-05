@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import pandas as pd
-from powersimdata.network.model import ModelImmutables
+from powersimdata.input.check import _check_resources_are_in_grid_and_format
 
 from postreise.analyze.generation.summarize import (
     sum_generation_by_state,
@@ -32,10 +32,36 @@ def plot_bar_generation_max_min_actual(
     :param int/float fontsize: font size of the texts shown on the plot.
     :param plot_show: show the plot or not, defaults to True.
     :return: (*matplotlib.axes.Axes*) -- axes object of the plot.
+    :raises TypeError:
+        if ``interconnect`` and ``gen_type`` are not str
+        if ``fontsize`` is not an integer or a float and/or
+    :raises ValueError: if ``interconnect is not valid
     """
+    if not isinstance(interconnect, str):
+        raise TypeError("interconnect must be a str")
+    if not isinstance(gen_type, str):
+        raise TypeError("gen_type must be a str")
+    if not isinstance(fontsize, (int, float)):
+        raise TypeError("fontsize must be either a int or a float")
+
     grid = scenario.get_grid()
+    _check_resources_are_in_grid_and_format(gen_type, grid)
+
     plant = grid.plant[grid.plant.type == gen_type]
-    mi = ModelImmutables(scenario.info["grid_model"])
+    mi = grid.model_immutables
+    if interconnect not in mi.zones["interconnect"]:
+        raise ValueError(
+            f"interconnect must be one of {sorted(mi.zones['interconnect'])}"
+        )
+    if (
+        len(
+            mi.zones["interconnect2abv"][interconnect]
+            - mi.zones["interconnect2abv"][scenario.info["interconnect"]]
+        )
+        != 0
+    ):
+        raise ValueError("interconnect is incompatible with scenario's interconnect")
+
     hour_num = (
         pd.Timestamp(scenario.info["end_date"])
         - pd.Timestamp(scenario.info["start_date"])
