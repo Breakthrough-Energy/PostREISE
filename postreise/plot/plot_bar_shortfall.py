@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import pandas as pd
 from powersimdata.design.generation.clean_capacity_scaling import (
     add_demand_to_targets,
@@ -16,6 +17,7 @@ def plot_bar_shortfall(
     scenario_names=None,
     baseline_scenario=None,
     baseline_scenario_name=None,
+    plot_show=True,
 ):
     """Plot a stacked bar chart of generation shortfall based on given targets for
         any number of scenarios.
@@ -36,6 +38,8 @@ def plot_bar_shortfall(
     :param str baseline_scenario_name: specify the label of the baseline scenario
         shown in the bar chart, default to None, in which case the name of the
         scenario will be used.
+    :param bool plot_show: display the generated figure or not, defaults to True.
+    :return: (*matplotlib.axes.Axes*) -- axes object of the plot.
     :raises ValueError:
         if length of scenario_names and scenario_ids is different.
     :raises TypeError:
@@ -147,7 +151,7 @@ def plot_bar_shortfall(
             target_pct = round(100 * target_generation / target_demand, 2)
 
         if baseline_scenario:
-            _construct_shortfall_visuals(
+            axes = _construct_shortfall_visuals(
                 area,
                 ax_data,
                 target_pct,
@@ -155,11 +159,15 @@ def plot_bar_shortfall(
                 baseline_scenario_name=baseline_scenario_name,
             )
         else:
-            _construct_shortfall_visuals(
+            axes = _construct_shortfall_visuals(
                 area,
                 ax_data,
                 target_pct,
             )
+        if plot_show:
+            plt.show()
+        else:
+            return axes
 
 
 def _construct_shortfall_visuals(
