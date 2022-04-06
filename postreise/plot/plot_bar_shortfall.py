@@ -49,23 +49,21 @@ def plot_bar_shortfall(
     if isinstance(scenario_ids, (int, str)):
         scenario_ids = [scenario_ids]
     if not isinstance(target_df, pd.DataFrame):
-        raise TypeError("ERROR: target_df must be a pandas.DataFrame")
+        raise TypeError("target_df must be a pandas.DataFrame")
     if strategy is None:
         strategy = dict()
     if not isinstance(strategy, dict):
-        raise TypeError("ERROR: strategy must be a dictionary")
+        raise TypeError("strategy must be a dict")
     if isinstance(scenario_names, str):
         scenario_names = [scenario_names]
     if scenario_names is not None and len(scenario_names) != len(scenario_ids):
-        raise ValueError(
-            "ERROR: if scenario names are provided, number of scenario names must match number of scenario ids"
-        )
+        raise ValueError("scenario_names must have same size as scenario_ids")
     if baseline_scenario is not None and not isinstance(baseline_scenario, (str, int)):
-        raise TypeError("ERROR: baseline_scenario must be a string or integer")
+        raise TypeError("baseline_scenario must be a str or int")
     if baseline_scenario_name is not None and not isinstance(
         baseline_scenario_name, str
     ):
-        raise TypeError("ERROR: baseline_scenario_name must be a string")
+        raise TypeError("baseline_scenario_name must be a str")
 
     scenarios = dict()
     targets = dict()
