@@ -44,6 +44,12 @@ def plot_bar_generation_vs_capacity(
         resource_types as labels.
     :param bool horizontal: display bars horizontally, default to False.
     :return: (*matplotlib.axes.Axes*) -- axes object of the plot.
+    :raises TypeError:
+        if ``resource_labels`` is not a dict.
+    :raises ValueError:
+        if length of ``area_types`` and ``areas`` is different.
+        if length of ``scenario_names`` and ``scenario_ids`` is different.
+        if only one scenario is provided with no ``custom_data``.
     """
     if isinstance(areas, str):
         areas = [areas]
