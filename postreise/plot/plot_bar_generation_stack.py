@@ -73,29 +73,25 @@ def plot_bar_generation_stack(
     if isinstance(scenario_ids, (int, str)):
         scenario_ids = [scenario_ids]
     if not isinstance(scenario_ids, list):
-        raise TypeError("ERROR: scenario_ids should be a int/str/list")
+        raise TypeError("scenario_ids must be a int, str or list")
     if isinstance(resources, str):
         resources = [resources]
     if not isinstance(resources, list):
-        raise TypeError("ERROR: resources should be a list/str")
+        raise TypeError("resources must be a list or str")
     if isinstance(area_types, str):
         area_types = [area_types]
     if not area_types:
         area_types = [None] * len(areas)
     if len(areas) != len(area_types):
-        raise ValueError(
-            "ERROR: if area_types are provided, number of area_types must match number of areas"
-        )
+        raise ValueError("area_types must have same size as areas")
     if isinstance(scenario_names, str):
         scenario_names = [scenario_names]
     if scenario_names and len(scenario_names) != len(scenario_ids):
-        raise ValueError(
-            "ERROR: if scenario names are provided, number of scenario names must match number of scenario ids"
-        )
+        raise ValueError("scenario_names must have same size as scenario_ids")
     if titles is not None and not isinstance(titles, dict):
-        raise TypeError("ERROR: titles should be a dictionary if provided")
+        raise TypeError("titles must be a dictionary")
     if filenames is not None and not isinstance(filenames, dict):
-        raise TypeError("ERROR: filenames should be a dictionary if provided")
+        raise TypeError("filenames must be a dictionary")
     s_list = []
     for sid in scenario_ids:
         s_list.append(Scenario(sid))
