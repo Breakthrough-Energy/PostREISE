@@ -61,12 +61,12 @@ def plot_bar_generation_stack(
         directory if None.
     :return: (*list*) -- matplotlib.axes.Axes object of each plot in a list.
     :raises TypeError:
-        if resources is not a list/str and/or
-        if titles is provided but not in a dictionary format and/or
-        if filenames is provided but not in a dictionary format.
+        if ``resources`` is not a list or str.
+        if ``titles`` is not a dict.
+        if ``filenames`` is not a dict.
     :raises ValueError:
-        if length of area_types and areas is different and/or
-        if length of scenario_names and scenario_ids is different.
+        if length of ``area_types`` and ``areas`` is different.
+        if length of ``scenario_names`` and ``scenario_ids`` is different.
     """
     if isinstance(areas, str):
         areas = [areas]
