@@ -27,14 +27,14 @@ def plot_n_scenarios(*args):
     scenario_numbers = [a.info["id"] for a in args]
     first_id = scenario_numbers[0]
     scenarios = {id: scen for (id, scen) in zip(scenario_numbers, args)}
-    grid = {id: scenario.state.get_grid() for id, scenario in scenarios.items()}
+    grid = {id: scenario.get_grid() for id, scenario in scenarios.items()}
     plant = {k: v.plant for k, v in grid.items()}
     # First scenario is chosen to set fuel colors
     type2color = ModelImmutables(args[0].info["grid_model"]).plants["type2color"]
     carbon_by_type, energy_by_type = {}, {}
     for id, scenario in scenarios.items():
         # Calculate raw numbers
-        annual_plant_energy = scenario.state.get_pg().sum()
+        annual_plant_energy = scenario.get_pg().sum()
         raw_energy_by_type = annual_plant_energy.groupby(plant[id].type).sum()
         annual_plant_carbon = generate_emissions_stats(scenario).sum()
         raw_carbon_by_type = annual_plant_carbon.groupby(plant[id].type).sum()

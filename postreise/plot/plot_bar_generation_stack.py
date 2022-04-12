@@ -61,41 +61,37 @@ def plot_bar_generation_stack(
         directory if None.
     :return: (*list*) -- matplotlib.axes.Axes object of each plot in a list.
     :raises TypeError:
-        if resources is not a list/str and/or
-        if titles is provided but not in a dictionary format and/or
-        if filenames is provided but not in a dictionary format.
+        if ``resources`` is not a list or str.
+        if ``titles`` is not a dict.
+        if ``filenames`` is not a dict.
     :raises ValueError:
-        if length of area_types and areas is different and/or
-        if length of scenario_names and scenario_ids is different.
+        if length of ``area_types`` and ``areas`` is different.
+        if length of ``scenario_names`` and ``scenario_ids`` is different.
     """
     if isinstance(areas, str):
         areas = [areas]
     if isinstance(scenario_ids, (int, str)):
         scenario_ids = [scenario_ids]
     if not isinstance(scenario_ids, list):
-        raise TypeError("ERROR: scenario_ids should be a int/str/list")
+        raise TypeError("scenario_ids must be a int, str or list")
     if isinstance(resources, str):
         resources = [resources]
     if not isinstance(resources, list):
-        raise TypeError("ERROR: resources should be a list/str")
+        raise TypeError("resources must be a list or str")
     if isinstance(area_types, str):
         area_types = [area_types]
     if not area_types:
         area_types = [None] * len(areas)
     if len(areas) != len(area_types):
-        raise ValueError(
-            "ERROR: if area_types are provided, number of area_types must match number of areas"
-        )
+        raise ValueError("area_types must have same size as areas")
     if isinstance(scenario_names, str):
         scenario_names = [scenario_names]
     if scenario_names and len(scenario_names) != len(scenario_ids):
-        raise ValueError(
-            "ERROR: if scenario names are provided, number of scenario names must match number of scenario ids"
-        )
+        raise ValueError("scenario_names must have same size as scenario_ids")
     if titles is not None and not isinstance(titles, dict):
-        raise TypeError("ERROR: titles should be a dictionary if provided")
+        raise TypeError("titles must be a dictionary")
     if filenames is not None and not isinstance(filenames, dict):
-        raise TypeError("ERROR: filenames should be a dictionary if provided")
+        raise TypeError("filenames must be a dictionary")
     s_list = []
     for sid in scenario_ids:
         s_list.append(Scenario(sid))
@@ -112,7 +108,12 @@ def plot_bar_generation_stack(
     all_loadzone_data = dict()
     for sid, scenario in zip(scenario_ids, s_list):
         curtailment = calculate_curtailment_time_series_by_areas_and_resources(
-            scenario, areas={"loadzone": mi.zones["loadzone"]}
+            scenario,
+            areas={
+                "loadzone": mi.zones["interconnect2loadzone"][
+                    scenario.info["interconnect"]
+                ]
+            },
         )
         for area in curtailment:
             for r in curtailment[area]:
@@ -127,7 +128,7 @@ def plot_bar_generation_stack(
         all_loadzone_data[sid] = pd.concat(
             [
                 sum_generation_by_type_zone(scenario).T,
-                scenario.state.get_demand().sum().T.rename("load"),
+                scenario.get_demand().sum().T.rename("load"),
                 curtailment,
             ],
             axis=1,
@@ -196,7 +197,7 @@ def plot_bar_generation_stack(
         if scenario_names:
             labels = scenario_names
         else:
-            labels = [s.info["name'"] for s in s_list]
+            labels = [s.info["name"] for s in s_list]
         ax.set_xticks([i * x_scale for i in range(len(s_list))])
         ax.set_xticklabels(labels, fontsize=12)
         ax.set_ylabel("TWh", fontsize=12)

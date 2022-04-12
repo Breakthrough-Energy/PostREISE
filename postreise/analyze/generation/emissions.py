@@ -44,16 +44,16 @@ def generate_emissions_stats(scenario, pollutant="carbon", method="simple"):
         err_msg = f"method for {pollutant} must be one of: {allowed_methods[pollutant]}"
         raise ValueError(err_msg)
 
-    pg = scenario.state.get_pg()
-    grid = scenario.state.get_grid()
+    pg = scenario.get_pg()
+    grid = scenario.get_grid()
     emissions = pd.DataFrame(np.zeros_like(pg), index=pg.index, columns=pg.columns)
 
     if method == "simple":
         for fuel, val in emissions_per_mwh[pollutant].items():
             indices = (grid.plant["type"] == fuel).to_numpy()
             emissions.loc[:, indices] = pg.loc[:, indices] * val / 1000
-    elif method in ("decommit", "always-on"):
-        decommit = True if method == "decommit" else False
+    else:
+        decommit = method == "decommit"
 
         costs = calculate_costs(
             pg=pg, gencost=grid.gencost["before"], decommit=decommit
@@ -66,8 +66,6 @@ def generate_emissions_stats(scenario, pollutant="carbon", method="simple"):
                 costs.iloc[:, indices] / grid.plant["GenFuelCost"].values[indices]
             )
             emissions.loc[:, indices] = heat[:, indices] * val * 44 / 12 / 1000
-    else:
-        raise Exception("I should not be able to get here")
 
     return emissions
 

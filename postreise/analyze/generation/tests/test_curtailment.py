@@ -7,7 +7,10 @@ from powersimdata.tests.mock_scenario import MockScenario
 
 from postreise.analyze.generation.curtailment import (
     calculate_curtailment_percentage_by_resources,
+    calculate_curtailment_time_series_by_areas,
+    calculate_curtailment_time_series_by_areas_and_resources,
     calculate_curtailment_time_series_by_resources,
+    calculate_curtailment_time_series_by_resources_and_areas,
     get_curtailment_time_series,
     summarize_curtailment_by_bus,
     summarize_curtailment_by_location,
@@ -233,3 +236,119 @@ class TestGetCurtailmentTimeSeries(unittest.TestCase):
         ]
         for a, e in zip(arg, expected_return):
             check_dataframe_matches(get_curtailment_time_series(*a), e)
+
+
+class TestCalculateCurtailmentTimeSeriesGrouped(unittest.TestCase):
+    def test_curtailment_time_series_by_areas(self):
+        areas = {
+            "state": "Washington",
+            "loadzone": "Bay Area",
+        }
+        expected = {
+            "Washington": mock_curtailment_data[["A", "B"]],
+            "Bay Area": mock_curtailment_data[["C", "D"]],
+        }
+        curtailment = calculate_curtailment_time_series_by_areas(scenario, areas=areas)
+
+        self.assertIsInstance(curtailment, dict)
+        self.assertEqual(set(areas.values()), set(expected.keys()))
+        for key in curtailment.keys():
+            self.assertIsInstance(curtailment[key], pd.DataFrame)
+            assert_array_equal(set(curtailment[key]), set(expected[key]))
+
+    def test_curtailment_time_series_by_areas_and_resources(self):
+        areas = {
+            "state": "Washington",
+            "loadzone": "Bay Area",
+        }
+        expected = {
+            "Washington": {
+                "solar": mock_curtailment_data[["A", "B"]],
+                "wind": pd.DataFrame(index=mock_curtailment_data.index),
+                "wind_offshore": pd.DataFrame(index=mock_curtailment_data.index),
+            },
+            "Bay Area": {
+                "solar": pd.DataFrame(index=mock_curtailment_data.index),
+                "wind": mock_curtailment_data["C"].to_frame(),
+                "wind_offshore": mock_curtailment_data["D"].to_frame(),
+            },
+        }
+        curtailment = calculate_curtailment_time_series_by_areas_and_resources(
+            scenario, areas=areas
+        )
+
+        self.assertIsInstance(curtailment, dict)
+        self.assertEqual(set(areas.values()), set(expected.keys()))
+        for a in curtailment.keys():
+            self.assertIsInstance(curtailment[a], dict)
+            for r in curtailment[a]:
+                assert_array_equal(set(curtailment[a][r]), set(expected[a][r]))
+
+    def test_curtailment_time_series_by_areas_and_resource(self):
+        areas = {
+            "state": "Washington",
+            "loadzone": "Bay Area",
+        }
+        expected = {
+            "Washington": {
+                "solar": mock_curtailment_data[["A", "B"]],
+            },
+            "Bay Area": {
+                "solar": pd.DataFrame(index=mock_curtailment_data.index),
+            },
+        }
+        curtailment = calculate_curtailment_time_series_by_areas_and_resources(
+            scenario, areas=areas, resources=["solar"]
+        )
+
+        self.assertIsInstance(curtailment, dict)
+        self.assertEqual(set(areas.values()), set(expected.keys()))
+        for a in curtailment.keys():
+            self.assertIsInstance(curtailment[a], dict)
+            for r in curtailment[a]:
+                assert_array_equal(set(curtailment[a][r]), set(expected[a][r]))
+
+    def test_curtailment_time_series_by_resources_and_areas(self):
+        areas = {
+            "state": "Washington",
+            "loadzone": "Bay Area",
+        }
+        expected = {
+            "solar": {
+                "Washington": mock_curtailment_data[["A", "B"]],
+                "Bay Area": pd.DataFrame(index=mock_curtailment_data.index),
+            },
+            "wind": {
+                "Washington": pd.DataFrame(index=mock_curtailment_data.index),
+                "Bay Area": mock_curtailment_data["C"].to_frame(),
+            },
+            "wind_offshore": {
+                "Washington": pd.DataFrame(index=mock_curtailment_data.index),
+                "Bay Area": mock_curtailment_data["D"].to_frame(),
+            },
+        }
+
+        curtailment = calculate_curtailment_time_series_by_resources_and_areas(
+            scenario, areas=areas
+        )
+
+        self.assertIsInstance(curtailment, dict)
+        self.assertEqual({"solar", "wind", "wind_offshore"}, set(expected.keys()))
+        for a in curtailment.keys():
+            self.assertIsInstance(curtailment[a], dict)
+            for r in curtailment[a]:
+                assert_array_equal(set(curtailment[a][r]), set(expected[a][r]))
+
+    def test_curtailment_time_series_by_resource_and_area(self):
+        expected = {"wind": {"Bay Area": mock_curtailment_data["C"].to_frame()}}
+
+        curtailment = calculate_curtailment_time_series_by_resources_and_areas(
+            scenario, areas={"loadzone": "Bay Area"}, resources=["wind"]
+        )
+
+        self.assertIsInstance(curtailment, dict)
+        self.assertEqual({"wind"}, set(expected.keys()))
+        for a in curtailment.keys():
+            self.assertIsInstance(curtailment[a], dict)
+            for r in curtailment[a]:
+                assert_array_equal(set(curtailment[a][r]), set(expected[a][r]))

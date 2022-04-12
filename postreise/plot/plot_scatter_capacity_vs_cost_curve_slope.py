@@ -44,7 +44,7 @@ def plot_scatter_capacity_vs_cost_curve_slope(
     plant_id = get_plant_id_for_resources_in_area(
         scenario, area, resources, area_type=area_type
     )
-    grid = scenario.state.get_grid()
+    grid = scenario.get_grid()
     plant_df = grid.plant.loc[plant_id]
     cost_df = grid.gencost["after"].loc[plant_id]
     slope = (cost_df["f2"] - cost_df["f1"]) / (cost_df["p2"] - cost_df["p1"])

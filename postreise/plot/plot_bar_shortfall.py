@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import pandas as pd
 from powersimdata.design.generation.clean_capacity_scaling import (
     add_demand_to_targets,
@@ -16,6 +17,7 @@ def plot_bar_shortfall(
     scenario_names=None,
     baseline_scenario=None,
     baseline_scenario_name=None,
+    plot_show=True,
 ):
     """Plot a stacked bar chart of generation shortfall based on given targets for
         any number of scenarios.
@@ -36,6 +38,8 @@ def plot_bar_shortfall(
     :param str baseline_scenario_name: specify the label of the baseline scenario
         shown in the bar chart, default to None, in which case the name of the
         scenario will be used.
+    :param bool plot_show: display the generated figure or not, defaults to True.
+    :return: (*matplotlib.axes.Axes*) -- axes object of the plot.
     :raises ValueError:
         if length of scenario_names and scenario_ids is different.
     :raises TypeError:
@@ -49,23 +53,21 @@ def plot_bar_shortfall(
     if isinstance(scenario_ids, (int, str)):
         scenario_ids = [scenario_ids]
     if not isinstance(target_df, pd.DataFrame):
-        raise TypeError("ERROR: target_df must be a pandas.DataFrame")
+        raise TypeError("target_df must be a pandas.DataFrame")
     if strategy is None:
         strategy = dict()
     if not isinstance(strategy, dict):
-        raise TypeError("ERROR: strategy must be a dictionary")
+        raise TypeError("strategy must be a dict")
     if isinstance(scenario_names, str):
         scenario_names = [scenario_names]
     if scenario_names is not None and len(scenario_names) != len(scenario_ids):
-        raise ValueError(
-            "ERROR: if scenario names are provided, number of scenario names must match number of scenario ids"
-        )
+        raise ValueError("scenario_names must have same size as scenario_ids")
     if baseline_scenario is not None and not isinstance(baseline_scenario, (str, int)):
-        raise TypeError("ERROR: baseline_scenario must be a string or integer")
+        raise TypeError("baseline_scenario must be a str or int")
     if baseline_scenario_name is not None and not isinstance(
         baseline_scenario_name, str
     ):
-        raise TypeError("ERROR: baseline_scenario_name must be a string")
+        raise TypeError("baseline_scenario_name must be a str")
 
     scenarios = dict()
     targets = dict()
@@ -149,7 +151,7 @@ def plot_bar_shortfall(
             target_pct = round(100 * target_generation / target_demand, 2)
 
         if baseline_scenario:
-            _construct_shortfall_visuals(
+            axes = _construct_shortfall_visuals(
                 area,
                 ax_data,
                 target_pct,
@@ -157,11 +159,15 @@ def plot_bar_shortfall(
                 baseline_scenario_name=baseline_scenario_name,
             )
         else:
-            _construct_shortfall_visuals(
+            axes = _construct_shortfall_visuals(
                 area,
                 ax_data,
                 target_pct,
             )
+        if plot_show:
+            plt.show()
+        else:
+            return axes
 
 
 def _construct_shortfall_visuals(

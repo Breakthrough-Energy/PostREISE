@@ -18,6 +18,7 @@ def plot_bar_generation_vs_capacity(
     resource_types=None,
     resource_labels=None,
     horizontal=False,
+    plot_show=True,
 ):
     """Plot any number of scenarios as bar or horizontal bar charts with two columns per
     scenario - generation and capacity.
@@ -42,6 +43,13 @@ def plot_bar_generation_vs_capacity(
         being labels to show in the plots, defaults to None, which uses
         resource_types as labels.
     :param bool horizontal: display bars horizontally, default to False.
+    :return: (*matplotlib.axes.Axes*) -- axes object of the plot.
+    :raises TypeError:
+        if ``resource_labels`` is not a dict.
+    :raises ValueError:
+        if length of ``area_types`` and ``areas`` is different.
+        if length of ``scenario_names`` and ``scenario_ids`` is different.
+        if only one scenario is provided with no ``custom_data``.
     """
     if isinstance(areas, str):
         areas = [areas]
@@ -50,9 +58,7 @@ def plot_bar_generation_vs_capacity(
     if not area_types:
         area_types = [None] * len(areas)
     if len(areas) != len(area_types):
-        raise ValueError(
-            "ERROR: if area_types are provided, it should have the same number of entries with areas."
-        )
+        raise ValueError("area_types must have same size as areas")
 
     if not scenario_ids:
         scenario_ids = []
@@ -61,21 +67,17 @@ def plot_bar_generation_vs_capacity(
     if isinstance(scenario_names, str):
         scenario_names = [scenario_names]
     if scenario_names and len(scenario_names) != len(scenario_ids):
-        raise ValueError(
-            "ERROR: if scenario names are provided, number of scenario names must match number of scenario ids"
-        )
+        raise ValueError("scenario_names must have same size as scenario_ids")
     if not custom_data:
         custom_data = {}
     if len(scenario_ids) + len(custom_data) <= 1:
-        raise ValueError(
-            "ERROR: must include at least two scenario ids and/or custom data"
-        )
+        raise ValueError("two scenario and/or custom data must be provided")
     if isinstance(resource_types, str):
         resource_types = [resource_types]
     if not resource_labels:
         resource_labels = dict()
     if not isinstance(resource_labels, dict):
-        raise TypeError("ERROR: resource_labels should be a dictionary")
+        raise TypeError("resource_labels must be a dict")
 
     all_loadzone_data = {}
     scenario_data = {}
@@ -152,9 +154,14 @@ def plot_bar_generation_vs_capacity(
             )
 
         if horizontal:
-            _construct_hbar_visuals(area, ax_data_list)
+            axes = _construct_hbar_visuals(area, ax_data_list)
         else:
-            _construct_bar_visuals(area, ax_data_list)
+            axes = _construct_bar_visuals(area, ax_data_list)
+
+        if plot_show:
+            plt.show()
+        else:
+            return axes
 
 
 def _construct_bar_visuals(zone, ax_data_list):
@@ -201,7 +208,7 @@ def _construct_bar_visuals(zone, ax_data_list):
             )
 
     axes[1].get_legend().remove()
-    plt.show()
+    return axes
 
 
 def _construct_hbar_visuals(zone, ax_data_list):
@@ -249,7 +256,7 @@ def _construct_hbar_visuals(zone, ax_data_list):
                 fontsize=14,
                 verticalalignment="top",
             )
-    plt.show()
+    return axes
 
 
 def _get_bar_display_val(val):

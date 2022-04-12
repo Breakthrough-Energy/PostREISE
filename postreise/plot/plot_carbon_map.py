@@ -20,7 +20,7 @@ def combine_bus_info_and_emission(scenario):
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :return: (*pandas.DataFrame*) -- bus data frame with emission.
     """
-    grid = scenario.state.get_grid()
+    grid = scenario.get_grid()
     carbon_by_bus = summarize_emissions_by_bus(generate_emissions_stats(scenario), grid)
 
     selected = grid.bus.loc[pd.DataFrame.from_dict(carbon_by_bus).index]

@@ -26,12 +26,12 @@ def sum_generation_by_type_zone(
     """
     _check_scenario_is_in_analyze_state(scenario)
 
-    pg = scenario.state.get_pg()
+    pg = scenario.get_pg().copy()
     if time_zone:
         pg = change_time_zone(pg, time_zone)
     if time_range:
         pg = slice_time_series(pg, time_range[0], time_range[1])
-    grid = scenario.state.get_grid()
+    grid = scenario.get_grid()
     plant = grid.plant
 
     summed_gen_series = pg.sum().groupby([plant.type, plant.zone_id]).sum()
@@ -49,7 +49,7 @@ def sum_generation_by_state(scenario: Scenario) -> pd.DataFrame:
     """
     # Start with energy by type & zone name
     energy_by_type_zoneid = sum_generation_by_type_zone(scenario)
-    grid = scenario.state.get_grid()
+    grid = scenario.get_grid()
     zoneid2zonename = grid.id2zone
     energy_by_type_zonename = energy_by_type_zoneid.rename(zoneid2zonename, axis=1)
     # Build lists to use for groupbys
@@ -161,8 +161,8 @@ def get_generation_time_series_by_resources(scenario, area, resources, area_type
     plant_id = get_plant_id_for_resources_in_area(
         scenario, area, resources, area_type=area_type
     )
-    pg = scenario.state.get_pg()[plant_id]
-    grid = scenario.state.get_grid()
+    pg = scenario.get_pg()[plant_id]
+    grid = scenario.get_grid()
 
     return pg.groupby(grid.plant.loc[plant_id, "type"].values, axis=1).sum()
 
@@ -185,6 +185,6 @@ def get_storage_time_series(scenario, area, area_type=None, storage_e=False):
     storage_id = get_storage_id_in_area(scenario, area, area_type)
 
     if storage_e:
-        return scenario.state.get_storage_e()[storage_id].sum(axis=1)
+        return scenario.get_storage_e()[storage_id].sum(axis=1)
     else:
-        return scenario.state.get_storage_pg()[storage_id].sum(axis=1)
+        return scenario.get_storage_pg()[storage_id].sum(axis=1)

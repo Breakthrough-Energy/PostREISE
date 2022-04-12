@@ -1,6 +1,11 @@
 import matplotlib.pyplot as plt
 import pandas as pd
+from powersimdata.input.check import (
+    _check_resources_are_in_grid_and_format,
+    _check_resources_are_renewable_and_format,
+)
 from powersimdata.network.model import ModelImmutables
+from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
 
 from postreise.analyze.generation.summarize import (
     sum_generation_by_state,
@@ -31,17 +36,44 @@ def plot_bar_renewable_max_profile_actual(
     :param int/float fontsize: font size of the texts shown on the plot.
     :param plot_show: show the plot or not, defaults to True.
     :return: (*matplotlib.axes.Axes*) -- axes object of the plot.
-    :raises ValueError: if gen_type is not one of renewable resources.
+    :raises TypeError:
+        if ``interconnect`` and ``gen_type`` are not str
+        if ``fontsize`` is not a int or a float
+    :raises ValueError: if ``interconnect is not valid
     """
-    mi = ModelImmutables(scenario.info["grid_model"])
-    if gen_type not in mi.plants["renewable_resources"]:
-        raise ValueError("gen_type must be one of renewable resources")
-    grid = scenario.state.get_grid()
+    _check_scenario_is_in_analyze_state(scenario)
+    if not isinstance(interconnect, str):
+        raise TypeError("interconnect must be a str")
+    if not isinstance(gen_type, str):
+        raise TypeError("gen_type must be a str")
+    if not isinstance(fontsize, (int, float)):
+        raise TypeError("fontsize must be either a int or a float")
+
+    grid = scenario.get_grid()
+    _check_resources_are_in_grid_and_format(gen_type, grid)
+    _check_resources_are_renewable_and_format(
+        gen_type, grid_model=scenario.info["grid_model"]
+    )
+
     plant = grid.plant[grid.plant.type == gen_type]
+    mi = ModelImmutables(scenario.info["grid_model"])
+    if interconnect not in mi.zones["interconnect"]:
+        raise ValueError(
+            f"interconnect must be one of {sorted(mi.zones['interconnect'])}"
+        )
+    if (
+        len(
+            mi.zones["interconnect2abv"][interconnect]
+            - mi.zones["interconnect2abv"][scenario.info["interconnect"]]
+        )
+        != 0
+    ):
+        raise ValueError("interconnect is incompatible with scenario's interconnect")
+
     if "wind" in gen_type:
-        profile = scenario.state.get_wind().sum()
+        profile = scenario.get_wind().sum()
     else:
-        profile = scenario.state.get_solar().sum()
+        profile = scenario.get_solar().sum()
     hour_num = (
         pd.Timestamp(scenario.info["end_date"])
         - pd.Timestamp(scenario.info["start_date"])

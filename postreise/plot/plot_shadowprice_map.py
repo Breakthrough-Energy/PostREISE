@@ -59,7 +59,7 @@ def _get_shadowprice_data(scenario_id):
     interconnect = s.info["interconnect"]
     interconnect = " ".join(interconnect.split("_"))
 
-    s_grid = s.state.get_grid()
+    s_grid = s.get_grid()
 
     # Get bus and add location data
     bus_map = project_bus(s_grid.bus)
@@ -68,15 +68,15 @@ def _get_shadowprice_data(scenario_id):
     branch_map = project_branch(s_grid.branch)
 
     # get congestion
-    congu = s.state.get_congu()
-    congl = s.state.get_congl()
+    congu = s.get_congu()
+    congl = s.get_congl()
     cong_abs = pd.DataFrame(
         np.maximum(congu.to_numpy(), congl.to_numpy()),
         columns=congu.columns,
         index=congu.index,
     )
 
-    return interconnect, bus_map, s.state.get_lmp(), branch_map, cong_abs
+    return interconnect, bus_map, s.get_lmp(), branch_map, cong_abs
 
 
 def _construct_bus_data(bus_map, lmp, user_set_split_points, datetime):
