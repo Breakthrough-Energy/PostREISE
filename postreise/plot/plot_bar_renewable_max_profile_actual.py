@@ -4,7 +4,6 @@ from powersimdata.input.check import (
     _check_resources_are_in_grid_and_format,
     _check_resources_are_renewable_and_format,
 )
-from powersimdata.network.model import ModelImmutables
 from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
 
 from postreise.analyze.generation.summarize import (
@@ -50,13 +49,11 @@ def plot_bar_renewable_max_profile_actual(
         raise TypeError("fontsize must be either a int or a float")
 
     grid = scenario.get_grid()
+    mi = grid.model_immutables
     _check_resources_are_in_grid_and_format(gen_type, grid)
-    _check_resources_are_renewable_and_format(
-        gen_type, grid_model=scenario.info["grid_model"]
-    )
+    _check_resources_are_renewable_and_format(gen_type, mi=mi)
 
     plant = grid.plant[grid.plant.type == gen_type]
-    mi = ModelImmutables(scenario.info["grid_model"])
     if interconnect not in mi.zones["interconnect"]:
         raise ValueError(
             f"interconnect must be one of {sorted(mi.zones['interconnect'])}"
