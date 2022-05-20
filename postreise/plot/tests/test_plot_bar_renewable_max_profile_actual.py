@@ -105,7 +105,7 @@ def test_plot_bar_renewable_max_profile_actual_argument_value():
             scenario, "Europe", "wind", plot_show=False
         )
     assert (
-        "interconnect must be one of ['Eastern', 'Texas', 'Texas_Western', 'USA', 'Western']"
+        "interconnect must be one of ['Eastern', 'Eastern_Western', 'Texas', 'Texas_Eastern', 'Texas_Western', 'USA', 'Western']"
         in str(excinfo.value)
     )
     with pytest.raises(ValueError) as excinfo:
