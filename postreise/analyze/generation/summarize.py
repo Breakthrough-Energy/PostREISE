@@ -92,11 +92,10 @@ def summarize_hist_gen(
     :return: (*pandas.DataFrame*) -- historical generation per resource.
     """
     _check_data_frame(hist_gen_raw, "PG")
-    filtered_colnames = _check_resources_and_format(
-        all_resources, grid_model=grid_model
-    )
+
     mi = ModelImmutables(grid_model)
 
+    filtered_colnames = _check_resources_and_format(all_resources, mi=mi)
     result = hist_gen_raw.copy()
 
     # Interconnection

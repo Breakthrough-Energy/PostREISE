@@ -62,7 +62,7 @@ def calculate_curtailment_time_series_by_resources(scenario, resources=None):
         )
     else:
         resources = _check_resources_are_renewable_and_format(
-            resources, grid_model=scenario.info["grid_model"]
+            resources, mi=grid.model_immutables
         )
 
     curtailment_by_resources = decompose_plant_data_frame_into_resources(
@@ -154,7 +154,7 @@ def calculate_curtailment_time_series_by_areas_and_resources(
         )
     else:
         resources = _check_resources_are_renewable_and_format(
-            resources, grid_model=scenario.info["grid_model"]
+            resources, mi=grid.model_immutables
         )
 
     curtailment_by_areas_and_resources = (
@@ -195,7 +195,7 @@ def calculate_curtailment_time_series_by_resources_and_areas(
         )
     else:
         resources = _check_resources_are_renewable_and_format(
-            resources, grid_model=scenario.info["grid_model"]
+            resources, mi=grid.model_immutables
         )
 
     curtailment_by_resources_and_areas = (
