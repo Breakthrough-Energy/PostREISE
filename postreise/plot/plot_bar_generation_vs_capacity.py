@@ -100,11 +100,11 @@ def plot_bar_generation_vs_capacity(
         }
     for area, area_type in zip(areas, area_types):
         for sid in scenario_ids:
-            loadzone_set = area_to_loadzone(
-                scenario_data[sid]["grid_model"], area, area_type
+            zone_list = list(
+                area_to_loadzone(scenario_data[sid]["grid_model"], area, area_type)
             )
             scenario_data[sid]["gen"]["data"][area] = (
-                all_loadzone_data[sid]["gen"][loadzone_set]
+                all_loadzone_data[sid]["gen"][zone_list]
                 .sum(axis=1)
                 .divide(1e6)
                 .astype("float")
@@ -112,7 +112,7 @@ def plot_bar_generation_vs_capacity(
                 .to_dict()
             )
             scenario_data[sid]["cap"]["data"][area] = (
-                all_loadzone_data[sid]["cap"][loadzone_set]
+                all_loadzone_data[sid]["cap"][zone_list]
                 .sum(axis=1)
                 .divide(1e3)
                 .astype("float")

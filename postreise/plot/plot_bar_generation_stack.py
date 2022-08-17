@@ -143,10 +143,10 @@ def plot_bar_generation_stack(
             patches = []
             fuels = []
             bottom = 0
-            loadzone_set = area_to_loadzone(s.info["grid_model"], area, area_type)
+            zone_list = list(area_to_loadzone(s.info["grid_model"], area, area_type))
             data = (
                 all_loadzone_data[scenario_ids[ind]]
-                .loc[loadzone_set]
+                .loc[zone_list]
                 .sum()
                 .divide(1e6)
                 .astype("float")
