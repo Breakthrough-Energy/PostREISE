@@ -85,7 +85,7 @@ def plot_bar_renewable_max_profile_actual(
         total_capacity = plant.groupby(group_criteria)["Pmax"].sum() * hour_num
         actual_gen = sum_generation_by_state(scenario)[gen_type] * 1000
     else:
-        zone_list = mi.zones["interconnect2loadzone"][interconnect]
+        zone_list = list(mi.zones["interconnect2loadzone"][interconnect])
         profile_gen = profile.groupby(plant.zone_name).sum().rename("profile")
         total_capacity = plant.groupby("zone_name")["Pmax"].sum() * hour_num
         actual_gen = (

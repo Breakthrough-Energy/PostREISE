@@ -79,7 +79,7 @@ def plot_bar_generation_max_min_actual(
         )
         all_actual_gen = sum_generation_by_state(scenario)[gen_type] * 1000
     else:
-        zone_list = mi.zones["interconnect2loadzone"][interconnect]
+        zone_list = list(mi.zones["interconnect2loadzone"][interconnect])
         all_max_min = plant.groupby("zone_name")[["Pmax", "Pmin"]].sum() * hour_num
         all_actual_gen = (
             sum_generation_by_type_zone(scenario)
