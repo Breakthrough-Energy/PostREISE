@@ -18,11 +18,15 @@ def sum_generation_by_type_zone(
     """Get total generation for each generator type and load zone combination.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
-    :param tuple time_range: [start_timestamp, end_timestamp] where each time stamp
+    :param tuple time_range: [start_timestamp, end_timestamp] where each timestamp
         is pandas.Timestamp/numpy.datetime64/datetime.datetime. If None, the entire
         time range is used for the given scenario.
     :param str time_zone: new time zone.
     :return: (*pandas.DataFrame*) -- total generation, indexed by {type, zone}.
+
+    .. note::
+        The returned data frame will not be affected if only ``time_zone`` (without
+        ``time_range``) is set since all entries in the PG data frame will be summed.
     """
     _check_scenario_is_in_analyze_state(scenario)
 
@@ -31,10 +35,11 @@ def sum_generation_by_type_zone(
         pg = change_time_zone(pg, time_zone)
     if time_range:
         pg = slice_time_series(pg, time_range[0], time_range[1])
-    grid = scenario.get_grid()
-    plant = grid.plant
+    if time_zone and not time_range:
+        print("Changing time_zone only has no effect")
 
-    summed_gen_series = pg.sum().groupby([plant.type, plant.zone_id]).sum()
+    grid = scenario.get_grid()
+    summed_gen_series = pg.sum().groupby([grid.plant.type, grid.plant.zone_id]).sum()
     summed_gen_dataframe = summed_gen_series.unstack().fillna(value=0)
 
     return summed_gen_dataframe
