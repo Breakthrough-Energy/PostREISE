@@ -72,7 +72,7 @@ def plot_curtailment_time_series(
     """
     _check_scenario_is_in_analyze_state(scenario)
     resources = _check_resources_and_format(
-        resources, grid_model=scenario.info["grid_model"]
+        resources, mi=ModelImmutables(scenario.info["grid_model"])
     )
 
     mi = ModelImmutables(scenario.info["grid_model"])

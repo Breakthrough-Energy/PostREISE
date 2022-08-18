@@ -29,8 +29,8 @@ def calculate_costs(
         raise ValueError("Either scenario XOR (pg AND gencost) must be specified")
     if scenario is not None:
         _check_scenario_is_in_analyze_state(scenario)
-        pg = scenario.state.get_pg()
-        gencost = scenario.state.get_grid().gencost["before"]
+        pg = scenario.get_pg()
+        gencost = scenario.get_grid().gencost["before"]
     else:
         _check_gencost(gencost)
         _check_time_series(pg, "PG")

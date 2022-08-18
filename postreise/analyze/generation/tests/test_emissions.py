@@ -80,6 +80,23 @@ def _test_emissions_structure(emissions, mock_plant, pg):
     assert negative_emissions_count == 0, "No plant should emit negative emissions"
 
 
+class TestEmissionStatsArguments:
+    def test_pollutant_value(self, scenario):
+        with pytest.raises(ValueError) as excinfo:
+            generate_emissions_stats(scenario, pollutant="CO2")
+        assert "Unknown pollutant for generate_emissions_stats()" in str(excinfo.value)
+
+    def test_method_type(self, scenario):
+        with pytest.raises(TypeError) as excinfo:
+            generate_emissions_stats(scenario, method=1)
+        assert "method must be a str" in str(excinfo.value)
+
+    def test_method_value(self, scenario):
+        with pytest.raises(ValueError) as excinfo:
+            generate_emissions_stats(scenario, pollutant="nox", method="always-off")
+        assert "method for nox must be one of: {'simple'}" in str(excinfo.value)
+
+
 class TestCarbonCalculation:
     def test_carbon_calc_always_on(self, scenario, mock_plant):
 
@@ -177,6 +194,13 @@ class TestSO2Calculation:
 
 
 class TestEmissionsSummarization:
+    def test_emissions_is_non_negative(self, scenario):
+        carbon = generate_emissions_stats(scenario)
+        with pytest.raises(ValueError):
+            summarize_emissions_by_bus(
+                -1 * carbon, MockGrid(grid_attrs={"plant": mock_plant})
+            )
+
     def test_emissions_summarization(self, mock_pg, mock_plant):
         # setup
         pg = pd.DataFrame(mock_pg).iloc[:3, :]

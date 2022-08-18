@@ -27,18 +27,18 @@ def calculate_curtailment_time_series(scenario):
     :return: (*pandas.DataFrame*) -- time series of curtailment.
     """
     _check_scenario_is_in_analyze_state(scenario)
-    grid = scenario.state.get_grid()
-    pg = scenario.state.get_pg()
+    grid = scenario.get_grid()
+    pg = scenario.get_pg()
 
-    plant_id = get_plant_id_for_resources(
-        grid.model_immutables.plants["renewable_resources"].intersection(
-            set(grid.plant.type)
-        ),
-        grid,
+    plant_id = list(
+        get_plant_id_for_resources(
+            grid.model_immutables.plants["renewable_resources"].intersection(
+                set(grid.plant.type)
+            ),
+            grid,
+        )
     )
-    profiles = pd.concat(
-        [scenario.state.get_solar(), scenario.state.get_wind()], axis=1
-    )
+    profiles = pd.concat([scenario.get_solar(), scenario.get_wind()], axis=1)
 
     curtailment = (profiles[plant_id] - pg[plant_id]).clip(lower=0).round(6)
     return curtailment
@@ -54,7 +54,7 @@ def calculate_curtailment_time_series_by_resources(scenario, resources=None):
         (datetime, plant id).
     """
     curtailment = calculate_curtailment_time_series(scenario)
-    grid = scenario.state.get_grid()
+    grid = scenario.get_grid()
 
     if resources is None:
         resources = grid.model_immutables.plants["renewable_resources"].intersection(
@@ -62,7 +62,7 @@ def calculate_curtailment_time_series_by_resources(scenario, resources=None):
         )
     else:
         resources = _check_resources_are_renewable_and_format(
-            resources, grid_model=scenario.info["grid_model"]
+            resources, mi=grid.model_immutables
         )
 
     curtailment_by_resources = decompose_plant_data_frame_into_resources(
@@ -83,7 +83,7 @@ def calculate_curtailment_time_series_by_areas(scenario, areas=None):
         (datetime, plant id).
     """
     curtailment = calculate_curtailment_time_series(scenario)
-    grid = scenario.state.get_grid()
+    grid = scenario.get_grid()
 
     areas = (
         _check_areas_are_in_grid_and_format(areas, grid)
@@ -109,18 +109,16 @@ def calculate_curtailment_percentage_by_resources(scenario, resources=None):
     """
     curtailment = calculate_curtailment_time_series_by_resources(scenario, resources)
     resources = set(curtailment.keys())
-    grid = scenario.state.get_grid()
+    grid = scenario.get_grid()
 
     total_curtailment = {r: curtailment[r].sum().sum() for r in resources}
 
-    profiles = pd.concat(
-        [scenario.state.get_solar(), scenario.state.get_wind()], axis=1
-    )
+    profiles = pd.concat([scenario.get_solar(), scenario.get_wind()], axis=1)
     total_potential = profiles.groupby(grid.plant.type, axis=1).sum().sum()
 
     curtailment_percentage = (
         sum(v for v in total_curtailment.values())
-        / total_potential.loc[resources].sum()
+        / total_potential.loc[list(resources)].sum()
     )
 
     return curtailment_percentage
@@ -142,7 +140,7 @@ def calculate_curtailment_time_series_by_areas_and_resources(
         resources and values are data frames indexed by (datetime, plant id).
     """
     curtailment = calculate_curtailment_time_series(scenario)
-    grid = scenario.state.get_grid()
+    grid = scenario.get_grid()
 
     areas = (
         _check_areas_are_in_grid_and_format(areas, grid)
@@ -156,7 +154,7 @@ def calculate_curtailment_time_series_by_areas_and_resources(
         )
     else:
         resources = _check_resources_are_renewable_and_format(
-            resources, grid_model=scenario.info["grid_model"]
+            resources, mi=grid.model_immutables
         )
 
     curtailment_by_areas_and_resources = (
@@ -179,11 +177,11 @@ def calculate_curtailment_time_series_by_resources_and_areas(
     :param dict areas: keys are area types ('*loadzone*', '*state*' or
         '*interconnect*'), values are a list of areas. Default is the scenario
         interconnect(s).
-    :return: (*dict*) -- keys are areas, values are dictionaries whose keys are
-        resources and values are data frames indexed by (timestamp, plant id).
+    :return: (*dict*) -- keys are resources, values are dictionaries whose keys are
+        areas and values are data frames indexed by (timestamp, plant id).
     """
     curtailment = calculate_curtailment_time_series(scenario)
-    grid = scenario.state.get_grid()
+    grid = scenario.get_grid()
 
     areas = (
         _check_areas_are_in_grid_and_format(areas, grid)
@@ -197,7 +195,7 @@ def calculate_curtailment_time_series_by_resources_and_areas(
         )
     else:
         resources = _check_resources_are_renewable_and_format(
-            resources, grid_model=scenario.info["grid_model"]
+            resources, mi=grid.model_immutables
         )
 
     curtailment_by_resources_and_areas = (
@@ -216,7 +214,7 @@ def summarize_curtailment_by_bus(scenario):
         (bus: curtailment vector).
     """
     curtailment = calculate_curtailment_time_series_by_resources(scenario)
-    grid = scenario.state.get_grid()
+    grid = scenario.get_grid()
 
     bus_curtailment = {
         ren_type: summarize_plant_to_bus(curtailment_df, grid).sum().to_dict()
@@ -234,7 +232,7 @@ def summarize_curtailment_by_location(scenario):
         ((lat, lon): curtailment vector).
     """
     curtailment = calculate_curtailment_time_series_by_resources(scenario)
-    grid = scenario.state.get_grid()
+    grid = scenario.get_grid()
 
     location_curtailment = {
         ren_type: summarize_plant_to_location(curtailment_df, grid).sum().to_dict()
@@ -259,9 +257,7 @@ def get_curtailment_time_series(scenario, area, area_type=None):
     curtailment = get_generation_time_series_by_resources(
         scenario, area, renewables, area_type=area_type
     )
-    renewable_profiles = pd.concat(
-        [scenario.state.get_wind(), scenario.state.get_solar()], axis=1
-    )
+    renewable_profiles = pd.concat([scenario.get_wind(), scenario.get_solar()], axis=1)
     for r in renewables:
         if r in curtailment.columns:
             plant_id = get_plant_id_for_resources_in_area(

@@ -136,12 +136,12 @@ def plot_powerflow_snapshot(
     _check_scenario_is_in_analyze_state(scenario)
     _check_date_range_in_scenario(scenario, hour, hour)
     # Get scenario data
-    grid = scenario.state.get_grid()
+    grid = scenario.get_grid()
     bus = grid.bus
     plant = grid.plant
     # Augment the branch dataframe with extra info needed for plotting
     branch = grid.branch
-    branch["pf"] = scenario.state.get_pf().loc[hour]
+    branch["pf"] = scenario.get_pf().loc[hour]
     branch = branch.query("pf != 0").copy()
     branch["dist"] = branch.apply(
         lambda x: haversine((x.from_lat, x.from_lon), (x.to_lat, x.to_lon)), axis=1
@@ -150,7 +150,7 @@ def plot_powerflow_snapshot(
     branch = project_branch(branch)
     # Augment the dcline dataframe with extra info needed for plotting
     dcline = grid.dcline
-    dcline["pf"] = scenario.state.get_dcline_pf().loc[hour]
+    dcline["pf"] = scenario.get_dcline_pf().loc[hour]
     dcline["from_lat"] = dcline.apply(lambda x: bus.loc[x.from_bus_id, "lat"], axis=1)
     dcline["from_lon"] = dcline.apply(lambda x: bus.loc[x.from_bus_id, "lon"], axis=1)
     dcline["to_lat"] = dcline.apply(lambda x: bus.loc[x.to_bus_id, "lat"], axis=1)
@@ -162,7 +162,7 @@ def plot_powerflow_snapshot(
     dcline = project_branch(dcline)
     # Create a dataframe for demand plotting, if necessary
     if demand_centers is not None:
-        demand = scenario.state.get_demand()
+        demand = scenario.get_demand()
         demand_centers["demand"] = demand.loc[hour]
         demand_centers = project_bus(demand_centers)
 
@@ -281,7 +281,7 @@ def plot_powerflow_snapshot(
 
     # Aggregate solar and wind for plotting
     plant_with_pg = plant.copy()
-    plant_with_pg["pg"] = scenario.state.get_pg().loc[hour]
+    plant_with_pg["pg"] = scenario.get_pg().loc[hour]
     grouped_solar = aggregate_plant_generation(plant_with_pg.query("type == 'solar'"))
     grouped_wind = aggregate_plant_generation(plant_with_pg.query("type == 'wind'"))
     # Plot solar, wind

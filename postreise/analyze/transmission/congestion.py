@@ -1,8 +1,7 @@
 import numpy as np
 import pandas as pd
 from powersimdata.input.helpers import summarize_plant_to_bus
-from powersimdata.scenario.analyze import Analyze
-from powersimdata.scenario.scenario import Scenario
+from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
 
 
 def calculate_congestion_surplus(scenario):
@@ -11,15 +10,11 @@ def calculate_congestion_surplus(scenario):
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :return: (*pandas.DataFrame*) -- congestion surplus.
     """
+    _check_scenario_is_in_analyze_state(scenario)
 
-    if not isinstance(scenario, Scenario):
-        raise TypeError("scenario must be a Scenario object")
-    if not isinstance(scenario.state, Analyze):
-        raise ValueError("scenario.state must be Analyze")
-
-    grid = scenario.state.get_grid()
-    lmp = scenario.state.get_lmp()
-    pg = scenario.state.get_pg()
+    grid = scenario.get_grid()
+    lmp = scenario.get_lmp()
+    pg = scenario.get_pg()
 
     bus_demand = scenario.get_bus_demand()
     bus_pg = summarize_plant_to_bus(pg, grid, all_buses=True)

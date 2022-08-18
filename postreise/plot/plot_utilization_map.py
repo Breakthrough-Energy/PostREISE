@@ -74,8 +74,8 @@ def map_risk_bind(
     # Check that we've appropriately specified:
     #    `scenario` XOR (`congestion_stats` AND `branch`)
     if scenario is not None:
-        branch = scenario.state.get_grid().branch
-        congestion_stats = generate_cong_stats(scenario.state.get_pf(), branch)
+        branch = scenario.get_grid().branch
+        congestion_stats = generate_cong_stats(scenario.get_pf(), branch)
     elif congestion_stats is not None and branch is not None:
         pass
     else:
@@ -207,8 +207,8 @@ def map_utilization(
     # Check that we've appropriately specified:
     #    `scenario` XOR (`utilization_df` AND `branch`)
     if scenario is not None:
-        branch = scenario.state.get_grid().branch
-        utilization_df = get_utilization(branch, scenario.state.get_pf(), median=True)
+        branch = scenario.get_grid().branch
+        utilization_df = get_utilization(branch, scenario.get_pf(), median=True)
     elif utilization_df is not None and branch is not None:
         pass
     else:

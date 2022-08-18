@@ -76,5 +76,14 @@ def test_pass_just_gencost(mock_gencost):
 
 
 def test_pass_too_many_things(mock_gencost, mock_pg, mock_scenario):
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as excinfo:
         calculate_costs(gencost=mock_gencost, pg=mock_pg, scenario=mock_scenario)
+    assert "Either scenario XOR (pg AND gencost) must be specified" in str(
+        excinfo.value
+    )
+
+
+def test_negative_pg(mock_gencost, mock_pg):
+    with pytest.raises(ValueError) as excinfo:
+        calculate_costs(gencost=mock_gencost, pg=-1 * mock_pg.iloc[:, 2])
+    assert "PG must be non-negative" in str(excinfo.value)

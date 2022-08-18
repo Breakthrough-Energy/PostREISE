@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from powersimdata.input.check import _check_resources_are_renewable_and_format
 from powersimdata.input.helpers import get_plant_id_for_resources_in_area
+from powersimdata.network.model import ModelImmutables
 
 from postreise.analyze.generation.capacity import get_capacity_by_resources
 from postreise.analyze.generation.curtailment import calculate_curtailment_time_series
@@ -64,7 +65,7 @@ def plot_scatter_capacity_vs_curtailment(
     if title is not None and not isinstance(title, str):
         raise TypeError("title should be a string")
     resources = _check_resources_are_renewable_and_format(
-        resources, grid_model=scenario.info["grid_model"]
+        resources, mi=ModelImmutables(scenario.info["grid_model"])
     )
     curtailment = calculate_curtailment_time_series(scenario)
     plant_list = get_plant_id_for_resources_in_area(
@@ -84,16 +85,14 @@ def plot_scatter_capacity_vs_curtailment(
         between_time=between_time,
         dayofweek=dayofweek,
     )
-    profiles = pd.concat(
-        [scenario.state.get_solar(), scenario.state.get_wind()], axis=1
-    )
+    profiles = pd.concat([scenario.get_solar(), scenario.get_wind()], axis=1)
     curtailment = curtailment.sum() / profiles[curtailment.columns].sum()
     if percentage:
         curtailment = (curtailment * 100).round(2)
     total_cap = get_capacity_by_resources(
         scenario, area, resources, area_type=area_type
     ).sum()
-    plant_df = scenario.state.get_grid().plant.loc[plant_list]
+    plant_df = scenario.get_grid().plant.loc[plant_list]
     if total_cap == 0:
         data_avg = 0
     else:
