@@ -1,4 +1,6 @@
+import io
 import pathlib
+import sys
 import unittest
 
 import pandas as pd
@@ -142,6 +144,15 @@ class TestSumGenerationByTypeZone(unittest.TestCase):
         )
         expected_return.set_index("type", inplace=True)
         check_dataframe_matches(summed_generation, expected_return)
+
+    def test_print_statement(self):
+        captured = io.StringIO()
+        # redirect stdout
+        sys.stdout = captured
+        _ = sum_generation_by_type_zone(self.scenario, time_zone="ETC/GMT+1")
+        # reset redirect
+        sys.stdout = sys.__stdout__
+        self.assertEqual(captured.getvalue(), "Changing time_zone only has no effect\n")
 
 
 @pytest.fixture
