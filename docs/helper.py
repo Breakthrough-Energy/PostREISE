@@ -1,3 +1,5 @@
+import base64
+
 mpl_config = {
     "single": {
         "curtailment_eastern": (
@@ -41,4 +43,5 @@ bokeh_config = {
 def save_matplotlib(result, filename):
     for i, output in enumerate(result.outputs):
         with open(filename[i], "wb") as f:
-            f.write(output.data["image/png"])
+            content = output.data["image/png"].encode()
+            f.write(base64.decodebytes(content))
