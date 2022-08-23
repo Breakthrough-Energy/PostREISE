@@ -63,7 +63,6 @@ def plot_scatter_capacity_vs_cost_curve_slope(
         data_avg = 0
     else:
         data_avg = (plant_df["Pmax"] * slope).sum() / total_cap
-    print(data_avg)
 
     _, ax = plt.subplots(figsize=[20, 10])
     ax.scatter(plant_df["Pmax"], slope, s=markersize)
