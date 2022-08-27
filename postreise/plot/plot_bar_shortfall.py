@@ -20,10 +20,10 @@ def plot_bar_shortfall(
     plot_show=True,
 ):
     """Plot a stacked bar chart of generation shortfall based on given targets for
-        any number of scenarios.
+    any number of scenarios.
 
     :param list/str areas: list of area(s) to show shortfall bar plots. If the target of
-        an area is not defined in target_df, it will be ignored.
+        an area is not defined in ``target_df``, it will be ignored.
     :param int/list/str scenario_ids: list of scenario id(s).
     :param pandas.DataFrame target_df: target data frame, which defines the clean
         energy target fraction, allowed resources and external historical amount of
@@ -31,7 +31,7 @@ def plot_bar_shortfall(
     :param dict strategy: a dictionary with keys being scenario ids and values being
         strategies, either *"collaborative"* or *"independent"*. *"collaborative"* is
         used if None.
-    :param list/str scenario_names: list of scenario name(s) of same len as scenario
+    :param list/str scenario_names: list of scenario name(s) of same length as scenario
         ids, defaults to None.
     :param str/int baseline_scenario: scenario id that serves as a baseline in the
         bar chart, default to None.
@@ -41,12 +41,12 @@ def plot_bar_shortfall(
     :param bool plot_show: display the generated figure or not, defaults to True.
     :return: (*matplotlib.axes.Axes*) -- axes object of the plot.
     :raises ValueError:
-        if length of scenario_names and scenario_ids is different.
+        if length of ``scenario_names`` and ``scenario_ids`` is different.
     :raises TypeError:
-        if target_df is not a pandas.DataFrame and/or
-        if strategy is provided but not in a dictionary format and/or
-        if baseline_scenario is provided but not in a str/int format and/or
-        if baseline_scenario_name is provided but not in a str format.
+        if ``target_df`` is not a pandas.DataFrame.
+        if ``strategy`` is provided but not in a dict format.
+        if ``baseline_scenario`` is provided but not in a str/int format.
+        if ``baseline_scenario_name`` is provided but not in a str format.
     """
     if isinstance(areas, str):
         areas = [areas]

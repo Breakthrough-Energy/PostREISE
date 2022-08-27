@@ -100,11 +100,14 @@ target.index.name = "region_name"
 
 @patch("postreise.plot.plot_bar_shortfall.Scenario", return_value=scenario)
 def test_plot_bar_shortfall(monkeypatch):
-    plot_bar_shortfall("Texas", 500, target, plot_show=False)
+    plot_bar_shortfall("Western", 100, target, plot_show=False)
+    plot_bar_shortfall("all", 200, target, plot_show=False)
+    plot_bar_shortfall("Texas", 300, target, plot_show=False)
     plot_bar_shortfall(
         "Texas",
         500,
         target,
+        scenario_names="Everything is bigger in Texas",
         baseline_scenario=1,
         baseline_scenario_name="Baseline",
         plot_show=False,
