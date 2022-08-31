@@ -49,22 +49,21 @@ def plot_generation_time_series_stack(
     """Generate time series generation stack plot in a certain area of a scenario.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
-    :param str area: one of *loadzone*, *state*, *state abbreviation*,
-        *interconnect*, *'all'*
+    :param str area: name of the area to focus on. Could be a loadzone, a state, a
+        country, etc. This will depend on the grid model.
     :param str/list resources: one or a list of resources. *'solar_curtailment'*,
         *'wind_curtailment'*, *'wind_offshore_curtailment'* are valid entries together
         with all available generator types in the area. The order of the resources
         determines the stack order in the figure.
-    :param str area_type: one of *'loadzone'*, *'state'*, *'state_abbr'*,
-        *'interconnect'*
+    :param str area_type: area supported by the grid model. For more details, see the
+        :func:`powersimdata.network.model.area_to_loadzone` function.
     :param tuple time_range: [start_timestamp, end_timestamp] where each time stamp
         is pandas.Timestamp/numpy.datetime64/datetime.datetime. If None, the entire
         time range is used for the given scenario.
     :param str time_zone: new time zone.
     :param str time_freq: frequency. Either *'D'* (day), *'W'* (week), *'M'* (month).
     :param bool show_demand: show demand line in the plot or not, default is True.
-    :param bool show_net_demand: show net demand line in the plot or not, default is
-        True.
+    :param bool show_net_demand: show net demand line in the plot or not.
     :param bool normalize: normalize the generation based on capacity or not,
         default is False.
     :param dict t2c: user specified color of resource type to overwrite type2color
