@@ -87,7 +87,9 @@ def plot_generation_time_series_stack(
     """
     _check_scenario_is_in_analyze_state(scenario)
 
-    mi = ModelImmutables(scenario.info["grid_model"])
+    mi = ModelImmutables(
+        scenario.info["grid_model"], interconnect=scenario.info["interconnect"]
+    )
     type2color = mi.plants["type2color"]
     type2label = mi.plants["type2label"]
     type2hatchcolor = mi.plants["type2hatchcolor"]
