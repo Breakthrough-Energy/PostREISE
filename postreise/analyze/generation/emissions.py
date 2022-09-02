@@ -108,3 +108,23 @@ def summarize_emissions_by_bus(emissions, grid):
     }
 
     return bus_totals_by_type
+
+
+def carbon_diff(scenario_1, scenario_2):
+    """Prints percentage change in carbon emissions of two scenarios.
+
+    :param powersimdata.scenario.scenario.Scenario scenario_1: scenario instance.
+    :param powersimdata.scenario.scenario.Scenario scenario_2: scenario instance.
+    :return: (*float*) -- relative difference in emission in percent.
+    """
+    carbon_by_bus_1 = summarize_emissions_by_bus(
+        generate_emissions_stats(scenario_1), scenario_1.get_grid()
+    )
+    carbon_by_bus_2 = summarize_emissions_by_bus(
+        generate_emissions_stats(scenario_2), scenario_2.get_grid()
+    )
+
+    sum_1 = sum(carbon_by_bus_1["coal"].values()) + sum(carbon_by_bus_1["ng"].values())
+    sum_2 = sum(carbon_by_bus_2["coal"].values()) + sum(carbon_by_bus_2["ng"].values())
+
+    return 100 * (1 - sum_2 / sum_1)

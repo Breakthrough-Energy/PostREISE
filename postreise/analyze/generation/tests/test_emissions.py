@@ -6,6 +6,7 @@ from powersimdata.tests.mock_grid import MockGrid
 from powersimdata.tests.mock_scenario import MockScenario
 
 from postreise.analyze.generation.emissions import (
+    carbon_diff,
     generate_emissions_stats,
     summarize_emissions_by_bus,
 )
@@ -236,3 +237,6 @@ class TestEmissionsSummarization:
             for bus in expected_sum[k]:
                 err_msg = "summation not correct for bus " + str(bus)
                 assert expected_sum[k][bus] == pytest.approx(summation[k][bus]), err_msg
+
+    def test_carbon_diff(self, scenario):
+        assert carbon_diff(scenario, scenario) == 0
