@@ -35,7 +35,7 @@ def plot_bar_generation_max_min_actual(
     :raises TypeError:
         if ``interconnect`` and ``gen_type`` are not str
         if ``fontsize`` is not an integer or a float and/or
-    :raises ValueError: if ``interconnect is not valid
+    :raises ValueError: if ``interconnect`` is not valid
     """
     if not isinstance(interconnect, str):
         raise TypeError("interconnect must be a str")
