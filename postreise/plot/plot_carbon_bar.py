@@ -1,5 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
+from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
 from powersimdata.scenario.scenario import Scenario
 
 from postreise.analyze.generation.emissions import (
@@ -8,13 +9,13 @@ from postreise.analyze.generation.emissions import (
 )
 
 
-def plot_carbon_bar(*args, labels=None, labels_size=15, show_plot=True):
+def plot_carbon_bar(*args, labels=None, labels_size=15, plot_show=True):
     """Make bar chart of carbon emissions by fuel type for n scenarios.
 
     :param powersimdata.scenario.scenario.Scenario args: scenario instances.
     :param list/tuple/set labels: labels on plot. Default to scenario id.
     :param int labels_size: size of labels.
-    :param bool show_plot: whether to save the plot.
+    :param bool plot_show: whether to show the plot.
     :raises ValueError:
         if ``args`` are not scenario instances.
         if ``labels`` has a different length than the number of passed scenarios.
@@ -30,12 +31,13 @@ def plot_carbon_bar(*args, labels=None, labels_size=15, show_plot=True):
     if labels is not None and len(args) != len(labels):
         raise ValueError("labels must have same length as number of scenarios")
     if not isinstance(labels_size, int):
-        raise TypeError("labels_size must be an integer")
+        raise TypeError("labels_size must be an int")
 
     labels = tuple([s.info["id"] for s in args]) if labels is None else tuple(labels)
 
     carbon_val = {"coal": [], "ng": []}
     for i, s in enumerate(args):
+        _check_scenario_is_in_analyze_state(s)
         grid = s.get_grid()
         carbon_by_bus = summarize_emissions_by_bus(generate_emissions_stats(s), grid)
         carbon_val["coal"].append(sum(carbon_by_bus["coal"].values()))
@@ -57,6 +59,6 @@ def plot_carbon_bar(*args, labels=None, labels_size=15, show_plot=True):
 
     plt.yticks(y_pos, labels)
     plt.subplots_adjust(wspace=0.1)
-    if show_plot:
+    if plot_show:
         plt.show()
     return ax1, ax2
