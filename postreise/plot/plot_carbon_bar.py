@@ -9,13 +9,13 @@ from postreise.analyze.generation.emissions import (
 )
 
 
-def plot_carbon_bar(*args, labels=None, labels_size=15, show_plot=True):
+def plot_carbon_bar(*args, labels=None, labels_size=15, plot_show=True):
     """Make bar chart of carbon emissions by fuel type for n scenarios.
 
     :param powersimdata.scenario.scenario.Scenario args: scenario instances.
     :param list/tuple/set labels: labels on plot. Default to scenario id.
     :param int labels_size: size of labels.
-    :param bool show_plot: whether to save the plot.
+    :param bool plot_show: whether to save the plot.
     :raises ValueError:
         if ``args`` are not scenario instances.
         if ``labels`` has a different length than the number of passed scenarios.
@@ -59,6 +59,6 @@ def plot_carbon_bar(*args, labels=None, labels_size=15, show_plot=True):
 
     plt.yticks(y_pos, labels)
     plt.subplots_adjust(wspace=0.1)
-    if show_plot:
+    if plot_show:
         plt.show()
     return ax1, ax2
