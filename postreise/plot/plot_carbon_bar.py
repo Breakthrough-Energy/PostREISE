@@ -1,5 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
+from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
 from powersimdata.scenario.scenario import Scenario
 
 from postreise.analyze.generation.emissions import (
@@ -36,6 +37,7 @@ def plot_carbon_bar(*args, labels=None, labels_size=15, show_plot=True):
 
     carbon_val = {"coal": [], "ng": []}
     for i, s in enumerate(args):
+        _check_scenario_is_in_analyze_state(s)
         grid = s.get_grid()
         carbon_by_bus = summarize_emissions_by_bus(generate_emissions_stats(s), grid)
         carbon_val["coal"].append(sum(carbon_by_bus["coal"].values()))
