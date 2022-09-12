@@ -15,7 +15,7 @@ def plot_carbon_bar(*args, labels=None, labels_size=15, plot_show=True):
     :param powersimdata.scenario.scenario.Scenario args: scenario instances.
     :param list/tuple/set labels: labels on plot. Default to scenario id.
     :param int labels_size: size of labels.
-    :param bool plot_show: whether to save the plot.
+    :param bool plot_show: whether to show the plot.
     :raises ValueError:
         if ``args`` are not scenario instances.
         if ``labels`` has a different length than the number of passed scenarios.
@@ -31,7 +31,7 @@ def plot_carbon_bar(*args, labels=None, labels_size=15, plot_show=True):
     if labels is not None and len(args) != len(labels):
         raise ValueError("labels must have same length as number of scenarios")
     if not isinstance(labels_size, int):
-        raise TypeError("labels_size must be an integer")
+        raise TypeError("labels_size must be an int")
 
     labels = tuple([s.info["id"] for s in args]) if labels is None else tuple(labels)
 
