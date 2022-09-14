@@ -84,7 +84,7 @@ def plot_scatter_capacity_vs_curtailment(
     plant_list = get_plant_id_for_resources_in_area(
         scenario, area, resources, area_type=area_type
     )
-    curtailment = curtailment[set(plant_list) & set(curtailment.columns)]
+    curtailment = curtailment[list(set(plant_list) & set(curtailment.columns))]
     curtailment = change_time_zone(curtailment, time_zone)
     if not time_range:
         time_range = (

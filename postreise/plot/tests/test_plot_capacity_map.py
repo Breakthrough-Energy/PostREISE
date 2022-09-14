@@ -19,14 +19,14 @@ mock_plant = {
         94.7977,
     ],
     "Pmax": [1000, 750, 1500, 300, 500, 300, 200, 800],
-    "type": ["coal", "ng", "coal", "coal", "wind", "ng", "coal", "solar"],
+    "type": ["coal", "coal", "coal", "coal", "wind", "coal", "coal", "solar"],
 }
 
 scenario = MockScenario({"plant": mock_plant})
 
 
 def test_map_plant_capacity():
-    canvas = map_plant_capacity(scenario, ["ng"])
+    canvas = map_plant_capacity(scenario, ["coal"])
     assert isinstance(canvas, plt.Figure)
 
     ct = {
@@ -49,7 +49,7 @@ def test_map_plant_capacity():
     scenario.state.ct = {}
     _ = map_plant_capacity(scenario, ["coal"], disaggregation="new_vs_existing_plants")
 
-    _ = map_plant_capacity(scenario, ["hydro", "ng"])
+    _ = map_plant_capacity(scenario, ["hydro", "coal"])
 
 
 def test_map_plant_capacity_argument_value():
