@@ -10,7 +10,8 @@
 ![GitHub last commit (branch)](https://img.shields.io/github/last-commit/Breakthrough-Energy/PostREISE/develop?logo=GitHub)
 ![GitHub pull requests](https://img.shields.io/github/issues-pr/Breakthrough-Energy/PostREISE?logo=GitHub)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Code of Conduct](https://img.shields.io/badge/code%20of-conduct-ff69b4.svg?style=flat)](https://breakthrough-energy.github.io/docs/communication/code_of_conduct.html)
+[![Code of Conduct](https://img.shields.io/badge/Code_of_conduct-ff69b4.svg)](https://breakthrough-energy.github.io/docs/communication/code_of_conduct.html)
+[![Slack](https://img.shields.io/badge/Community_Slack-sign_up-1f425f.svg?logo=slack)](https://science.breakthroughenergy.org/#get-updates)
 
 
 # PostREISE
