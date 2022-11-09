@@ -12,8 +12,8 @@ def pmin_constraints(scenario, epsilon=1e-3):
     _check_scenario_is_in_analyze_state(scenario)
     _check_epsilon(epsilon)
 
-    pg = scenario.state.get_pg()
-    grid = scenario.state.get_grid()
+    pg = scenario.get_pg()
+    grid = scenario.get_grid()
     pmin = grid.plant["Pmin"]
     binding_pmin_constraints = (pg - pmin) <= epsilon
 
@@ -30,8 +30,8 @@ def pmax_constraints(scenario, epsilon=1e-3):
     _check_scenario_is_in_analyze_state(scenario)
     _check_epsilon(epsilon)
 
-    pg = scenario.state.get_pg()
-    grid = scenario.state.get_grid()
+    pg = scenario.get_pg()
+    grid = scenario.get_grid()
     pmax = grid.plant["Pmax"]
     binding_pmax_constraints = (pmax - pg) <= epsilon
 
@@ -50,8 +50,8 @@ def ramp_constraints(scenario, epsilon=1e-3):
     _check_scenario_is_in_analyze_state(scenario)
     _check_epsilon(epsilon)
 
-    pg = scenario.state.get_pg()
-    grid = scenario.state.get_grid()
+    pg = scenario.get_pg()
+    grid = scenario.get_grid()
     ramp = grid.plant["ramp_30"]
     diff = pg.diff(axis=0)
     binding_ramp_constraints = (ramp * 2 - abs(diff)) <= epsilon
