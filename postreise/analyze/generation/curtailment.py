@@ -253,7 +253,8 @@ def get_curtailment_time_series(scenario, area, area_type=None):
     :return: (*pandas.DataFrame*) -- index: timestamps, columns: available renewable
         resource(s).
     """
-    renewables = ["wind", "wind_offshore", "solar"]
+    grid = scenario.get_grid()
+    renewables = grid.model_immutables.plants["renewable_resources"]
     curtailment = get_generation_time_series_by_resources(
         scenario, area, renewables, area_type=area_type
     )
