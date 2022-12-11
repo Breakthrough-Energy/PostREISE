@@ -230,7 +230,7 @@ class TestEmissionsSummarization:
         err_msg = "summarize_emissions_by_bus didn't return a dict"
         assert isinstance(summation, dict), err_msg
         err_msg = "summarize_emissions_by_bus didn't return the right dict keys"
-        assert set(summation.keys()) == expected_sum.keys(), err_msg
+        assert set(summation.keys()) == set(expected_sum.keys()) | {"biomass"}, err_msg
         for k in expected_sum.keys():
             err_msg = "summation not correct for fuel " + k
             assert expected_sum[k].keys() == summation[k].keys(), err_msg
