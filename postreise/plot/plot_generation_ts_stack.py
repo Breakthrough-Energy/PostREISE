@@ -72,7 +72,7 @@ def plot_generation_time_series_stack(
     :param dict t2l: user specified label of resource type to overwrite type2label
         default dict. key: resource type, value: label.
     :param dict t2hc: user specified color of curtailable resource hatches to overwrite
-        type2hatchcolor default dict. key: resource type, valid keys are
+        pre-defined ones. key: resource type, valid keys are
         *'wind_curtailment'*, *'solar_curtailment'*, *'wind_offshore_curtailment'*,
         value: color code.
     :param str title: user specified title of the figure, default is set to be area.
@@ -89,8 +89,16 @@ def plot_generation_time_series_stack(
 
     mi = ModelImmutables(scenario.info["grid_model"])
     type2color = mi.plants["type2color"]
+    type2color.update(
+        {k + "_curtailment": v for k, v in mi.plants["curtailable2color"].items()}
+    )
     type2label = mi.plants["type2label"]
-    type2hatchcolor = mi.plants["type2hatchcolor"]
+    type2label.update(
+        {k + "_curtailment": v for k, v in mi.plants["curtailable2label"].items()}
+    )
+    type2hatchcolor = {
+        k + "_curtailment": v for k, v in mi.plants["curtailable2hatchcolor"].items()
+    }
     if t2c:
         type2color.update(t2c)
     if t2l:
@@ -107,10 +115,9 @@ def plot_generation_time_series_stack(
     capacity_ts = pd.Series(capacity.sum(), index=pg_stack.index)
 
     curtailable_resources = {
-        "solar_curtailment",
-        "wind_curtailment",
-        "wind_offshore_curtailment",
+        r + "_curtailment" for r in mi.plants["curtailable_resources"]
     }
+
     if curtailable_resources & set(resources):
         curtailment = get_curtailment_time_series(scenario, area, area_type=area_type)
         for r in curtailable_resources:
@@ -233,10 +240,9 @@ def plot_generation_time_series_stack(
 
     handles, labels = ax.get_legend_handles_labels()
     if show_demand:
-        labels[0] = "Demand"
+        labels[-1] = "Demand"
     if show_net_demand:
-        labels[1] = "Net Demand"
-    label_offset = show_demand + show_net_demand
+        labels[-2] = "Net Demand"
     labels = [type2label[l] if l in type2label else l for l in labels]
 
     # Add hatches
@@ -252,7 +258,7 @@ def plot_generation_time_series_stack(
                 edgecolor=type2hatchcolor[r],
                 linewidth=0.0,
             )
-            handles[ind + label_offset] = mpatches.Patch(
+            handles[ind] = mpatches.Patch(
                 facecolor=type2color[r],
                 hatch="//",
                 edgecolor=type2hatchcolor[r],

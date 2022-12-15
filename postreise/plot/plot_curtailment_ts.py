@@ -77,7 +77,13 @@ def plot_curtailment_time_series(
 
     mi = ModelImmutables(scenario.info["grid_model"])
     type2color = mi.plants["type2color"]
+    type2color.update(
+        {k + "_curtailment": v for k, v in mi.plants["curtailable2color"].items()}
+    )
     type2label = mi.plants["type2label"]
+    type2label.update(
+        {k + "_curtailment": v for k, v in mi.plants["curtailable2label"].items()}
+    )
     if t2c:
         type2color.update(t2c)
     if t2l:

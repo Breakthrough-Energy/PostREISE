@@ -97,14 +97,23 @@ def plot_bar_generation_stack(
         s_list.append(Scenario(sid))
     mi = ModelImmutables(s_list[0].info["grid_model"])
     type2color = mi.plants["type2color"]
+    type2color.update(
+        {k + "_curtailment": v for k, v in mi.plants["curtailable2color"].items()}
+    )
     type2label = mi.plants["type2label"]
-    type2hatchcolor = mi.plants["type2hatchcolor"]
+    type2label.update(
+        {k + "_curtailment": v for k, v in mi.plants["curtailable2label"].items()}
+    )
+    type2hatchcolor = {
+        k + "_curtailment": v for k, v in mi.plants["curtailable2hatchcolor"].items()
+    }
     if t2c:
         type2color.update(t2c)
     if t2l:
         type2label.update(t2l)
     if t2hc:
         type2hatchcolor.update(t2hc)
+
     all_loadzone_data = dict()
     for sid, scenario in zip(scenario_ids, s_list):
         curtailment = calculate_curtailment_time_series_by_areas_and_resources(
@@ -158,9 +167,7 @@ def plot_bar_generation_stack(
                 if curtailment_split and f == "curtailment":
                     continue
                 if not curtailment_split and f in {
-                    "wind_curtailment",
-                    "solar_curtailment",
-                    "wind_offshore_curtailment",
+                    r + "_curtailment" for r in mi.plants["curtailable_resources"]
                 }:
                     continue
                 fuels.append(f)
