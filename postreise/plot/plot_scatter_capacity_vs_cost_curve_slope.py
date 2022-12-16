@@ -11,36 +11,46 @@ def plot_scatter_capacity_vs_cost_curve_slope(
     markersize=50,
     fontsize=20,
     title=None,
-    show_plot=True,
+    plot_show=True,
 ):
     """Generate for a given scenario the scatter plot of the capacity (x-axis) vs
     cost curve slope (y-axis) of generators located in area and fueled by resources
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
-    :param str area: one of *loadzone*, *state*, *state abbreviation*,
-        *interconnect*, *'all'*
+    :param str area: ame of the area to focus on. Could be a loadzone, a state, a
+        country, etc. This will depend on the grid model.
     :param str/list resources: one or a list of resources.
-    :param str area_type: one of *'loadzone'*, *'state'*, *'state_abbr'*,
-        *'interconnect'*
+    :param str area_type: area supported by the grid model. For more details, see the
+        :func:`powersimdata.network.model.area_to_loadzone` function.
     :param int/float markersize: marker size, default to 50.
     :param int/float fontsize: font size, default to 20.
     :param str title: user specified figure title, default to None.
-    :param bool show_plot: show the plot or not, default to True.
+    :param bool plot_show: show the plot or not, default to True.
     :return: (*tuple*) -- the first entry is matplotlib.axes.Axes object of the plot,
         the second entry is the capacity weighted average of cost curve slopes over the
         selected time range.
     :raises TypeError:
-        if markersize is not an integer or a float and/or
-        if fontsize is not an integer or a float and/or
-        if title is provided but not in a string format.
+        if ``area`` is not a str.
+        if ``resources`` is not a str or a list of str.
+        if ``markersize`` is not an int or a float.
+        if ``fontsize`` is not an int or a float.
+        if ``title`` is provided but not a str.
     """
     _check_scenario_is_in_analyze_state(scenario)
+
+    if not isinstance(area, str):
+        raise TypeError("area must be a str")
+    if not isinstance(resources, (str, list)):
+        raise TypeError("resources must be a list or str")
+    if isinstance(resources, list) and not all(isinstance(r, str) for r in resources):
+        raise TypeError("resources must be a list of str")
     if not isinstance(markersize, (int, float)):
-        raise TypeError("markersize should be either an integer or a float")
+        raise TypeError("markersize must be either an int or float")
     if not isinstance(fontsize, (int, float)):
-        raise TypeError("fontsize should be either an integer or a float")
+        raise TypeError("fontsize must be either an int or float")
     if title is not None and not isinstance(title, str):
-        raise TypeError("title should be a string")
+        raise TypeError("title must be a string")
+
     plant_id = get_plant_id_for_resources_in_area(
         scenario, area, resources, area_type=area_type
     )
@@ -72,6 +82,6 @@ def plot_scatter_capacity_vs_cost_curve_slope(
         + ax.get_yticklabels()
     ):
         item.set_fontsize(fontsize)
-    if show_plot:
+    if plot_show:
         plt.show()
     return ax, data_avg

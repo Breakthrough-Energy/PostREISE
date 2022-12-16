@@ -3,6 +3,7 @@ import pandas as pd
 from powersimdata.input.check import _check_resources_are_renewable_and_format
 from powersimdata.input.helpers import get_plant_id_for_resources_in_area
 from powersimdata.network.model import ModelImmutables
+from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
 
 from postreise.analyze.generation.capacity import get_capacity_by_resources
 from postreise.analyze.generation.curtailment import calculate_curtailment_time_series
@@ -22,22 +23,22 @@ def plot_scatter_capacity_vs_curtailment(
     fontsize=20,
     title=None,
     percentage=False,
-    show_plot=True,
+    plot_show=True,
 ):
     """Generate for a given scenario the scatter plot of the capacity (x-axis) vs
     curtailment as a fraction of available resources (y-axis) of generators
     located in area and fueled by resources over a time range.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance
-    :param str area: one of *loadzone*, *state*, *state abbreviation*,
-        *interconnect*, *'all'*
+    :param str area: name of the area to focus on. Could be a loadzone, a state, a
+        country, etc. This will depend on the grid model.
     :param str/list resources: one or a list of resources.
     :param str time_zone: new time zone, default to be *'utc'*.
     :param tuple time_range: [start_timestamp, end_timestamp] where each time stamp
         is pandas.Timestamp/numpy.datetime64/datetime.datetime. If None, the entire
         time range is used for the given scenario.
-    :param str area_type: one of *'loadzone'*, *'state'*, *'state_abbr'*,
-        *'interconnect'*
+    :param str area_type: area supported by the grid model. For more details, see the
+        :func:`powersimdata.network.model.area_to_loadzone` function.
     :param list between_time: specify the start hour and end hour of each day
         inclusively, default to None, which includes every hour of a day. Note that if
         the end hour is set before the start hour, the complementary hours of a day are
@@ -49,21 +50,33 @@ def plot_scatter_capacity_vs_curtailment(
     :param int/float fontsize: font size, default to 20.
     :param str title: user specified figure title, default to None.
     :param bool percentage: show capacity factor in percentage or not, default to False
-    :param bool show_plot: show the plot or not, default to True.
+    :param bool plot_show: show the plot or not, default to True.
     :return: (*tuple*) -- the first entry is matplotlib.axes.Axes object of the plot,
         the second entry is the capacity weighted average of curtailment over the
         selected time range.
     :raises TypeError:
-        if markersize is not an integer or a float and/or
-        if fontsize is not an integer or a float and/or
-        if title is provided but not in a string format.
+        if ``area`` is not a str.
+        if ``resources`` is not a str or a list of str.
+        if ``time_zone`` is not a str.
+        if ``markersize`` is not an int or a float.
+        if ``fontsize`` is not an int or a float.
+        if ``title`` is provided but not in a string format.
     """
+    _check_scenario_is_in_analyze_state(scenario)
+
+    if not isinstance(area, str):
+        raise TypeError("area must be a str")
+    if not isinstance(resources, (str, list)):
+        raise TypeError("resources must be a list or str")
+    if isinstance(resources, list) and not all(isinstance(r, str) for r in resources):
+        raise TypeError("resources must be a list of str")
     if not isinstance(markersize, (int, float)):
-        raise TypeError("markersize should be either an integer or a float")
+        raise TypeError("markersize must be either an int or float")
     if not isinstance(fontsize, (int, float)):
-        raise TypeError("fontsize should be either an integer or a float")
+        raise TypeError("fontsize must be either an int or float")
     if title is not None and not isinstance(title, str):
-        raise TypeError("title should be a string")
+        raise TypeError("title must be a str")
+
     resources = _check_resources_are_renewable_and_format(
         resources, mi=ModelImmutables(scenario.info["grid_model"])
     )
@@ -71,7 +84,7 @@ def plot_scatter_capacity_vs_curtailment(
     plant_list = get_plant_id_for_resources_in_area(
         scenario, area, resources, area_type=area_type
     )
-    curtailment = curtailment[set(plant_list) & set(curtailment.columns)]
+    curtailment = curtailment[list(set(plant_list) & set(curtailment.columns))]
     curtailment = change_time_zone(curtailment, time_zone)
     if not time_range:
         time_range = (
@@ -120,6 +133,6 @@ def plot_scatter_capacity_vs_curtailment(
         + ax.get_yticklabels()
     ):
         item.set_fontsize(fontsize)
-    if show_plot:
+    if plot_show:
         plt.show()
     return ax, data_avg

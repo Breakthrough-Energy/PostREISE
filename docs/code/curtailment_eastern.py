@@ -10,7 +10,7 @@ t2c = {"wind_curtailment": "blue", "solar_curtailment": "blue"}
 plot_curtailment_time_series(
     scenario,
     "Eastern",
-    ["wind", "solar"],
+    ["solar", "wind"],
     time_freq="D",
     t2c=t2c,
     label_fontsize=30,

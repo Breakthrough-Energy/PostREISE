@@ -38,7 +38,7 @@ def plot_bar_renewable_max_profile_actual(
     :raises TypeError:
         if ``interconnect`` and ``gen_type`` are not str
         if ``fontsize`` is not a int or a float
-    :raises ValueError: if ``interconnect is not valid
+    :raises ValueError: if ``interconnect`` is not valid
     """
     _check_scenario_is_in_analyze_state(scenario)
     if not isinstance(interconnect, str):

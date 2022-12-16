@@ -76,7 +76,7 @@ def test_plot_bar_generation_max_min_actual_argument_value():
     with pytest.raises(ValueError) as excinfo:
         plot_bar_generation_max_min_actual(scenario, "Europe", "wind", plot_show=False)
     assert (
-        "interconnect must be one of ['Eastern', 'Eastern_Western', 'Texas', 'Texas_Eastern', 'Texas_Western', 'USA', 'Western']"
+        "interconnect must be one of ['Eastern', 'Eastern_Texas', 'Eastern_Western', 'Texas', 'Texas_Western', 'USA', 'Western']"
         in str(excinfo.value)
     )
     with pytest.raises(ValueError) as excinfo:

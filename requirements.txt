@@ -2,7 +2,7 @@ bokeh~=2.0
 matplotlib~=3.3
 numpy~=1.19
 pandas~=1.4.0
-powersimdata~=0.5.4
+powersimdata~=0.5.5
 pyproj~=3.0
 black
 pytest

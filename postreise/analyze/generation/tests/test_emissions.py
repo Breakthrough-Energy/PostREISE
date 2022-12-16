@@ -6,6 +6,7 @@ from powersimdata.tests.mock_grid import MockGrid
 from powersimdata.tests.mock_scenario import MockScenario
 
 from postreise.analyze.generation.emissions import (
+    carbon_diff,
     generate_emissions_stats,
     summarize_emissions_by_bus,
 )
@@ -229,10 +230,13 @@ class TestEmissionsSummarization:
         err_msg = "summarize_emissions_by_bus didn't return a dict"
         assert isinstance(summation, dict), err_msg
         err_msg = "summarize_emissions_by_bus didn't return the right dict keys"
-        assert set(summation.keys()) == expected_sum.keys(), err_msg
+        assert set(summation.keys()) == set(expected_sum.keys()) | {"biomass"}, err_msg
         for k in expected_sum.keys():
             err_msg = "summation not correct for fuel " + k
             assert expected_sum[k].keys() == summation[k].keys(), err_msg
             for bus in expected_sum[k]:
                 err_msg = "summation not correct for bus " + str(bus)
                 assert expected_sum[k][bus] == pytest.approx(summation[k][bus]), err_msg
+
+    def test_carbon_diff(self, scenario):
+        assert carbon_diff(scenario, scenario) == 0
