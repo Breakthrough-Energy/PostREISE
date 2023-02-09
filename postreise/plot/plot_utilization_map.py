@@ -11,9 +11,8 @@ from postreise.analyze.transmission.utilization import (
     get_utilization,
 )
 from postreise.plot.canvas import create_map_canvas
-from postreise.plot.check import _check_func_kwargs
 from postreise.plot.colors import traffic_palette
-from postreise.plot.plot_states import add_state_borders
+from postreise.plot.plot_borders import add_borders
 from postreise.plot.projection_helpers import project_branch
 
 
@@ -33,7 +32,7 @@ def map_risk_bind(
     select_branch_min_width=2,
     figsize=(1400, 800),
     show_color_bar=True,
-    state_borders_kwargs=None,
+    borders_kwargs=None,
 ):
     """Make map showing risk or binding incidents on US states map.
     Either ``scenario`` XOR (``congestion_stats`` AND ``branch``) must be specified.
@@ -59,8 +58,8 @@ def map_risk_bind(
         (pixels).
     :param tuple(int, int) figsize: size of the bokeh figure (in pixels).
     :param bool show_color_bar: whether to render the color bar on the figure.
-    :param dict state_borders_kwargs: keyword arguments to be passed to
-        :func:`postreise.plot.plot_states.add_state_borders`.
+    :param dict borders_kwargs: keyword arguments to be passed to
+        :func:`postreise.plot.plot_borders.add_borders`.
     :raises ValueError: if (``scenario`` XOR (``congestion_stats`` AND ``branch``)) are
         not properly specified.
     :return: (*bokeh.plotting.figure*) -- map of lines with risk and bind incidents
@@ -117,17 +116,15 @@ def map_risk_bind(
     # Create canvas
     canvas = create_map_canvas(figsize=figsize)
 
-    # Add state borders
-    default_state_borders_kwargs = {"fill_alpha": 0.0, "background_map": True}
-    all_state_borders_kwargs = (
-        {**default_state_borders_kwargs, **state_borders_kwargs}
-        if state_borders_kwargs is not None
-        else default_state_borders_kwargs
+    # Add borders
+    default_borders_kwargs = {"fill_alpha": 0.0, "background_map": True}
+    all_borders_kwargs = (
+        {**default_borders_kwargs, **borders_kwargs}
+        if borders_kwargs is not None
+        else default_borders_kwargs
     )
-    _check_func_kwargs(
-        add_state_borders, set(all_state_borders_kwargs), "state_borders_kwargs"
-    )
-    canvas = add_state_borders(canvas, **all_state_borders_kwargs)
+    grid = scenario.state.get_grid()
+    canvas = add_borders(grid.grid_model, canvas, all_borders_kwargs)
 
     # Add color bar
     if show_color_bar:
@@ -178,7 +175,7 @@ def map_utilization(
     branch_min_width=0.2,
     figsize=(1400, 800),
     show_color_bar=True,
-    state_borders_kwargs=None,
+    borders_kwargs=None,
 ):
     """Make map showing utilization. Utilization input can either be medians
     only, or can be normalized utilization dataframe.
@@ -197,8 +194,8 @@ def map_utilization(
     :param int/float branch_scale_factor: scale factor for branches (pixels/GW).
     :param int/float branch_min_width: minimum width for branches (pixels).
     :param tuple(int, int) figsize: size of the bokeh figure (in pixels).
-    :param dict state_borders_kwargs: keyword arguments to be passed to
-        :func:`postreise.plot.plot_states.add_state_borders`.
+    :param dict borders_kwargs: keyword arguments to be passed to
+        :func:`postreise.plot.plot_borders.add_borders`.
     :raises ValueError: if (``scenario`` XOR (``utilization_df`` AND ``branch``)) are
         not properly specified.
     :return: (*bokeh.plotting.figure*) -- map of lines with median utilization color
@@ -255,16 +252,14 @@ def map_utilization(
     canvas = create_map_canvas(figsize=figsize)
 
     # Add state borders
-    default_state_borders_kwargs = {"fill_alpha": 0.0, "line_width": 2}
-    all_state_borders_kwargs = (
-        {**default_state_borders_kwargs, **state_borders_kwargs}
-        if state_borders_kwargs is not None
-        else default_state_borders_kwargs
+    default_borders_kwargs = {"fill_alpha": 0.0, "line_width": 2}
+    all_borders_kwargs = (
+        {**default_borders_kwargs, **borders_kwargs}
+        if borders_kwargs is not None
+        else default_borders_kwargs
     )
-    _check_func_kwargs(
-        add_state_borders, set(all_state_borders_kwargs), "state_borders_kwargs"
-    )
-    canvas = add_state_borders(canvas, **all_state_borders_kwargs)
+    grid = scenario.state.get_grid()
+    canvas = add_borders(grid.grid_model, canvas, all_borders_kwargs)
 
     # Add color bar
     if show_color_bar:

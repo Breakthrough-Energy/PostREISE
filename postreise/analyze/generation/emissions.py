@@ -24,7 +24,7 @@ def generate_emissions_stats(scenario, pollutant="carbon", method="simple"):
           are off (detected by pg < 1 MW).
     """
     _check_scenario_is_in_analyze_state(scenario)
-    mi = ModelImmutables(scenario.info["grid_model"])
+    mi = scenario.get_grid().model_immutables
     allowed_methods = {
         "carbon": {"simple", "always-on", "decommit"},
         "nox": {"simple"},

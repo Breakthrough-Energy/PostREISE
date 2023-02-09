@@ -5,8 +5,7 @@ from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
 from powersimdata.utility.distance import haversine
 
 from postreise.plot.canvas import create_map_canvas
-from postreise.plot.check import _check_func_kwargs
-from postreise.plot.plot_states import add_state_borders
+from postreise.plot.plot_borders import add_borders
 from postreise.plot.projection_helpers import project_branch, project_bus
 
 
@@ -97,7 +96,7 @@ def plot_powerflow_snapshot(
     num_dc_arrows=1,
     min_arrow_size=5,
     branch_alpha=0.5,
-    state_borders_kwargs=None,
+    borders_kwargs=None,
     x_range=None,
     y_range=None,
     legend_font_size=None,
@@ -126,8 +125,8 @@ def plot_powerflow_snapshot(
     :param int num_dc_arrows: number of arrows for each DC branch.
     :param int/float min_arrow_size: minimum arrow size.
     :param int/float branch_alpha: opaqueness of branches.
-    :param dict state_borders_kwargs: keyword arguments to be passed to
-        :func:`postreise.plot.plot_states.add_state_borders`.
+    :param dict borders_kwargs: keyword arguments to be passed to
+        :func:`postreise.plot.plot_borders.add_borders`.
     :param tuple(float, float) x_range: x range to zoom plot to (EPSG:3857).
     :param tuple(float, float) y_range: y range to zoom plot to (EPSG:3857).
     :param int/str legend_font_size: size to display legend specified as e.g. 12/'12pt'.
@@ -170,16 +169,13 @@ def plot_powerflow_snapshot(
     canvas = create_map_canvas(figsize=figsize, x_range=x_range, y_range=y_range)
 
     # Add state borders
-    default_state_borders_kwargs = {"fill_alpha": 0.0, "background_map": False}
-    all_state_borders_kwargs = (
-        {**default_state_borders_kwargs, **state_borders_kwargs}
-        if state_borders_kwargs is not None
-        else default_state_borders_kwargs
+    default_borders_kwargs = {"fill_alpha": 0.0, "background_map": False}
+    all_borders_kwargs = (
+        {**default_borders_kwargs, **borders_kwargs}
+        if borders_kwargs is not None
+        else default_borders_kwargs
     )
-    _check_func_kwargs(
-        add_state_borders, set(all_state_borders_kwargs), "state_borders_kwargs"
-    )
-    canvas = add_state_borders(canvas, **all_state_borders_kwargs)
+    canvas = add_borders(grid.grid_model, canvas, all_borders_kwargs)
 
     if b2b_dclines is not None:
         # Append the pseudo AC lines to the branch dataframe, remove from dcline

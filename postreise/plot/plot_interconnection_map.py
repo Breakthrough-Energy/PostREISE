@@ -4,20 +4,20 @@ from powersimdata.network.model import ModelImmutables
 from powersimdata.utility import distance
 
 from postreise.plot.canvas import create_map_canvas
-from postreise.plot.check import _check_func_kwargs
-from postreise.plot.plot_states import add_state_borders, add_state_tooltips
+from postreise.plot.colors import grid_colors
+from postreise.plot.plot_borders import add_borders, add_tooltips
 from postreise.plot.projection_helpers import project_branch
 
 
-def count_nodes_per_state(grid):
-    """Count nodes per state to add as hover-over info in :func`map_interconnections`
+def count_nodes_per_area(grid):
+    """Count nodes per area to add as hover-over info in :func`map_interconnections`
 
     :param powersimdata.input.grid.Grid grid: grid object.
-    :return: (*pandas.Series*) -- index: state names, values: number of nodes.
+    :return: (*pandas.Series*) -- index: area names, values: number of nodes.
     """
-    id2state = ModelImmutables(grid.grid_model).zones["id2abv"]
-    grid.bus["state"] = grid.bus["zone_id"].map(id2state)
-    counts = pd.Series(grid.bus["state"].value_counts())
+    id2area = ModelImmutables(grid.grid_model).zones["id2abv"]
+    grid.bus["area"] = grid.bus["zone_id"].map(id2area)
+    counts = pd.Series(grid.bus["area"].value_counts())
 
     return counts
 
@@ -29,7 +29,7 @@ def map_interconnections(
     branch_width_scale_factor=0.5,
     hvdc_width_scale_factor=1,
     b2b_size_scale_factor=50,
-    state_borders_kwargs=None,
+    borders_kwargs=None,
 ):
     """Map transmission lines color coded by interconnection.
 
@@ -39,8 +39,8 @@ def map_interconnections(
     :param int/float branch_width_scale_factor: scale factor for branch capacities.
     :param int/float hvdc_width_scale_factor: scale factor for hvdc capacities.
     :param int/float b2b_size_scale_factor: scale factor for back-to_back capacities.
-    :param dict state_borders_kwargs: keyword arguments to be passed to
-        :func:`postreise.plot.plot_states.add_state_borders`.
+    :param dict borders_kwargs: keyword arguments to be passed to
+        :func:`postreise.plot.plot_borders.add_borders`.
     :return: (*bokeh.plotting.figure*) -- interconnection map with lines and nodes.
     :raises TypeError:
         if ``branch_device_cutoff`` is not ``float``.
@@ -82,10 +82,6 @@ def map_interconnections(
     branch = branch.loc[branch["dist"] > branch_distance_cutoff]
     branch = project_branch(branch)
 
-    branch_west = branch.loc[branch["interconnect"] == "Western"]
-    branch_east = branch.loc[branch["interconnect"] == "Eastern"]
-    branch_tx = branch.loc[branch["interconnect"] == "Texas"]
-
     # HVDC lines
     all_dcline = grid.dcline.copy()
     all_dcline["from_lon"] = grid.bus.loc[all_dcline["from_bus_id"], "lon"].values
@@ -96,6 +92,9 @@ def map_interconnections(
 
     if grid.grid_model == "usa_tamu":
         b2b_id = range(9)
+    elif grid.grid_model == "europe_tub":
+        b2b_id = []
+        all_dcline = all_dcline.loc[all_dcline["pypsa_length"] > 0.0]
     else:
         raise ValueError("grid model is not supported")
     dcline = all_dcline.iloc[~all_dcline.index.isin(b2b_id)]
@@ -104,50 +103,35 @@ def map_interconnections(
     # create canvas
     canvas = create_map_canvas(figsize=figsize)
 
-    # add state borders
-    default_state_borders_kwargs = {
+    # add borders
+    default_borders_kwargs = {
         "line_width": 2,
         "fill_alpha": 0,
         "background_map": False,
     }
-    all_state_borders_kwargs = (
-        {**default_state_borders_kwargs, **state_borders_kwargs}
-        if state_borders_kwargs is not None
-        else default_state_borders_kwargs
-    )
-    _check_func_kwargs(
-        add_state_borders, set(all_state_borders_kwargs), "state_borders_kwargs"
-    )
-    canvas = add_state_borders(canvas, **all_state_borders_kwargs)
-
-    # add state tooltips
-    state_counts = count_nodes_per_state(grid)
-    state2label = {s: c for s, c in zip(state_counts.index, state_counts.to_numpy())}
-    canvas = add_state_tooltips(canvas, "nodes", state2label)
-
-    canvas.multi_line(
-        branch_west[["from_x", "to_x"]].to_numpy().tolist(),
-        branch_west[["from_y", "to_y"]].to_numpy().tolist(),
-        color="#006ff9",
-        line_width=branch_west["rateA"].abs() * 1e-3 * branch_width_scale_factor,
-        legend_label="Western",
+    all_borders_kwargs = (
+        {**default_borders_kwargs, **borders_kwargs}
+        if borders_kwargs is not None
+        else default_borders_kwargs
     )
 
-    canvas.multi_line(
-        branch_east[["from_x", "to_x"]].to_numpy().tolist(),
-        branch_east[["from_y", "to_y"]].to_numpy().tolist(),
-        color="#8B36FF",
-        line_width=branch_east["rateA"].abs() * 1e-3 * branch_width_scale_factor,
-        legend_label="Eastern",
-    )
+    canvas = add_borders(grid.grid_model, canvas, all_borders_kwargs)
 
-    canvas.multi_line(
-        branch_tx[["from_x", "to_x"]].to_numpy().tolist(),
-        branch_tx[["from_y", "to_y"]].to_numpy().tolist(),
-        color="#01D4ED",
-        line_width=branch_tx["rateA"].abs() * 1e-3 * branch_width_scale_factor,
-        legend_label="Texas",
-    )
+    # create labels for tooltips
+    # TODO: tooltips working for USA, needs fix for europe
+    # node_counts = count_nodes_per_area(grid)
+    # area2label = {a: c for a, c in zip(node_counts.index, node_counts.to_numpy())}
+    # canvas = add_tooltips(grid.model, canvas, "nodes", area2label)
+
+    for interconnect in branch["interconnect"].unique():
+        branches = branch.loc[branch["interconnect"] == interconnect]
+        canvas.multi_line(
+            branches[["from_x", "to_x"]].to_numpy().tolist(),
+            branches[["from_y", "to_y"]].to_numpy().tolist(),
+            color=grid_colors.get(grid.grid_model, {}).get(interconnect, "black"),
+            line_width=branches["rateA"].abs() * 1e-3 * branch_width_scale_factor,
+            legend_label=interconnect,
+        )
 
     canvas.multi_line(
         dcline[["from_x", "to_x"]].to_numpy().tolist(),

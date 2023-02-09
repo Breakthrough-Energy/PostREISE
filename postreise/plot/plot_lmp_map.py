@@ -13,8 +13,7 @@ from matplotlib.colors import BoundaryNorm
 from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
 
 from postreise.plot.canvas import create_map_canvas
-from postreise.plot.check import _check_func_kwargs
-from postreise.plot.plot_states import add_state_borders
+from postreise.plot.plot_borders import add_borders
 from postreise.plot.projection_helpers import project_bus
 
 
@@ -26,7 +25,7 @@ def map_lmp(
     num_ticks=6,
     figsize=(1400, 800),
     scale_factor=1,
-    state_borders_kwargs=None,
+    borders_kwargs=None,
 ):
     """Plot average LMP at bus level.
 
@@ -37,8 +36,8 @@ def map_lmp(
     :param int num_ticks: number of ticks to display on the color bar.
     :param tuple figsize: size of the bokeh figure (in pixels).
     :param int/float scale_factor: scaling factor for size of circles centered on buses.
-    :param dict state_borders_kwargs: keyword arguments to be passed to
-        :func:`postreise.plot.plot_states.add_state_borders`.
+    :param dict borders_kwargs: keyword arguments to be passed to
+        :func:`postreise.plot.plot_borders.add_borders`.
     :return: (*bokeh.plotting.figure*) -- LMP map.
     :raises TypeError:
         if ``coordinate_rounding`` is not ``int``.
@@ -71,6 +70,7 @@ def map_lmp(
     lmp = scenario.get_lmp()
     bus_with_lmp = grid.bus.copy()
     bus_with_lmp["lmp"] = lmp.mean()
+    grid_model = grid.grid_model
 
     return add_lmp(
         bus_with_lmp,
@@ -80,7 +80,8 @@ def map_lmp(
         num_ticks,
         figsize,
         scale_factor,
-        state_borders_kwargs,
+        borders_kwargs,
+        grid_model,
     )
 
 
@@ -92,7 +93,8 @@ def add_lmp(
     num_ticks,
     figsize,
     scale_factor,
-    state_borders_kwargs,
+    borders_kwargs,
+    grid_model,
 ):
     """Add LMP to canvas.
 
@@ -104,30 +106,29 @@ def add_lmp(
     :param int num_ticks: number of ticks to display on the color bar.
     :param tuple figsize: size of the bokeh figure (in pixels).
     :param int/float scale_factor: scaling factor for size of circles centered on buses.
-    :param dict state_borders_kwargs: keyword arguments to be passed to
-        :func:`postreise.plot.plot_states.add_state_borders`.
+    :param dict borders_kwargs: keyword arguments to be passed to
+        :func:`postreise.plot.plot_borders.add_borders`.
+    :param str grid_model: Which model of the grid we're using, e.g. usa_tamu, europe_tub
     :return: (*bokeh.plotting.figure*) -- canvas with LMP..
     """
 
     # create canvas
     canvas = create_map_canvas(figsize=figsize)
 
-    # add state borders
-    default_state_borders_kwargs = {
+    # add borders
+    default_borders_kwargs = {
         "line_color": "gray",
         "line_width": 2,
         "fill_alpha": 0,
         "background_map": False,
     }
-    all_state_borders_kwargs = (
-        {**default_state_borders_kwargs, **state_borders_kwargs}
-        if state_borders_kwargs is not None
-        else default_state_borders_kwargs
+    all_borders_kwargs = (
+        {**default_borders_kwargs, **borders_kwargs}
+        if borders_kwargs is not None
+        else default_borders_kwargs
     )
-    _check_func_kwargs(
-        add_state_borders, set(all_state_borders_kwargs), "state_borders_kwargs"
-    )
-    canvas = add_state_borders(canvas, **all_state_borders_kwargs)
+
+    canvas = add_borders(grid_model, canvas, all_borders_kwargs)
 
     # aggregate buses by lat/lon
     grouped_bus = aggregate_bus_lmp(bus_with_lmp, coordinate_rounding)

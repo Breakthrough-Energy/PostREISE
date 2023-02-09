@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from bokeh.models import ColumnDataSource, HoverTool
 from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
+from powersimdata.network.constants.carrier.resource import USAResource, EUResource
 
 from postreise.analyze.generation.emissions import (
     generate_emissions_stats,
@@ -10,7 +11,7 @@ from postreise.analyze.generation.emissions import (
 from postreise.plot.canvas import create_map_canvas
 from postreise.plot.check import _check_func_kwargs
 from postreise.plot.colors import be_green, be_purple, be_red
-from postreise.plot.plot_states import add_state_borders
+from postreise.plot.plot_borders import add_borders
 from postreise.plot.projection_helpers import project_bus
 
 
@@ -50,12 +51,13 @@ def aggregate_bus_emission_generator(bus, coordinate_rounding):
     return aggregated
 
 
-def aggregate_bus_emission_difference(bus, coordinate_rounding):
+def aggregate_bus_emission_difference(bus, coordinate_rounding, grid):
     """Aggregate emission for buses based on similar lat/lon coordinates
 
     :param pandas.DataFrame bus: bus data frame containing 'coal', 'ng', 'lat', 'lon'
         'type' and 'color' columns.
     :param int coordinate_rounding: number of digits to round lat/lon for aggregation.
+    # ADD GRID
     :return: (*pandas.DataFrame*) -- aggregated data frame.
     """
     bus_w_xy = project_bus(bus)
@@ -69,6 +71,8 @@ def aggregate_bus_emission_difference(bus, coordinate_rounding):
     return aggregated
 
 
+# TODO pass grid model
+# USAResource, EUResource
 def prepare_bus_data_generator(bus_emission, coordinate_rounding, color_ng, color_coal):
     """Prepare data with amount of emissions.
 
@@ -81,6 +85,9 @@ def prepare_bus_data_generator(bus_emission, coordinate_rounding, color_ng, colo
     """
     bus_emission["color"] = ""
     bus_emission["type"] = ""
+    # TODO: europe has different tyeps
+    # powersimdata/network/constants/carrier/resource.py
+    # carbon_resources
     bus_emission.loc[(bus_emission["ng"] > 0), "color"] = color_ng
     bus_emission.loc[(bus_emission["coal"] > 0), "color"] = color_coal
     bus_emission.loc[(bus_emission["ng"] > 0), "type"] = "natural gas"
@@ -96,7 +103,7 @@ def prepare_bus_data_generator(bus_emission, coordinate_rounding, color_ng, colo
 
 
 def prepare_bus_data_difference(
-    bus_emission, coordinate_rounding, color_up, color_down
+    bus_emission, coordinate_rounding, color_up, color_down, grid=None
 ):
     """Prepare data with amount of emissions and type for hover tips
 
@@ -105,10 +112,11 @@ def prepare_bus_data_difference(
     :param int coordinate_rounding: number of digits to round lat/lon for aggregation.
     :param str color_up: color assigned to 'increase' in emissions.
     :param str color_down: color assigned to 'decrase' in emissions.
+    # ADD GRID
     :return: (*pandas.DataFrame*) -- data for plotting.
     """
     grouped_bus_emission = aggregate_bus_emission_difference(
-        bus_emission, coordinate_rounding
+        bus_emission, coordinate_rounding, grid=None
     )
     grouped_bus_emission["color"] = ""
     grouped_bus_emission["type"] = ""
@@ -169,7 +177,7 @@ def map_carbon_emission_generator(
     color_coal="black",
     color_ng=be_purple,
     scale_factor=1,
-    state_borders_kwargs=None,
+    borders_kwargs=None,
 ):
     """Make map of carbon emissions at bus level. Color of markers indicates generator
     type and size reflects emissions level.
@@ -180,8 +188,8 @@ def map_carbon_emission_generator(
     :param str color_ng: color assigned for ng, default to BE purple.
     :param str color_coal: color associated with coal, default to black/gray.
     :param int/float scale_factor: scaling factor for size of emissions circles glyphs.
-    :param dict state_borders_kwargs: keyword arguments to be passed to
-        :func:`postreise.plot.plot_states.add_state_borders`.
+    :param dict borders_kwargs: keyword arguments to be passed to
+        :func:`postreise.plot.plot_borders.add_borders`.
     :return: (*bokeh.plotting.figure*) -- carbon emission map.
     :raises TypeError:
         if ``coordinate_rounding`` is not ``int``.
@@ -209,16 +217,14 @@ def map_carbon_emission_generator(
     canvas = create_map_canvas(figsize=figsize)
 
     # add state borders
-    default_state_borders_kwargs = {"fill_alpha": 0.0, "background_map": False}
-    all_state_borders_kwargs = (
-        {**default_state_borders_kwargs, **state_borders_kwargs}
-        if state_borders_kwargs is not None
-        else default_state_borders_kwargs
+    default_borders_kwargs = {"fill_alpha": 0.0, "background_map": False}
+    all_borders_kwargs = (
+        {**default_borders_kwargs, **borders_kwargs}
+        if borders_kwargs is not None
+        else default_borders_kwargs
     )
-    _check_func_kwargs(
-        add_state_borders, set(all_state_borders_kwargs), "state_borders_kwargs"
-    )
-    canvas = add_state_borders(canvas, **all_state_borders_kwargs)
+    grid = scenario.state.get_grid()
+    canvas = add_borders(grid.grid_model, canvas, all_borders_kwargs)
 
     # add emission
     bus_emission = combine_bus_info_and_emission(scenario)
@@ -237,7 +243,7 @@ def map_carbon_emission_difference(
     color_increase=be_red,
     color_decrease=be_green,
     scale_factor=1,
-    state_borders_kwargs=None,
+    borders_kwargs=None,
 ):
     """Make map of difference in emissions between two scenarios at bus level. Color of
     markers indicates increase/decrease in emissions (``scenario_2`` w.r,t.
@@ -250,8 +256,8 @@ def map_carbon_emission_difference(
     :param str color_increase: color assigned to increase in emissions.
     :param str color_decrease: color associated to decrease in emissions.
     :param float scale_factor: scaling factor for size of emissions circles glyphs.
-    :param dict state_borders_kwargs: keyword arguments to be passed to
-        :func:`postreise.plot.plot_states.add_state_borders`.
+    :param dict borders_kwargs: keyword arguments to be passed to
+        :func:`postreise.plot.plot_borders.add_borders`.
     :return: (*bokeh.plotting.figure*) -- carbon emission map.
     :raises TypeError:
         if ``coordinate_rounding`` is not ``int``.
@@ -280,16 +286,14 @@ def map_carbon_emission_difference(
     canvas = create_map_canvas(figsize=figsize)
 
     # add state borders
-    default_state_borders_kwargs = {"fill_alpha": 0.0, "background_map": False}
-    all_state_borders_kwargs = (
-        {**default_state_borders_kwargs, **state_borders_kwargs}
-        if state_borders_kwargs is not None
-        else default_state_borders_kwargs
+    default_borders_kwargs = {"fill_alpha": 0.0, "background_map": False}
+    all_borders_kwargs = (
+        {**default_borders_kwargs, **borders_kwargs}
+        if borders_kwargs is not None
+        else default_borders_kwargs
     )
-    _check_func_kwargs(
-        add_state_borders, set(all_state_borders_kwargs), "state_borders_kwargs"
-    )
-    canvas = add_state_borders(canvas, **all_state_borders_kwargs)
+    grid = scenario_1.state.get_grid()
+    canvas = add_borders(grid.grid_model, canvas, all_borders_kwargs)
 
     # add emission
     bus_emission_1 = combine_bus_info_and_emission(scenario_1)
@@ -308,7 +312,7 @@ def map_carbon_emission_difference(
     emission["lon"] = emission["lon_1"].fillna(emission["lon_2"])
     emission["lat"] = emission["lat_1"].fillna(emission["lat_2"])
     emission = prepare_bus_data_difference(
-        emission, coordinate_rounding, color_increase, color_decrease
+        emission, coordinate_rounding, color_increase, color_decrease, grid
     )
     canvas = add_emission(canvas, emission, scale_factor)
 
