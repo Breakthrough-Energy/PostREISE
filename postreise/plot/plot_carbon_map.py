@@ -9,8 +9,7 @@ from postreise.analyze.generation.emissions import (
     summarize_emissions_by_bus,
 )
 from postreise.plot.canvas import create_map_canvas
-from postreise.plot.check import _check_func_kwargs
-from postreise.plot.colors import be_green, be_purple, be_red
+from postreise.plot.colors import be_green, be_red, be_purple
 from postreise.plot.plot_borders import add_borders
 from postreise.plot.projection_helpers import project_bus
 
@@ -32,20 +31,22 @@ def combine_bus_info_and_emission(scenario):
     return bus_w_emission
 
 
-def aggregate_bus_emission_generator(bus, coordinate_rounding):
+def aggregate_bus_emission_generator(bus, coordinate_rounding, resource_types):
     """Aggregate emission for buses based on similar lat/lon coordinates
 
-    :param pandas.DataFrame bus: bus data frame containing 'coal', 'ng', 'lat', 'lon'
-        'type' and 'color' columns.
+    :param pandas.DataFrame bus: bus data frame containing carbon resource types,
+        'lat', 'lon', 'type', and 'color' columns.
     :param int coordinate_rounding: number of digits to round lat/lon for aggregation.
+    :param set resource_types: set of carbon resource types.
     :return: (*pandas.DataFrame*) -- aggregated data frame.
     """
     bus_w_xy = project_bus(bus)
     bus_w_xy["lat"] = bus_w_xy["lat"].round(coordinate_rounding)
     bus_w_xy["lon"] = bus_w_xy["lon"].round(coordinate_rounding)
 
+    resource_agg = {rtype: "sum" for rtype in resource_types}
     aggregated = bus_w_xy.groupby(["lat", "lon", "color", "type"]).agg(
-        {"coal": "sum", "ng": "sum", "x": "mean", "y": "mean"}
+        {"x": "mean", "y": "mean", **resource_agg}
     )
     aggregated = aggregated.reset_index()
     return aggregated
@@ -54,10 +55,9 @@ def aggregate_bus_emission_generator(bus, coordinate_rounding):
 def aggregate_bus_emission_difference(bus, coordinate_rounding, grid):
     """Aggregate emission for buses based on similar lat/lon coordinates
 
-    :param pandas.DataFrame bus: bus data frame containing 'coal', 'ng', 'lat', 'lon'
-        'type' and 'color' columns.
+    :param pandas.DataFrame bus: bus data frame containing carbon resource types,
+        'lat', 'lon', 'type', and 'color' columns.
     :param int coordinate_rounding: number of digits to round lat/lon for aggregation.
-    # ADD GRID
     :return: (*pandas.DataFrame*) -- aggregated data frame.
     """
     bus_w_xy = project_bus(bus)
@@ -71,34 +71,45 @@ def aggregate_bus_emission_difference(bus, coordinate_rounding, grid):
     return aggregated
 
 
-# TODO pass grid model
-# USAResource, EUResource
-def prepare_bus_data_generator(bus_emission, coordinate_rounding, color_ng, color_coal):
+def prepare_bus_data_generator(grid, bus_emission, coordinate_rounding):
     """Prepare data with amount of emissions.
 
+    :param powersimdata.input.grid.Grid grid: grid object.
     :param pandas.DataFrame bus_emission: bus data frame with emission as returned by
         :func:`combine_bus_info_and_emission`.
     :param int coordinate_rounding: number of digits to round lat/lon for aggregation.
-    :param str color_ng: color assigned for ng, default to BE purple.
-    :param str color_coal: color assigned for coal, default to black/gray.
     :return: (*pandas.DataFrame*) -- data for plotting.
     """
     bus_emission["color"] = ""
     bus_emission["type"] = ""
-    # TODO: europe has different tyeps
-    # powersimdata/network/constants/carrier/resource.py
-    # carbon_resources
-    bus_emission.loc[(bus_emission["ng"] > 0), "color"] = color_ng
-    bus_emission.loc[(bus_emission["coal"] > 0), "color"] = color_coal
-    bus_emission.loc[(bus_emission["ng"] > 0), "type"] = "natural gas"
-    bus_emission.loc[(bus_emission["coal"] > 0), "type"] = "coal"
+
+    coal_resource_types = grid.model_immutables.plants["group_all_resources"]["coal"]
+    ng_resource_types = grid.model_immutables.plants["group_all_resources"]["ng"]
+    resource_types = coal_resource_types.union(ng_resource_types)
+
+    for rtype in resource_types:
+        # TODO: update usa_tamu ModelImmutables colors to use hex values so this doesn't break
+        if grid.grid_model == "usa_tamu":
+            colors = {"coal": "black", "ng": be_purple}
+            color = colors[rtype]
+        elif grid.grid_model == "europe_tub":
+            color = grid.model_immutables.plants["type2color"][rtype]
+        else:
+            raise ValueError("grid model is not supported")
+
+        bus_emission.loc[(bus_emission[rtype] > 0), "color"] = color
+        label = grid.model_immutables.plants["type2label"][rtype]
+        bus_emission.loc[(bus_emission[rtype] > 0), "type"] = label
 
     grouped_bus_emission = aggregate_bus_emission_generator(
-        bus_emission, coordinate_rounding
+        bus_emission, coordinate_rounding, resource_types
     )
-    grouped_bus_emission["amount"] = (
-        grouped_bus_emission["ng"] + grouped_bus_emission["coal"]
-    )
+    grouped_bus_emission["amount"] = 0
+    for rtype in resource_types:
+        grouped_bus_emission["amount"] = (
+            grouped_bus_emission["amount"] + grouped_bus_emission[rtype]
+        )
+
     return grouped_bus_emission.query("amount != 0").sort_values(by=["color"])
 
 
@@ -174,8 +185,6 @@ def map_carbon_emission_generator(
     scenario,
     coordinate_rounding=1,
     figsize=(1400, 800),
-    color_coal="black",
-    color_ng=be_purple,
     scale_factor=1,
     borders_kwargs=None,
 ):
@@ -185,15 +194,12 @@ def map_carbon_emission_generator(
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
     :param int coordinate_rounding: number of digits to round lat/lon for aggregation.
     :param tuple figsize: size of the bokeh figure (in pixels).
-    :param str color_ng: color assigned for ng, default to BE purple.
-    :param str color_coal: color associated with coal, default to black/gray.
     :param int/float scale_factor: scaling factor for size of emissions circles glyphs.
     :param dict borders_kwargs: keyword arguments to be passed to
         :func:`postreise.plot.plot_borders.add_borders`.
     :return: (*bokeh.plotting.figure*) -- carbon emission map.
     :raises TypeError:
         if ``coordinate_rounding`` is not ``int``.
-        if ``color_coal`` and ``color_ng`` are not ``str``.
         if ``scale_factor`` is not ``int`` or ``float``.
     :raises ValueError:
         if ``coordinate_rounding`` is negative.
@@ -204,10 +210,6 @@ def map_carbon_emission_generator(
         raise TypeError("coordinate_rounding must be an int")
     if coordinate_rounding < 0:
         raise ValueError("coordinate_rounding must be positive")
-    if not isinstance(color_coal, str):
-        raise TypeError("color_coal must be a str")
-    if not isinstance(color_ng, str):
-        raise TypeError("color_ng must be a str")
     if not isinstance(scale_factor, (int, float)):
         raise TypeError("scale_factor must be a int/float")
     if scale_factor < 0:
@@ -228,9 +230,7 @@ def map_carbon_emission_generator(
 
     # add emission
     bus_emission = combine_bus_info_and_emission(scenario)
-    emission = prepare_bus_data_generator(
-        bus_emission, coordinate_rounding, color_ng, color_coal
-    )
+    emission = prepare_bus_data_generator(grid, bus_emission, coordinate_rounding)
     canvas = add_emission(canvas, emission, scale_factor)
     return canvas
 
@@ -306,9 +306,15 @@ def map_carbon_emission_difference(
         how="outer",
     )
     emission.fillna(0, inplace=True)
-    emission["amount"] = (
-        emission["ng_2"] + emission["coal_2"] - emission["ng_1"] - emission["coal_1"]
-    )
+
+    coal_resource_types = grid.model_immutables.plants["group_all_resources"]["coal"]
+    ng_resource_types = grid.model_immutables.plants["group_all_resources"]["ng"]
+    resource_types = coal_resource_types.union(ng_resource_types)
+
+    emission["amount"] = 0
+    for rtype in resource_types:
+        emission["amount"] + emission[f"{rtype}_2"] - emission[f"{rtype}_1"]
+
     emission["lon"] = emission["lon_1"].fillna(emission["lon_2"])
     emission["lat"] = emission["lat_1"].fillna(emission["lat_2"])
     emission = prepare_bus_data_difference(

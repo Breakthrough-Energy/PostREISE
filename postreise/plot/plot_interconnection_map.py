@@ -1,6 +1,5 @@
 import pandas as pd
 from powersimdata.input.check import _check_grid_type
-from powersimdata.network.model import ModelImmutables
 from powersimdata.utility import distance
 
 from postreise.plot.canvas import create_map_canvas
@@ -15,10 +14,9 @@ def count_nodes_per_area(grid):
     :param powersimdata.input.grid.Grid grid: grid object.
     :return: (*pandas.Series*) -- index: area names, values: number of nodes.
     """
-    id2area = ModelImmutables(grid.grid_model).zones["id2abv"]
+    id2area = grid.model_immutables.zones["id2abv"]
     grid.bus["area"] = grid.bus["zone_id"].map(id2area)
     counts = pd.Series(grid.bus["area"].value_counts())
-
     return counts
 
 
@@ -118,10 +116,9 @@ def map_interconnections(
     canvas = add_borders(grid.grid_model, canvas, all_borders_kwargs)
 
     # create labels for tooltips
-    # TODO: tooltips working for USA, needs fix for europe
-    # node_counts = count_nodes_per_area(grid)
-    # area2label = {a: c for a, c in zip(node_counts.index, node_counts.to_numpy())}
-    # canvas = add_tooltips(grid.model, canvas, "nodes", area2label)
+    node_counts = count_nodes_per_area(grid)
+    area2label = {a: c for a, c in zip(node_counts.index, node_counts.to_numpy())}
+    canvas = add_tooltips(grid.grid_model, canvas, "nodes", area2label)
 
     for interconnect in branch["interconnect"].unique():
         branches = branch.loc[branch["interconnect"] == interconnect]

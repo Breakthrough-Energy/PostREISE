@@ -360,11 +360,13 @@ def add_borders(grid_model, canvas, borders_kwargs=None):
         raise ValueError("grid model is not supported")
 
 
-def add_tooltips(grid_model, canvas, area2label):
+def add_tooltips(grid_model, canvas, tooltip_title, area2label):
     # TODO: docs
     if grid_model == "usa_tamu":
-        return StatesBorderPlotter.add_tooltips(canvas, "nodes", area2label)
+        return StatesBorderPlotter.add_tooltips(canvas, tooltip_title, area2label)
     elif grid_model == "europe_tub":
-        return EuropeBorderPlotter.add_tooltips(canvas, "nodes", area2label)
+        # TODO: europe shapefiles do not line up with europe grid data
+        # return canvas
+        return EuropeBorderPlotter.add_tooltips(canvas, tooltip_title, area2label)
     else:
         raise ValueError("grid model is not supported")
