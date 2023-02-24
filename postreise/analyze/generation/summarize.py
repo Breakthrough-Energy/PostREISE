@@ -50,6 +50,8 @@ def sum_generation_by_state(scenario: Scenario) -> pd.DataFrame:
     totals for the interconnects and for all states.
 
     :param powersimdata.scenario.scenario.Scenario scenario: scenario instance.
+    :raises ValueError:
+        if grid model is not supported.
     :return: (*pandas.DataFrame*) -- total generation per resource, by area.
     """
     # Start with energy by type & zone name
@@ -59,8 +61,14 @@ def sum_generation_by_state(scenario: Scenario) -> pd.DataFrame:
     energy_by_type_zonename = energy_by_type_zoneid.rename(zoneid2zonename, axis=1)
     # Build lists to use for groupbys
     zone_list = energy_by_type_zonename.columns
+    if grid.grid_model == "usa_tamu":
+        loadzone2area = "loadzone2state"
+    elif grid.grid_model == "europe_tub":
+        loadzone2area = "loadzone2country"
+    else:
+        raise ValueError("grid model is not supported")
     zone_states = [
-        grid.model_immutables.zones["loadzone2state"][zone] for zone in zone_list
+        grid.model_immutables.zones[loadzone2area][zone] for zone in zone_list
     ]
     zone_interconnects = [
         grid.model_immutables.zones["loadzone2interconnect"][zone] for zone in zone_list

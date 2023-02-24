@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from powersimdata.input.check import _check_resources_are_renewable_and_format
 from powersimdata.input.helpers import get_plant_id_for_resources_in_area
-from powersimdata.network.model import ModelImmutables
 from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
 
 from postreise.analyze.generation.capacity import get_capacity_by_resources
@@ -78,7 +77,7 @@ def plot_scatter_capacity_vs_curtailment(
         raise TypeError("title must be a str")
 
     resources = _check_resources_are_renewable_and_format(
-        resources, mi=ModelImmutables(scenario.info["grid_model"])
+        resources, mi=scenario.state.get_grid().model_immutables
     )
     curtailment = calculate_curtailment_time_series(scenario)
     plant_list = get_plant_id_for_resources_in_area(

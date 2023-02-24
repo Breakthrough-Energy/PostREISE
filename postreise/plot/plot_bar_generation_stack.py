@@ -95,7 +95,10 @@ def plot_bar_generation_stack(
     s_list = []
     for sid in scenario_ids:
         s_list.append(Scenario(sid))
-    mi = ModelImmutables(s_list[0].info["grid_model"])
+    mi = s_list[0].state.get_grid().model_immutables
+    # TODO: fix in mi
+    mi.plants["curtailable2color"]["offwind-dc"] = "#74c6f2"
+
     type2color = mi.plants["type2color"]
     type2color.update(
         {k + "_curtailment": v for k, v in mi.plants["curtailable2color"].items()}
@@ -116,13 +119,14 @@ def plot_bar_generation_stack(
 
     all_loadzone_data = dict()
     for sid, scenario in zip(scenario_ids, s_list):
+        if scenario.info["interconnect"] in ["USA", "Europe"]:
+            loadzones = mi.zones["loadzone"]
+        else:
+            loadzones = mi.zones["interconnect2loadzone"][scenario.info["interconnect"]]
+
         curtailment = calculate_curtailment_time_series_by_areas_and_resources(
             scenario,
-            areas={
-                "loadzone": mi.zones["interconnect2loadzone"][
-                    scenario.info["interconnect"]
-                ]
-            },
+            areas={"loadzone": loadzones},
         )
         for area in curtailment:
             for r in curtailment[area]:
