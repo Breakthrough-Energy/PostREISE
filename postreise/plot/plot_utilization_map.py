@@ -235,7 +235,6 @@ def map_utilization(
 
     branch_map = project_branch(branch_utilization)
     branch_map = branch_map.sort_values(by=["median_utilization"])
-    branch_map = branch_map[~branch_map.isin([np.nan, np.inf, -np.inf]).any(1)]
 
     multi_line_source = ColumnDataSource(
         {
