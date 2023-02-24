@@ -351,7 +351,17 @@ class EuropeBorderPlotter(BorderPlotter):
 
 
 def add_borders(grid_model, canvas, borders_kwargs=None):
-    # TODO: docs
+    """Calls add_borders for either StatesBorderPlotter or EuropeBorderPlotter
+        based on grid model
+
+    :param str grid_model: the grid model, either usa_tamu or europe_tub
+    :param bokeh.plotting.figure canvas: canvas.
+    :param dict borders_kwargs: keyword arguments to be passed to
+        :func:`postreise.plot.plot_borders.add_borders`
+    :raises ValueError:
+        if grid model is not supported.
+    :return: (*bokeh.plotting.figure.Figure*) -- canvas with borders.
+    """
     if grid_model == "usa_tamu":
         return StatesBorderPlotter.add_borders(canvas, **borders_kwargs)
     elif grid_model == "europe_tub":
@@ -361,12 +371,22 @@ def add_borders(grid_model, canvas, borders_kwargs=None):
 
 
 def add_tooltips(grid_model, canvas, tooltip_title, area2label):
-    # TODO: docs
+    """Calls add_tooltips for either StatesBorderPlotter or EuropeBorderPlotter
+        based on grid model
+
+    :param str grid_model: the grid model, either usa_tamu or europe_tub
+    :param bokeh.plotting.figure canvas: canvas.
+    :param str tooltip_title: title to be added to tooltips
+    :param dict area2label: keys are area name abbreviations and values are labels.
+    :raises ValueError:
+        if grid model is not supported.
+    :return: (*bokeh.plotting.figure.Figure*) -- canvas with tooltips.
+    """
     if grid_model == "usa_tamu":
         return StatesBorderPlotter.add_tooltips(canvas, tooltip_title, area2label)
     elif grid_model == "europe_tub":
-        # TODO: europe shapefiles do not line up with europe grid data
-        # return canvas
-        return EuropeBorderPlotter.add_tooltips(canvas, tooltip_title, area2label)
+        # TODO: tooltips currently broken for europe because shapefile
+        # countries do not line up with europe grid data
+        return canvas
     else:
         raise ValueError("grid model is not supported")
