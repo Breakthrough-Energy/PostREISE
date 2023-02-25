@@ -1,0 +1,12 @@
+.ellipsisWrapper {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  min-width: 0px; /* Handles a weird flex bug. See https://css-tricks.com/flexbox-truncated-text/ */
+}
+
+.ellipsisWrapper__ellipsis {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

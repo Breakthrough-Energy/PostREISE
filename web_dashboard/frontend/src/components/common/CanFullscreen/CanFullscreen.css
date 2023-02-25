@@ -1,0 +1,34 @@
+.can-fullscreen {
+  position: relative;
+  height: calc(100%);
+  width: calc(100%);
+}
+
+.can-fullscreen__button {
+  position: absolute;
+
+  padding: 3px;
+  border-radius: 50%;
+
+  color: var(--gray-900);
+
+  line-height: 0%;
+
+  cursor: pointer;
+
+  transition: var(--transition);
+}
+
+.can-fullscreen__button svg {
+  font-size: 26px;
+}
+
+.can-fullscreen__button:hover {
+  color: white;
+  background-color: var(--blue-400);
+}
+
+.can-fullscreen__modal {
+  height: 100%;
+  width: 100%;
+}

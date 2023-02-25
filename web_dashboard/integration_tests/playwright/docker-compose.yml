@@ -1,0 +1,13 @@
+version: '3.7'
+
+services:
+  playwright:
+    build: .
+    environment:
+      - SITE_URL=${SITE_URL}
+      - DEBUG=pw:api
+    volumes:
+      - $PWD/tests:/integration/tests
+    network_mode: host
+    stdin_open: true
+    tty: true

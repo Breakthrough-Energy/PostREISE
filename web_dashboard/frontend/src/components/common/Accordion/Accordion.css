@@ -1,0 +1,21 @@
+.overflow-hidden{
+    overflow: hidden;
+}
+
+.overflow-visible {
+    overflow: visible;
+}
+
+.animated-close {
+    max-height: 0px;
+    opacity: 0;
+    visibility: hidden;
+    transition: max-height 0.375s, opacity 0.5s, visibility 0.5s;
+}
+
+.animated-open {
+    max-height: 2000px;
+    opacity: 1;
+    visibility: visible;
+    transition: max-height 0.375s;
+}

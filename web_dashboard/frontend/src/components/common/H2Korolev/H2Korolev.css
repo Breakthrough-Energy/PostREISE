@@ -1,0 +1,14 @@
+.h2-korolev {
+  margin: 50px 0px;
+  font-family: 'Korolev';
+  font-size: 88px;
+  font-weight: 500;
+  line-height: 1.15;
+}
+
+@media screen and (max-width: 909px) {
+  .h2-korolev {
+    margin: 25px 0px;
+    font-size: 64px; /*56px*/
+  }
+}

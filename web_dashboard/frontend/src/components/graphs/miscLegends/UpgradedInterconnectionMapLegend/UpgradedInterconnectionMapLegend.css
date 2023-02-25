@@ -1,0 +1,40 @@
+.upgraded-interconnection-map-legend {
+  display: flex;
+  flex-wrap: wrap;
+
+  width: 100%;
+  padding: 10px 5px;
+
+  border-top: var(--border);
+  background-color: white;
+
+  font-size: var(--responsive-font-XS);
+}
+
+.upgraded-interconnection-map-legend > div {
+  justify-content: left;
+  padding: 5px 15px;
+}
+
+.upgraded-interconnection-map-legend__u,
+.upgraded-interconnection-map-legend__hvdc {
+  height: 6px;
+  width: 24px;
+  margin-right: 8px;
+  margin-bottom: 2px;
+}
+
+.upgraded-interconnection-map-legend__u {
+  background-color: var(--green);
+}
+
+.upgraded-interconnection-map-legend__hvdc {
+  background-color: var(--magenta);
+}
+
+@media screen and (max-width: 909px) {
+  .upgraded-interconnection-map-legend {
+    padding: 5px;
+    border: var(--border);
+  }
+}

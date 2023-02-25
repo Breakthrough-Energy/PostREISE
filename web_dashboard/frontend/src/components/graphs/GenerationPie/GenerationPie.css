@@ -1,0 +1,23 @@
+/*
+The graph overlay is centered based on the
+height, margin and padding of the parent .graph class */
+.pie__total {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    pointer-events: none;
+
+    font-size: 18px;
+    font-family: 'Rational';
+    font-weight: 600;
+    text-align: center;
+    color: var(--gray-600);
+  }

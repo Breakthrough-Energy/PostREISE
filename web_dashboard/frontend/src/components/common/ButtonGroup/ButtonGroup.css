@@ -1,0 +1,12 @@
+.button-group {
+  display: flex;
+  cursor: pointer;
+}
+
+.button-group__button:not(:last-child) {
+  border-right: var(--border);
+}
+
+.button-group__active {
+  background-color: var(--blue-400);
+}

@@ -1,0 +1,67 @@
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+/* Reset box-sizing properties. See:
+   https://css-tricks.com/box-sizing/#universal-box-sizing-with-inheritance */
+html {
+  box-sizing: border-box;
+}
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+body {
+  font-family: 'Rational', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
+    'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.4;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+
+@font-face {
+  font-family: 'Rational';
+  font-display: block;
+  src: url(./fonts/RationalText-BE-Book.otf);
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Rational';
+  font-display: block;
+  src: url(./fonts/RationalText-BE-Medium.otf);
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Rational';
+  font-display: block;
+  src: url(./fonts/RationalText-BE-SemiBold.otf);
+  font-weight: 600;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Korolev';
+  font-display: block;
+  src: url(./fonts/Korolev-Compressed-Bold.woff2);
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* Override a bad Safari default */
+button:active {
+  color: unset;
+}

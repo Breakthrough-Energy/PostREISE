@@ -1,0 +1,10 @@
+.deck-gl-map {
+  width: 100%;
+  height: 100%;
+}
+
+/* deckgl sets maps to z-index 0 which means tooltips end up beneath other
+   elements. So we unset that here. */
+#deckgl-wrapper {
+  z-index: unset !important;
+}

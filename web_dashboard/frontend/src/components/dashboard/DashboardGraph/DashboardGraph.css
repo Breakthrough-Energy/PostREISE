@@ -1,0 +1,9 @@
+.dashboard-graph__toggle {
+  border: var(--border);
+  border-radius: var(--border-radius);
+  background-color: var(--gray-100);
+}
+
+.dashboard-graph__toggle-button {
+  padding: 3px 10px;
+}

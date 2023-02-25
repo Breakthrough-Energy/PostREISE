@@ -1,0 +1,37 @@
+.branch-map-legend {
+  padding: 10px 20px 30px 20px;
+}
+
+.branch-map-legend__title {
+  margin-bottom: 5px;
+  font-size: var(--responsive-font-S);
+  font-weight: 600;
+}
+
+.branch-map-legend__sections {
+  display: flex;
+}
+
+.branch-map-legend__section {
+  position: relative;
+  width: min(100%, 100px);
+}
+
+.branch-map-legend__color {
+  height: 10px;
+}
+
+.branch-map-legend__tick,
+.branch-map-legend__first-tick {
+  display: flex;
+  justify-content: center;
+  position: absolute;
+  top: 100%;
+  left: calc(100% - 15px);
+  width: 30px;
+  font-size: var(--responsive-font-S);
+}
+
+.branch-map-legend__first-tick {
+  left: -15px;
+}

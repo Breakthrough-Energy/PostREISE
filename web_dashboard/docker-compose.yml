@@ -1,0 +1,18 @@
+version: "3.7"
+services:
+  frontend:
+    build: ./frontend
+    volumes:
+      - ./frontend:/app
+      # One-way volume to use node_modules from inside image
+      - nodemodules:/app/node_modules
+    ports:
+      - "3000:3000"
+    # Handles a react-scripts bug. If a fix is merged this may be removed later.
+    # See https://github.com/facebook/create-react-app/issues/8688#issuecomment-602110747
+    stdin_open: true
+    environment:
+      - NODE_ENV=development
+    command: yarn start
+volumes:
+  nodemodules:

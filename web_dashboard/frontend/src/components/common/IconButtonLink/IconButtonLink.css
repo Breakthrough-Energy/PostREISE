@@ -1,0 +1,72 @@
+.gradient-button__wrapper {
+  position: relative;
+  width: fit-content;
+}
+
+.gradient-button__shadow {
+  background: linear-gradient(135deg,#4e44fb,#40c4e0 50%,#5ed661);
+  border-radius: 9999px;
+  filter: blur(8px);
+  -webkit-filter: blur(1px);
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 6px;
+  width: 100%;
+  opacity: 0;
+  transition: opacity var(--transition-time);
+}
+
+.gradient-button__wrapper:hover .gradient-button__shadow {
+  opacity: 1;
+}
+
+.icon-button-link {
+  position: relative;
+  width: fit-content;
+  padding: 7px 7px 7px 25px;
+  border-radius: 30px;
+  font-weight: 600;
+  transition: var(--transition);
+  z-index: 1;
+}
+
+.icon-button-link__blue {
+  color: white;
+  background-color: var(--blue-400);
+}
+
+.icon-button-link__white {
+  color: var(--blue-400);
+  background-color: white;
+}
+
+.icon-button-link__blue:hover,
+.icon-button-link__white:hover {
+  color: white;
+  background-color: var(--gray-900);
+}
+
+/* Circle border around icon */
+.icon-button-link__icon {
+  flex-shrink: 0;
+  height: 42px;
+  width: 42px;
+  margin-left: 15px;
+  border-radius: 50%;
+  font-size: 16px;
+  transition: border var(--transition-time);
+}
+
+.icon-button-link__blue .icon-button-link__icon {
+  border: 1px solid white;
+}
+
+.icon-button-link__white .icon-button-link__icon {
+  border: 1px solid var(--blue-400);
+}
+
+.icon-button-link__blue:hover .icon-button-link__icon,
+.icon-button-link__white:hover .icon-button-link__icon {
+  border: 1px solid white;
+}

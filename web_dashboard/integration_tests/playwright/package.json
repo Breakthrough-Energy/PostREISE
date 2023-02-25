@@ -1,0 +1,21 @@
+{
+  "name": "integration-tests",
+  "version": "1.0.0",
+  "description": "",
+  "main": "cenacs.e2e.js",
+  "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.0.20",
+    "expect-playwright": "^0.3.3",
+    "jest": "^26.6.3",
+    "jest-image-snapshot": "^4.5.0",
+    "jest-playwright-preset": "^1.5.1",
+    "playwright": "^1.10.0",
+    "playwright-video": "^2.4.0"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "test": "jest --config ./tests/jest.e2e.config.js --detectOpenHandles"
+  },
+  "author": "",
+  "license": "ISC"
+}

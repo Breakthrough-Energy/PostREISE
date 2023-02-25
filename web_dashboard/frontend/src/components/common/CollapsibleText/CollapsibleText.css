@@ -1,0 +1,10 @@
+.collapsible-text__button {
+  margin-left: 10px;
+  text-decoration: underline;
+  color: var(--blue-400);
+  cursor: pointer;
+}
+
+.collapsible-text__button:hover {
+  text-decoration: none;
+}

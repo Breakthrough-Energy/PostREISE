@@ -1,0 +1,68 @@
+.graph-column__grid-item:not(:nth-last-child(-n+2)) {
+  border-right: var(--border);
+}
+
+.graph-column__column-header {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 30px 60px 10px 60px;
+  align-items: center;
+}
+
+.graph-column__scenario-name {
+  width: 100%;
+  max-width: 800px;
+  margin: 0px;
+}
+
+.graph-column__scenario-subtitle {
+  max-width: 800px;
+  margin-top: 20px;
+}
+
+.graph-column__close {
+  position: absolute;
+  top: 22px;
+  left: calc(100% - 60px);
+
+  padding: 3px;
+  border-radius: 15px;
+
+  font-size: 20px;
+}
+
+.graph-column__close:hover {
+  color: white;
+  background-color: var(--pink);
+}
+
+.graph-column__graph-list {
+  display: flex;
+  flex-wrap: wrap;
+
+  padding: 0px 30px 20px 30px;
+
+  align-content: flex-start;
+  justify-content: center;
+}
+
+@media screen and (max-width: 909px) {
+  .graph-column__column-header {
+    padding: 30px 20px 10px 20px;
+  }
+
+  .graph-column__scenario-name {
+    font-size: 24px;
+  }
+
+  .graph-column__column-header:not(:first-child),
+  .graph-column__graph-list:not(:nth-child(2)),
+  .graph-column__close {
+    display: none;
+  }
+
+  .graph-column__graph-list {
+    padding: 0px 0px 20px 0px;
+  }
+}

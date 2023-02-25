@@ -1,0 +1,19 @@
+.emissions-map-legend {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 20px 30px 20px;
+  font-size: var(--responsive-font-S);
+}
+
+.emissions-map-legend__section {
+  display: flex;
+  align-items: center;
+}
+
+.emissions-map-legend__circle {
+  height: 10px;
+  width: 10px;
+  margin-right: 8px;
+  margin-bottom: 2px;
+  border-radius: 50%;
+}

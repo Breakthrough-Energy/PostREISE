@@ -1,0 +1,6 @@
+.gradient-border {
+  height: 10px;
+  width: 100%;
+  background: linear-gradient(to right, var(--med-blue), var(--highlight-blue), var(--lime-green));
+  flex-shrink: 0;
+}

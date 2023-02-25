@@ -1,0 +1,96 @@
+/* These are our commonly used variables.
+   To use them, import this file into your component. */
+
+:root {
+  --border: 1px solid var(--gray-300);
+  --bokeh-border: 1px solid #eaeaea;
+  --border-radius: 4px;
+  --box-shadow: 0px 2px 5px #AAAAAA;
+  --modal-shadow: #00000085;
+  --header-height: 93px;
+  --section-height: 720px; /* used on main BE site */
+
+  --transition-time: 375ms;
+  --transition: all var(--transition-time);
+
+
+  /* Z-INDEX */
+  --z-index-modal: 10000;
+  --z-index-scenario-toolbar: 100;
+  --z-index-graph-fullscreen: 100;
+  --z-index-header: 50;
+
+  /* NEW COLORS */
+  --gray-100: #ebeef1;
+  --gray-200: #D8DEE4;
+  --gray-300: #c4ced6;
+  --gray-500: #9da7b1;
+  --gray-600: #72818F;
+  --gray-700: #5a606b;
+  --gray-800: #373f4c;
+  --gray-900: #22262b;
+  --black: #0A0F14;
+
+  --cyan: #00D4ED;
+  --blue-400: #0090FF; /* primary blue */
+  --blue-500: #006ff9;
+  --blue-600: #173FA5;
+
+  --accordion-1: #1fd4ee;
+  --accordion-2: #1ebee8;
+  --accordion-3: #27a8e1;
+  --accordion-4: #2893dd;
+  --accordion-5: #257fd9;
+  --accordion-6: #1b6ad1;
+  --accordion-end: #0955c9;
+
+  --teal: #26E8D7;
+  --green: #78D911;
+  --purple: #8B36FF;
+  --magenta: #FF3270;
+
+
+  /* OLD COLORS */
+  --blackish: #0A0F14;
+  --dark-gray: #2c2e32;
+  --med-dark-gray: #535557;
+  --med-gray: #808184;
+  --light-gray: #c7c8ca;
+  --lightest-gray: #eff7f8;
+
+  --navy-blue: #012f56;
+  --dark-blue: #084b86;
+  --med-blue: #0c84e2;
+  --highlight-blue: #40c4e0;
+  --light-blue: #dbfbfd;
+
+  --pink: #d8428d;
+  --purple-med: #6D3376;
+  --lime-green: #a6ce39; /* Merrielle's favorite color! :) */
+
+
+  /* FONTS */
+  --responsive-font-header-S: 44px;
+  --responsive-font-XL: 32px;
+  --responsive-font-L: 27px;
+  --responsive-font-M-Plus: 24px;
+  --responsive-font-M: 18px;
+  --responsive-font-S: 16px;
+  --responsive-font-XS: 14px;
+}
+
+/* Mobile style variables */
+@media screen and (max-width: 909px) {
+  :root {
+    --header-height: 52px;
+
+    /* FONTS */
+    --responsive-font-header-S: 38px;
+    --responsive-font-XL: 27px;
+    --responsive-font-L: 24px;
+    --responsive-font-M-Plus: 20px;
+    --responsive-font-M: 16px;
+    --responsive-font-S: 14px; /* TODO: double check this looks good */
+    --responsive-font-XS: 14px; /* same */
+}
+}

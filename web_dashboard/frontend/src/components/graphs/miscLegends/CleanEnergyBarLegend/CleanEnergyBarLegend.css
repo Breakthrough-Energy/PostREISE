@@ -1,0 +1,44 @@
+.clean-energy-bar-legend {
+  display: flex;
+  flex-wrap: wrap;
+
+  width: 100%;
+  padding: 10px 5px;
+
+  border-top: var(--border);
+  background-color: white;
+
+  color: var(--gray-900);
+  font-size: var(--responsive-font-XS);
+}
+
+.clean-energy-bar-legend > div {
+  justify-content: left;
+  padding: 5px 15px;
+}
+
+.clean-energy-bar-legend__title {
+  font-weight: 500;
+}
+
+.clean-energy-bar-legend__square {
+  height: 10px;
+  width: 10px;
+  margin-right: 8px;
+  margin-bottom: 4px;
+}
+
+.clean-energy-bar-legend__0 {
+  background-color: var(--cyan);
+}
+
+.clean-energy-bar-legend__1 {
+  background-color: var(--blue-400);
+}
+
+@media screen and (max-width: 909px) {
+  .clean-energy-bar-legend {
+    padding: 5px;
+    border: var(--border);
+  }
+}

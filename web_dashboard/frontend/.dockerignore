@@ -1,0 +1,2 @@
+# Files and folders that will not be sent to the docker build context
+/node_modules

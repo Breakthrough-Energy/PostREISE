@@ -1,0 +1,108 @@
+.scenario-toolbar {
+  position: sticky;
+  top: 0px;
+  left: 0px;
+  display: flex;
+  flex-direction: column;
+  z-index: var(--z-index-scenario-toolbar);
+
+  height: calc(var(--header-height) + 10px);
+
+  background-color: var(--gray-900);
+}
+
+.scenario-toolbar__scenarios {
+  display: flex;
+
+  min-width: 0; /* Allows children to shrink for small windows */
+  height: var(--header-height);
+
+  font-size: 24px;
+  line-height: unset;
+
+  align-items: center;
+}
+
+.scenario-toolbar__scenario-label, .scenario-toolbar__location-label {
+  color: white;
+}
+
+.scenario-toolbar__add,
+.scenario-toolbar__select,
+.scenario-toolbar__location-select {
+  margin-left: 6px;
+}
+
+.scenario-toolbar__add {
+  width: 34px;
+  height: 32px;
+  padding: 5px 0px 5px 0px;
+
+  background-color: white;
+  border: var(--border);
+  border-radius: 4px;
+
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1em;
+
+  flex-shrink: 0;
+}
+
+.scenario-toolbar__add:hover:not(.scenario-toolbar__add__disabled) {
+  background-color: var(--light-blue);
+  border-color: var(--highlight-blue);
+}
+
+.scenario-toolbar__add__disabled {
+  color: var(--med-dark-gray);
+  background-color: var(--light-gray);
+}
+
+.scenario-toolbar__infobox-description {
+  font-size: initial;
+}
+
+.scenario-toolbar__infobox-securityNotice {
+  font-size: 12px;
+}
+
+.scenario-toolbar__location-label {
+  margin-left: 30px;
+}
+
+@media screen and (max-width: 909px) {
+  .scenario-toolbar__scenario-label,
+  .scenario-toolbar__select:not(:nth-child(2)),
+  .scenario-toolbar__select .select__infobox,
+  .scenario-toolbar__add,
+  .scenario-toolbar__location-label {
+    display: none;
+  }
+
+  .scenario-toolbar {
+    justify-content: center;
+  }
+
+  .scenario-toolbar__select {
+    width: fit-content;
+    max-width: 100%;
+    margin: 0px;
+  }
+
+  .scenario-toolbar__select .select__option {
+    max-width: 240px;
+  }
+}
+
+@media screen and (max-width: 1199px) {
+  .scenario-toolbar__scenarios {
+    padding: 0px 20px;
+  }
+}
+
+@media screen and (min-width: 1200px) {
+  .scenario-toolbar__scenarios {
+    padding: 0px 100px;
+  }
+}

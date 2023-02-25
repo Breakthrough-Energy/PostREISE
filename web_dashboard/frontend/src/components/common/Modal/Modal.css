@@ -1,0 +1,19 @@
+.modal {
+  background-color: white;
+}
+
+.modal__fullscreen {
+  position: fixed;
+  top: 0px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  width: 100%;
+  height: 100%;
+
+  background-color: var(--modal-shadow);
+  overflow: scroll;
+
+  z-index: var(--z-index-modal);
+}

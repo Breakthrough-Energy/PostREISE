@@ -1,0 +1,124 @@
+.graph {
+  width: 450px;
+  min-width: 450px; /* Fixes graph squashing in MS Edge */
+  height: 400px;
+  margin: 30px;
+  padding: 10px;
+
+  background-color: white;
+  border: var(--border);
+  border-radius: 10px;
+  box-shadow: var(--box-shadow);
+}
+
+.graph__fs-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-content: flex-start;
+  align-items: center;
+  justify-content: center;
+}
+
+.graph__fullscreen {
+  padding: 20px 10px;
+}
+
+.graph__fullscreen-button {
+  top: -2px;
+  right: -1px;
+}
+
+.graph__fullscreen .graph__fullscreen-button {
+  top: 17px;
+  right: 17px;
+}
+
+.graph__title {
+  flex-shrink: 0;
+  max-width: 355px;
+  font-size: 1.3rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.graph__subtitle {
+  position: relative;
+  flex-shrink: 0;
+
+  height: 42px;
+  width: 100%;
+  max-width: 600px;
+
+  color: var(--med-dark-gray);
+
+  font-size: initial;
+  font-style: italic;
+  text-align: left;
+  line-height: initial;
+
+  z-index: 5;
+}
+
+.graph__ct {
+  position: absolute;
+  bottom: 0px;
+
+  padding: 5px 30px;
+  background-color: white;
+}
+
+.graph__ct.open {
+  padding-top: 10px;
+  box-shadow: 0px -10px 10px white;
+}
+
+.graph__content {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  position: relative;
+
+  font-size: 18px;
+
+  justify-content: center;
+  align-items: center;
+}
+
+.graph__title, .graph__subtitle, .graph__content {
+  min-height: 0;  /* Handles a weird flex bug. See https://css-tricks.com/flexbox-truncated-text/ */
+}
+
+@media screen and (max-width: 909px) {
+  .graph {
+    margin: 10px;
+    width: calc(100vw - 20px);
+    min-width: unset;
+    /* Preserve aspect ratio even with dynamic width */
+    height: calc(0.9*(100vw - 60px));
+    max-height: calc(100vh - 80px);
+  }
+
+  .graph__fullscreen {
+    padding: 10px 5px;
+  }
+
+  .graph__fullscreen-button  {
+    top: -4px;
+  }
+
+  .graph__fullscreen .graph__fullscreen-button {
+    top: 5px;
+  }
+
+  .graph:not(.graph__fullscreen) .graph__title {
+    max-width: calc(100vw - 100px);
+  }
+
+  .graph__fullscreen .graph__title {
+    max-width: calc(100vw - 80px);
+  }
+
+  .graph__title {
+    font-size: 18px;
+  }
+}

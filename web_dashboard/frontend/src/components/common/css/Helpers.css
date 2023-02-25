@@ -1,0 +1,108 @@
+.reset-link-styles {
+  color: inherit;
+  font-weight: 400;
+  text-decoration: inherit;
+}
+
+.link-blue {
+  color: var(--blue-400);
+}
+
+.link-blue:visited {
+  color: revert;
+}
+
+.reset-list-styles {
+  margin: 0px;
+  padding: 0px;
+  list-style-type: none;
+}
+
+.reset-button-styles {
+  border: none;
+  padding: none;
+  background-color: unset;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  align-content: center;
+  justify-content: center;
+}
+
+/* Allows the element to overflow its parent and take up the entire width of the screen. */
+.full-page-width {
+  position: relative;
+  left: 50%;
+  width: 100vw !important;
+  margin-left: -50vw;
+}
+
+.hidden {
+  /* https://css-tricks.com/when-using-important-is-the-right-choice/ */
+  display: none !important;
+}
+
+.default-p-style p,
+.default-text-style { /* useful for things like li elements */
+  color: var(--gray-900);
+  font-size: var(--responsive-font-M);
+  line-height: 1.56;
+}
+
+/* used on scrollytelling */
+.small-caps {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.primary-button-styles {
+  z-index: 2;
+  transition: background-color 375ms;
+  border: 0;
+  border-radius: 100px;
+
+  min-width: 150px;
+  margin-right: 5px;
+  padding: 16px;
+
+  font-size: 18px;
+  font-weight: 500;
+  text-align: center;
+  background-color: var(--blue-400);
+  color: #fff;
+  outline: none;
+}
+
+.primary-button-styles:hover {
+  background: rgba(10,15,20,.9);
+}
+
+.secondary-button-styles {
+  z-index: 2;
+  transition: background-color 375ms;
+  border: 0;
+  border-radius: 100px;
+
+  min-width: 150px;
+  margin-right: 5px;
+  padding: 16px;
+
+  font-size: 18px;
+  font-weight: 500;
+  text-align: center;
+  background-color: var(--gray-500);
+  color: var(--gray-900);
+  outline: none;
+}
+
+@media screen and (max-width: 899px) {
+  .full-page-width {
+    /* no padding */
+    left: calc(50%);
+    width: calc(100vw);
+  }
+}

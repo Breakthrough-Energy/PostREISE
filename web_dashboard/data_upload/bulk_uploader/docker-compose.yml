@@ -1,0 +1,14 @@
+version: '3.7'
+services:
+  uploader:
+    build:
+      context: .
+    container_name: uploader
+    environment: 
+        - COSMOS_ENDPOINT=${COSMOS_ENDPOINT}
+        - COSMOS_KEY=${COSMOS_KEY}
+        - COSMOS_DB_NAME=${COSMOS_DB_NAME}
+    stdin_open: true
+    tty: true
+    volumes:
+      - $PWD/upload_files:/app/shared

@@ -1,0 +1,12 @@
+.branch-map {
+  width: 100%;
+  height: 100%;
+}
+
+.branch-map__legend {
+  position: absolute;
+  right: 0px;
+  bottom: 0px;
+  width: min(100%, 500px);
+  background: rgb(255, 255, 255, .88);
+}

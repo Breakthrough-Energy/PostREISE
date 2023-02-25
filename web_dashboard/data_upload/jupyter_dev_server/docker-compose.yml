@@ -1,0 +1,27 @@
+version: '3.7'
+
+services:
+  powersimdata:
+    container_name: powersimdata
+    build:
+      context: ../../../PowerSimData
+    image: powersimdata:latest
+    entrypoint: bash
+  postreise:
+    container_name: postreise
+    hostname: postreise
+    build:
+      context: ../../../PostREISE
+    depends_on:
+      - powersimdata
+    environment:
+      - DEPLOYMENT_MODE=1
+    image: postreise:latest
+    ports:
+      - 10001:10000
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+    volumes:
+      - /mnt/bes/pcm:/mnt/bes/pcm:ro
+      - ..:/data_upload
+    working_dir: /data_upload

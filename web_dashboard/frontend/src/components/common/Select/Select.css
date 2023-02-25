@@ -1,0 +1,102 @@
+.select {
+  display: flex;
+  position: relative;
+  align-items: center;
+
+  width: 250px;
+  height: 32px;
+  border-radius: var(--border-radius);
+
+  font-size: initial;
+  text-align: left;
+
+  justify-content: space-between;
+}
+
+.select, .select__dropdown, .select__options {
+  min-width: 0px; /* Allows select to shrink to fit parent */
+}
+
+.select, .select__option {
+  border: var(--border);
+  background-color: white;
+}
+
+.select__buttonText {
+  padding-top: 1px;
+  font-weight: 500;
+}
+
+.select__arrow {
+  flex-shrink: 0;
+  margin-left: 7px;
+}
+
+.select__open {
+  border-bottom-left-radius: 0px;
+  border-bottom-right-radius: 0px;
+}
+
+.select__open:focus {
+  outline: none;
+}
+
+.select:hover {
+  border-color: var(--highlight-blue);
+}
+
+.select:hover, .select__option:hover {
+  background-color: var(--light-blue);
+}
+
+.select__dropdown {
+  position: absolute;
+  display: flex;
+  top: 31px;
+  margin-left: -7px;
+}
+
+.select__options {
+  max-height: 500px;
+  width: 250px;
+  overflow-y: auto;
+}
+
+/* Fixes dropdown misalignment in firefox */
+@-moz-document url-prefix() {
+  .select__dropdown {
+     margin-left: -9px;
+  }
+}
+
+.select__option {
+  position: relative;
+
+  max-width: 250px;
+  height: 32px;
+  margin-top: -1px;
+  padding: 2px 7px 0px 7px;
+}
+
+.select__option:last-child {
+  border-bottom-left-radius: var(--border-radius);
+  border-bottom-right-radius: var(--border-radius);
+}
+
+.select__infobox {
+  width: 400px;
+  margin-top: -1px;
+  margin-left: -1px;
+  padding: 0px 20px 5px 20px;
+
+  background-color: white;
+  border: var(--border);
+  border-radius: var(--border-radius);
+  border-top-left-radius: 0px;
+  box-shadow: var(--box-shadow);
+}
+
+.select__infobox__title {
+  margin-top: 20px;
+  margin-bottom: 18px;
+}

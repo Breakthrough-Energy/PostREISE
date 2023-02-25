@@ -1,0 +1,71 @@
+{
+  "name": "cenacs",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@apollo/react-hooks": "^4.0.0",
+    "@loaders.gl/core": "^2.3.13",
+    "@loaders.gl/json": "^2.3.13",
+    "@loaders.gl/shapefile": "^2.3.13",
+    "@nivo/bar": "^0.68.0",
+    "@nivo/core": "^0.68.0",
+    "@nivo/line": "^0.68.0",
+    "@nivo/pie": "^0.68.0",
+    "@reduxjs/toolkit": "^1.5.1",
+    "apollo-boost": "^0.4.7",
+    "apollo-cache-inmemory": "^1.6.5",
+    "axios": "^0.21.1",
+    "classnames": "^2.3.1",
+    "deck.gl": "^8.4.16",
+    "graphql": "^15.5.0",
+    "hookrouter": "^1.2.5",
+    "normalize.css": "^8.0.1",
+    "prop-types": "^15.7.2",
+    "react": "^17.0.2",
+    "react-app-polyfill": "^2.0.0",
+    "react-dom": "^17.0.2",
+    "react-ga": "^3.3.0",
+    "react-icons": "^4.2.0",
+    "react-map-gl": "^6.1.12",
+    "react-redux": "^7.2.4",
+    "react-scripts": "^4.0.3",
+    "react-spring": "9.1.2",
+    "react-test-renderer": "^17.0.2",
+    "shiitake": "^3.0.2",
+    "uuid": "^8.3.2"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "lint": "eslint src",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all",
+      "not chrome < 51",
+      "not safari < 10"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version",
+      "edge >= 18"
+    ]
+  },
+  "proxy": "http://backend:8000",
+  "devDependencies": {
+    "@testing-library/jest-dom": "^5.12.0",
+    "@testing-library/react": "^11.2.6",
+    "@testing-library/user-event": "^13.1.5",
+    "@wojtekmaj/enzyme-adapter-react-17": "^0.6.1",
+    "enzyme": "^3.11.0",
+    "msw": "^0.36.8"
+  }
+}
