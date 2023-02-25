@@ -25,6 +25,7 @@ Here are a few things that **PostREISE** can do:
 * Perform transmission congestion/utilization analyses of scenarios
 * Study generation/emission in scenarios
 * Plot results of analyses
+* Web dashboard with previously generated scenario results
 
 A detailed tutorial can be found on our [docs].
 
@@ -46,10 +47,10 @@ this package.
 
 
 ## Installation
-Scenario data managed by **PowerSimData** are used by the analysis and plotting modules
+* Scenario data managed by **PowerSimData** are used by the analysis and plotting modules
 of **PostREISE**. Follow the instructions in the README of the [PowerSimData] package to install our
 software ecosystem.
-
+* Web dashboard: Check out the `web_dashboard` branch and see README in `./web_dashboard`
 
 ## License
 [MIT](LICENSE)
