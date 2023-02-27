@@ -1,7 +1,7 @@
 import os
 
-import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib import pyplot as plt
 from powersimdata.input.check import _check_resources_and_format
 from powersimdata.network.model import ModelImmutables
 from powersimdata.scenario.check import _check_scenario_is_in_analyze_state

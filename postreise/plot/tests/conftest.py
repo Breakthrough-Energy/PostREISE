@@ -1,5 +1,5 @@
-import matplotlib.pyplot as plt
 import pytest
+from matplotlib import pyplot as plt
 
 
 @pytest.fixture(autouse=True)

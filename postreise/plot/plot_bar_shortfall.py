@@ -1,5 +1,5 @@
-import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib import pyplot as plt
 from powersimdata.design.generation.clean_capacity_scaling import (
     add_demand_to_targets,
     add_resource_data_to_targets,

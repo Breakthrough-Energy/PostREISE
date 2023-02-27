@@ -1,15 +1,15 @@
 import numpy as np
 import pandas as pd
 from bokeh.models import ColumnDataSource, HoverTool
+from powersimdata.network.constants.carrier.resource import EUResource, USAResource
 from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
-from powersimdata.network.constants.carrier.resource import USAResource, EUResource
 
 from postreise.analyze.generation.emissions import (
     generate_emissions_stats,
     summarize_emissions_by_bus,
 )
 from postreise.plot.canvas import create_map_canvas
-from postreise.plot.colors import be_green, be_red, be_purple
+from postreise.plot.colors import be_green, be_purple, be_red
 from postreise.plot.plot_borders import add_borders
 from postreise.plot.projection_helpers import project_bus
 

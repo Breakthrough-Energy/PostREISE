@@ -1,4 +1,4 @@
-import matplotlib.pyplot as plt
+from matplotlib import pyplot as plt
 from powersimdata import Scenario
 
 from postreise.plot.plot_curtailment_ts import plot_curtailment_time_series

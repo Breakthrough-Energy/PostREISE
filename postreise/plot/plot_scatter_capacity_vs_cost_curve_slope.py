@@ -1,4 +1,4 @@
-import matplotlib.pyplot as plt
+from matplotlib import pyplot as plt
 from powersimdata.input.helpers import get_plant_id_for_resources_in_area
 from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
 

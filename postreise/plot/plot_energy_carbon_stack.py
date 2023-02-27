@@ -1,8 +1,8 @@
 # This plotting module has a corresponding demo notebook in
 #   PostREISE/postreise/plot/demo: energy_emissions_stack_bar_demo.ipynb
 
-import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import pyplot as plt
 from powersimdata.network.model import ModelImmutables
 from powersimdata.scenario.scenario import Scenario
 

@@ -1,5 +1,5 @@
-import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib import pyplot as plt
 from powersimdata.input.check import _check_resources_are_renewable_and_format
 from powersimdata.input.helpers import get_plant_id_for_resources_in_area
 from powersimdata.scenario.check import _check_scenario_is_in_analyze_state

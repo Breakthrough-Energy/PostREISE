@@ -1,5 +1,5 @@
-import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib import pyplot as plt
 from powersimdata.network.model import ModelImmutables, area_to_loadzone
 from powersimdata.scenario.scenario import Scenario
 

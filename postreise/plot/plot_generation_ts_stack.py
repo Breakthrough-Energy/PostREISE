@@ -1,8 +1,8 @@
 import os
 
-import matplotlib.patches as mpatches
-import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib import patches as mpatches
+from matplotlib import pyplot as plt
 from powersimdata.network.model import ModelImmutables
 from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
 

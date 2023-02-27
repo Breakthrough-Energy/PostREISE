@@ -1,5 +1,5 @@
-import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib import pyplot as plt
 from powersimdata.input.check import _check_resources_are_in_grid_and_format
 
 from postreise.analyze.generation.summarize import (
