@@ -7,9 +7,11 @@ import { usePath, useRoutes } from 'hookrouter';
 import Dashboard from '../dashboard/Dashboard/Dashboard';
 import dashboardSlice from '../../slices/dashboardSlice/dashboardSlice';
 import { setPageTracking } from '../../util/util';
+import HourlyUtilization from '../HourlyDemo/HourlyUtilization';
 
 export const routes = {
-  '/': () => <Dashboard />
+  '/': () => <Dashboard />,
+  '/hourly': () => <HourlyUtilization />
 };
 
 // Using combineReducers as prep for adding more stores
