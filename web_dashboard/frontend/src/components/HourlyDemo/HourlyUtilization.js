@@ -272,7 +272,7 @@ async function* getData(startDay, toggleIdx, dataNotLoaded, setNotDataLoaded) {
 }
 
 const getBaseJson = async () => {
-  const yearFile = "https://bescienceswebsite.blob.core.windows.net/grid-data/v1/1270/branch.json"
+  const yearFile = "./grid-data/v1/1270/branch.json"
   console.log(yearFile)
   const yearly_chunk = await load(yearFile, JSONLoader);
   yearly_chunk.forEach(val => val.median_utilization = {'yearMedian': val.median_utilization});
