@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 from bokeh.models import ColumnDataSource, HoverTool
-from powersimdata.network.constants.carrier.resource import EUResource, USAResource
 from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
 
 from postreise.analyze.generation.emissions import (

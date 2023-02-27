@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 from powersimdata.input.check import _check_grid_type, _check_time_series
-from powersimdata.network.model import ModelImmutables
 from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
 
 from postreise.analyze.generation.costs import calculate_costs

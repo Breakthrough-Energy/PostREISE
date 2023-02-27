@@ -1,7 +1,6 @@
 # This plotting module has a corresponding demo notebook in
 #   PostREISE/postreise/plot/demo: utilization_map_demo.ipynb
 
-import numpy as np
 import pandas as pd
 from bokeh.models import ColorBar, ColumnDataSource, HoverTool
 from bokeh.transform import linear_cmap

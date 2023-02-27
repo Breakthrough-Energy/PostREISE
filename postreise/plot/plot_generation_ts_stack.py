@@ -3,7 +3,6 @@ import os
 import pandas as pd
 from matplotlib import patches as mpatches
 from matplotlib import pyplot as plt
-from powersimdata.network.model import ModelImmutables
 from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
 
 from postreise.analyze.demand import get_demand_time_series, get_net_demand_time_series
