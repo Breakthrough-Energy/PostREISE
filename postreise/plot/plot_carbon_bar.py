@@ -35,22 +35,38 @@ def plot_carbon_bar(*args, labels=None, labels_size=15, plot_show=True):
 
     labels = tuple([s.info["id"] for s in args]) if labels is None else tuple(labels)
 
-    carbon_val = {"coal": [], "ng": []}
+    mi = args[0].state.get_grid().model_immutables
+    coal_resource_types = list(mi.plants["group_all_resources"]["coal"])
+    ng_resource_types = list(mi.plants["group_all_resources"]["ng"])
+    resource_types = coal_resource_types + ng_resource_types
+
+    carbon_val = {rtype: [] for rtype in resource_types}
     for i, s in enumerate(args):
         _check_scenario_is_in_analyze_state(s)
         grid = s.get_grid()
         carbon_by_bus = summarize_emissions_by_bus(generate_emissions_stats(s), grid)
-        carbon_val["coal"].append(sum(carbon_by_bus["coal"].values()))
-        carbon_val["ng"].append(sum(carbon_by_bus["ng"].values()))
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(14, len(labels)))
+        for rtype in resource_types:
+            carbon_val[rtype].append(sum(carbon_by_bus[rtype].values()))
+
+    fig, axes = plt.subplots(
+        1,
+        len(resource_types),
+        sharey=True,
+        figsize=(7 * len(resource_types), len(labels)),
+    )
     y_pos = np.arange(len(labels))
 
+    colors = [mi.plants["type2color"][rtype] for rtype in resource_types]
+    label_text = [
+        f"{mi.plants['type2label'][rtype]}: CO$_2$ Emissions"
+        for rtype in resource_types
+    ]
     for a, f, c, t in zip(
-        [ax1, ax2],
-        ["coal", "ng"],
-        ["black", "purple"],
-        ["Coal: CO$_2$  Emissions", "Natural Gas: CO$_2$ Emissions"],
+        axes,
+        resource_types,
+        colors,
+        label_text,
     ):
         a.barh(y_pos, carbon_val[f], align="center", alpha=0.25, color=c)
         a.set_xlabel("Tons", fontsize=labels_size + 3)
@@ -61,4 +77,4 @@ def plot_carbon_bar(*args, labels=None, labels_size=15, plot_show=True):
     plt.subplots_adjust(wspace=0.1)
     if plot_show:
         plt.show()
-    return ax1, ax2
+    return axes

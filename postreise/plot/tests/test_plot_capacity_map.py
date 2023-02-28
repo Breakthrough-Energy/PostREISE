@@ -1,5 +1,5 @@
-import bokeh.plotting as plt
 import pytest
+from bokeh import plotting as plt
 from powersimdata.tests.mock_scenario import MockScenario
 
 from postreise.plot.plot_capacity_map import map_plant_capacity

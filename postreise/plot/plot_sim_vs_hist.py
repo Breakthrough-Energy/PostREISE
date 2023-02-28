@@ -1,6 +1,6 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib import pyplot as plt
 
 from postreise.analyze.generation.summarize import sum_generation_by_state
 
@@ -52,7 +52,16 @@ def plot_generation_sim_vs_hist(
     pg = scenario.get_pg()
 
     def calc_max(fuel):
-        loadzone = list(grid.model_immutables.area_to_loadzone(state, "state"))  # noqa
+        if grid.grid_model == "usa_tamu":
+            area_type = "state"
+        elif grid.grid_model == "europe_tub":
+            area_type = "country"
+        else:
+            raise ValueError("grid model is not supported")
+
+        loadzone = list(  # noqa
+            grid.model_immutables.area_to_loadzone(state, area_type)
+        )
         capacity = grid.plant.query("type == @fuel & zone_name == @loadzone")[
             "Pmax"
         ].sum()

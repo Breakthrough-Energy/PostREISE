@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 from powersimdata.input.check import _check_grid_type, _check_time_series
-from powersimdata.network.model import ModelImmutables
 from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
 
 from postreise.analyze.generation.costs import calculate_costs
@@ -24,7 +23,7 @@ def generate_emissions_stats(scenario, pollutant="carbon", method="simple"):
           are off (detected by pg < 1 MW).
     """
     _check_scenario_is_in_analyze_state(scenario)
-    mi = ModelImmutables(scenario.info["grid_model"])
+    mi = scenario.get_grid().model_immutables
     allowed_methods = {
         "carbon": {"simple", "always-on", "decommit"},
         "nox": {"simple"},
@@ -124,7 +123,15 @@ def carbon_diff(scenario_1, scenario_2):
         generate_emissions_stats(scenario_2), scenario_2.get_grid()
     )
 
-    sum_1 = sum(carbon_by_bus_1["coal"].values()) + sum(carbon_by_bus_1["ng"].values())
-    sum_2 = sum(carbon_by_bus_2["coal"].values()) + sum(carbon_by_bus_2["ng"].values())
+    grid = scenario_1.state.get_grid()
+    coal_resource_types = grid.model_immutables.plants["group_all_resources"]["coal"]
+    ng_resource_types = grid.model_immutables.plants["group_all_resources"]["ng"]
+    resource_types = coal_resource_types.union(ng_resource_types)
+
+    sum_1 = 0
+    sum_2 = 0
+    for rtype in resource_types:
+        sum_1 = sum_1 + sum(carbon_by_bus_1[rtype].values())
+        sum_2 = sum_2 + sum(carbon_by_bus_2[rtype].values())
 
     return 100 * (1 - sum_2 / sum_1)

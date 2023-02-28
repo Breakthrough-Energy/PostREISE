@@ -1,5 +1,5 @@
-import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib import pyplot as plt
 
 
 def plot_tornado(title, data, sorted=False, plot_show=True):
@@ -48,7 +48,7 @@ def plot_tornado(title, data, sorted=False, plot_show=True):
     ax.set_yticks([])
     ax.axvline(x=0, color="black", lw=0.8)
 
-    for (p, resource) in zip(ax.patches, list(df.index)):
+    for p, resource in zip(ax.patches, list(df.index)):
         b = p.get_bbox()
         x_pos = b.x1 if b.x1 >= 0 else b.x0
         val = "%.2e" % b.x1

@@ -1,18 +1,12 @@
 # This plotting module has a corresponding demo notebook in
 #   PostREISE/postreise/plot/demo: energy_emissions_stack_bar_demo.ipynb
 
-import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import pyplot as plt
 from powersimdata.network.model import ModelImmutables
 from powersimdata.scenario.scenario import Scenario
 
 from postreise.analyze.generation.emissions import generate_emissions_stats
-
-# Define common classifications
-possible_renewable = ["solar", "wind", "wind_offshore"]
-possible_clean = possible_renewable + ["geothermal", "hydro", "nuclear"]
-possible_carbon = ["coal", "dfo", "ng"]
-all_possible = possible_carbon + ["other"] + possible_clean
 
 
 def plot_n_scenarios(*args):
@@ -50,6 +44,14 @@ def plot_n_scenarios(*args):
     for id in scenario_numbers:
         energy_by_type[id] = energy_by_type[id].reindex(fuels, fill_value=0)
         carbon_by_type[id] = carbon_by_type[id].reindex(fuels, fill_value=0)
+
+    # Define common classifications
+    mi = grid[first_id].model_immutables
+    possible_renewable = mi.plants["renewable_resources"]
+    possible_clean = mi.plants["clean_resources"]
+    possible_carbon = mi.plants["carbon_resources"]
+    all_possible = list(possible_carbon) + ["other"] + list(possible_clean)
+
     # Re-order according to plotting preferences
     fuels = [f for f in all_possible if f in fuels]
     # Re-assess subsets

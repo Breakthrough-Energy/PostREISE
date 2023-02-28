@@ -1,5 +1,5 @@
-import bokeh.plotting as plt
 import pytest
+from bokeh import plotting as plt
 
 from postreise.plot.canvas import create_map_canvas
 

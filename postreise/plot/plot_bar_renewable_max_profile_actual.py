@@ -1,5 +1,5 @@
-import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib import pyplot as plt
 from powersimdata.input.check import (
     _check_resources_are_in_grid_and_format,
     _check_resources_are_renewable_and_format,
@@ -58,14 +58,6 @@ def plot_bar_renewable_max_profile_actual(
         raise ValueError(
             f"interconnect must be one of {sorted(mi.zones['interconnect'])}"
         )
-    if (
-        len(
-            mi.zones["interconnect2abv"][interconnect]
-            - mi.zones["interconnect2abv"][scenario.info["interconnect"]]
-        )
-        != 0
-    ):
-        raise ValueError("interconnect is incompatible with scenario's interconnect")
 
     if "wind" in gen_type:
         profile = scenario.get_wind().sum()
@@ -76,11 +68,19 @@ def plot_bar_renewable_max_profile_actual(
         - pd.Timestamp(scenario.info["start_date"])
     ).total_seconds() / 3600 + 1
     if show_as_state:
+        if grid.grid_model == "usa_tamu":
+            abv2area = "abv2state"
+            loadzone2area = "loadzone2state"
+        elif grid.grid_model == "europe_tub":
+            abv2area = "abv2country"
+            loadzone2area = "loadzone2country"
+        else:
+            raise ValueError("grid model is not supported")
         zone_list = [
-            mi.zones["abv2state"][abv]
+            mi.zones[abv2area][abv]
             for abv in mi.zones["interconnect2abv"][interconnect]
         ]
-        group_criteria = plant.zone_name.map(mi.zones["loadzone2state"])
+        group_criteria = plant.zone_name.map(mi.zones[loadzone2area])
         profile_gen = profile.groupby(group_criteria).sum().rename("profile")
         total_capacity = plant.groupby(group_criteria)["Pmax"].sum() * hour_num
         actual_gen = sum_generation_by_state(scenario)[gen_type] * 1000

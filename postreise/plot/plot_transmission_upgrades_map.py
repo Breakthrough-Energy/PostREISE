@@ -8,8 +8,7 @@ from powersimdata.utility.distance import haversine
 
 from postreise.plot import colors
 from postreise.plot.canvas import create_map_canvas
-from postreise.plot.check import _check_func_kwargs
-from postreise.plot.plot_states import add_state_borders
+from postreise.plot.plot_borders import add_borders
 from postreise.plot.projection_helpers import project_branch
 
 
@@ -250,7 +249,7 @@ def map_transmission_upgrades(
     figsize=(1400, 800),
     x_range=None,
     y_range=None,
-    state_borders_kwargs=None,
+    borders_kwargs=None,
     legend_font_size=20,
     legend_location="bottom_left",
     **plot_kwargs,
@@ -263,8 +262,8 @@ def map_transmission_upgrades(
     :param tuple figsize: size of the bokeh figure (in pixels).
     :param tuple x_range: x range to zoom plot to (EPSG:3857).
     :param tuple y_range: y range to zoom plot to (EPSG:3857).
-    :param dict state_borders_kwargs: keyword arguments to be passed to
-        :func:`postreise.plot.plot_states.add_state_borders`.
+    :param dict borders_kwargs: keyword arguments to be passed to
+        :func:`postreise.plot.plot_borders.add_borders`.
     :param int/float legend_font_size: font size for legend.
     :param str legend_location: location for legend.
     :param \\*\\*plot_kwargs: collected keyword arguments to be passed to
@@ -288,22 +287,19 @@ def map_transmission_upgrades(
     # Set up figure
     canvas = create_map_canvas(figsize=figsize, x_range=x_range, y_range=y_range)
 
-    # Add state outlines
-    default_state_borders_kwargs = {
+    # Add borders
+    default_borders_kwargs = {
         "line_color": "slategrey",
         "line_width": 1,
         "fill_alpha": 1,
         "background_map": False,
     }
-    all_state_borders_kwargs = (
-        {**default_state_borders_kwargs, **state_borders_kwargs}
-        if state_borders_kwargs is not None
-        else default_state_borders_kwargs
+    all_borders_kwargs = (
+        {**default_borders_kwargs, **borders_kwargs}
+        if borders_kwargs is not None
+        else default_borders_kwargs
     )
-    _check_func_kwargs(
-        add_state_borders, set(all_state_borders_kwargs), "state_borders_kwargs"
-    )
-    canvas = add_state_borders(canvas, **all_state_borders_kwargs)
+    canvas = add_borders(grid1.grid_model, canvas, all_borders_kwargs)
 
     # add transmission map
     canvas = add_transmission_upgrades(

@@ -1,5 +1,5 @@
-import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib import pyplot as plt
 from powersimdata.input.check import _check_resources_are_in_grid_and_format
 
 from postreise.analyze.generation.summarize import (
@@ -35,7 +35,9 @@ def plot_bar_generation_max_min_actual(
     :raises TypeError:
         if ``interconnect`` and ``gen_type`` are not str
         if ``fontsize`` is not an integer or a float and/or
-    :raises ValueError: if ``interconnect`` is not valid
+    :raises ValueError:
+        if ``interconnect`` is not valid
+        if grid model is not supported.
     """
     if not isinstance(interconnect, str):
         raise TypeError("interconnect must be a str")
@@ -53,26 +55,26 @@ def plot_bar_generation_max_min_actual(
         raise ValueError(
             f"interconnect must be one of {sorted(mi.zones['interconnect'])}"
         )
-    if (
-        len(
-            mi.zones["interconnect2abv"][interconnect]
-            - mi.zones["interconnect2abv"][scenario.info["interconnect"]]
-        )
-        != 0
-    ):
-        raise ValueError("interconnect is incompatible with scenario's interconnect")
 
     hour_num = (
         pd.Timestamp(scenario.info["end_date"])
         - pd.Timestamp(scenario.info["start_date"])
     ).total_seconds() / 3600 + 1
     if show_as_state:
+        if grid.grid_model == "usa_tamu":
+            abv2area = "abv2state"
+            loadzone2area = "loadzone2state"
+        elif grid.grid_model == "europe_tub":
+            abv2area = "abv2country"
+            loadzone2area = "loadzone2country"
+        else:
+            raise ValueError("grid model is not supported")
         zone_list = [
-            mi.zones["abv2state"][abv]
+            mi.zones[abv2area][abv]
             for abv in mi.zones["interconnect2abv"][interconnect]
         ]
         all_max_min = (
-            plant.groupby(plant.zone_name.map(mi.zones["loadzone2state"]))[
+            plant.groupby(plant.zone_name.map(mi.zones[loadzone2area]))[
                 ["Pmax", "Pmin"]
             ].sum()
             * hour_num

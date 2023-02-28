@@ -6,8 +6,7 @@ from matplotlib import colors as mcolors
 from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
 
 from postreise.plot.canvas import create_map_canvas
-from postreise.plot.check import _check_func_kwargs
-from postreise.plot.plot_states import add_state_borders
+from postreise.plot.plot_borders import add_borders
 from postreise.plot.projection_helpers import project_bus
 
 
@@ -18,7 +17,7 @@ def map_plant_capacity(
     x_range=None,
     y_range=None,
     disaggregation=None,
-    state_borders_kwargs=None,
+    borders_kwargs=None,
     min_capacity=1,
     size_factor=1,
     alpha=0.5,
@@ -36,8 +35,8 @@ def map_plant_capacity(
     :param str disaggregation: method used to disaggregate plants:
         if "new_vs_existing_plants": separates plants into added vs. existing.
         if None, no disaggregation.
-    :param dict state_borders_kwargs: keyword arguments to pass to
-        :func:`postreise.plot.plot_states.add_state_borders`.
+    :param dict borders_kwargs: keyword arguments to be passed to
+        :func:`postreise.plot.plot_borders.add_borders`.
     :param float/int min_capacity: minimum bus capacity (MW) for markers to be plotted.
     :param float/int size_factor: scale size of glyphs.
     :param float/int alpha: opacity of circles (between 0 and 1).
@@ -50,22 +49,21 @@ def map_plant_capacity(
     # create canvas
     canvas = create_map_canvas(figsize=figsize, x_range=x_range, y_range=y_range)
 
-    # add state borders
-    default_state_borders_kwargs = {
+    # add borders
+    default_borders_kwargs = {
         "line_color": "gray",
         "line_width": 2,
         "fill_alpha": 0,
         "background_map": True,
     }
-    all_state_borders_kwargs = (
-        {**default_state_borders_kwargs, **state_borders_kwargs}
-        if state_borders_kwargs is not None
-        else default_state_borders_kwargs
+    all_borders_kwargs = (
+        {**default_borders_kwargs, **borders_kwargs}
+        if borders_kwargs is not None
+        else default_borders_kwargs
     )
-    _check_func_kwargs(
-        add_state_borders, set(all_state_borders_kwargs), "state_borders_kwargs"
-    )
-    canvas = add_state_borders(canvas, **all_state_borders_kwargs)
+
+    grid = scenario.state.get_grid()
+    canvas = add_borders(grid.grid_model, canvas, all_borders_kwargs)
 
     # add plant capacity
     add_plant_capacity(

@@ -31,3 +31,18 @@ traffic_palette = [
     "red",
     "darkred",
 ]
+
+grid_colors = {
+    "usa_tamu": {
+        "Western": be_blue,
+        "Eastern": be_purple,
+        "Texas": be_lightblue,
+    },
+    "europe_tub": {
+        "ContinentalEurope": be_blue,
+        "Baltic": "#fed53d",
+        "Nordic": be_lightblue,
+        "GreatBritain": be_purple,
+        "Ireland": be_green,
+    },
+}

@@ -1,7 +1,7 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from powersimdata.network.model import ModelImmutables, area_to_loadzone
+from matplotlib import pyplot as plt
+from powersimdata.network.model import area_to_loadzone
 from powersimdata.scenario.scenario import Scenario
 
 from postreise.analyze.generation.capacity import sum_capacity_by_type_zone
@@ -98,9 +98,7 @@ def plot_pie_generation_vs_capacity(
     scenario_data = {}
     for i, sid in enumerate(scenario_ids):
         scenario = Scenario(sid)
-        mi = ModelImmutables(
-            scenario.info["grid_model"], interconnect=scenario.info["interconnect"]
-        )
+        mi = scenario.get_grid().model_immutables
         all_loadzone_data[sid] = {
             "gen": sum_generation_by_type_zone(scenario, time_range, time_zone).rename(
                 columns=mi.zones["id2loadzone"]

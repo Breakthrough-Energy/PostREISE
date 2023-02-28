@@ -1,9 +1,8 @@
 import os
 
-import matplotlib.patches as mpatches
-import matplotlib.pyplot as plt
 import pandas as pd
-from powersimdata.network.model import ModelImmutables
+from matplotlib import patches as mpatches
+from matplotlib import pyplot as plt
 from powersimdata.scenario.check import _check_scenario_is_in_analyze_state
 
 from postreise.analyze.demand import get_demand_time_series, get_net_demand_time_series
@@ -87,7 +86,10 @@ def plot_generation_time_series_stack(
     """
     _check_scenario_is_in_analyze_state(scenario)
 
-    mi = ModelImmutables(scenario.info["grid_model"])
+    mi = scenario.state.get_grid().model_immutables
+    # TODO: fix in mi
+    mi.plants["curtailable2color"]["offwind-dc"] = "#74c6f2"
+
     type2color = mi.plants["type2color"]
     type2color.update(
         {k + "_curtailment": v for k, v in mi.plants["curtailable2color"].items()}
@@ -240,9 +242,9 @@ def plot_generation_time_series_stack(
 
     handles, labels = ax.get_legend_handles_labels()
     if show_demand:
-        labels[-1] = "Demand"
+        labels[0] = "Demand"
     if show_net_demand:
-        labels[-2] = "Net Demand"
+        labels[1] = "Net Demand"
     labels = [type2label[l] if l in type2label else l for l in labels]
 
     # Add hatches
