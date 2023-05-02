@@ -16,3 +16,6 @@ black = "*"
 pytest = "*"
 coverage = "*"
 pytest-cov = "*"
+
+[requires]
+python_full_version= "3.10.4"
