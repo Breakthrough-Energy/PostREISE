@@ -100,7 +100,6 @@ class TestEmissionStatsArguments:
 
 class TestCarbonCalculation:
     def test_carbon_calc_always_on(self, scenario, mock_plant):
-
         carbon = generate_emissions_stats(scenario, method="always-on")
         _test_emissions_structure(carbon, mock_plant, scenario.state.get_pg())
 
@@ -118,7 +117,6 @@ class TestCarbonCalculation:
         )
 
     def test_carbon_calc_decommit(self, scenario, mock_plant):
-
         carbon = generate_emissions_stats(scenario, method="decommit")
         _test_emissions_structure(carbon, mock_plant, scenario.state.get_pg())
 
@@ -136,7 +134,6 @@ class TestCarbonCalculation:
         )
 
     def test_carbon_calc_simple(self, scenario, mock_plant):
-
         carbon = generate_emissions_stats(scenario, method="simple")
         _test_emissions_structure(carbon, mock_plant, scenario.state.get_pg())
 
